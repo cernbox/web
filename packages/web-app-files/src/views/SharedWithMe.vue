@@ -15,7 +15,11 @@
             class="files-table"
             :class="{ 'files-table-squashed': isSidebarOpen }"
             :are-previews-displayed="displayPreviews"
-            :resources="filterDataByStatus(activeFiles, 1)"
+            :resources="
+              getShowAllPending() === false
+                ? filterDataByStatus(activeFiles, 1).slice(0, 3)
+                : filterDataByStatus(activeFiles, 1)
+            "
             :target-route="targetRoute"
             :highlighted="highlightedFile ? highlightedFile.id : null"
             :header-position="headerPosition"
@@ -68,11 +72,13 @@
               Show all</a
             >
           </div>
+
           <div
             class="oc-app-bar"
             v-else-if="
               getShowAllPending() === true && filterDataByStatus(activeFiles, 1).length > 3
             "
+            style="text-align: center"
           >
             <a @click="setShowAllPending(false)" style="text-align: center; padding-bottom: 12px">
               Show less
@@ -341,7 +347,6 @@ export default {
     },
 
     getShowDeclined() {
-      console.log()
       return showDeclined
     },
 
@@ -351,19 +356,11 @@ export default {
     },
 
     getShowAllPending() {
+      console.log('show all?', showAllPending, this.filterDataByStatus(this.activeFiles, 1))
       return showAllPending
     },
 
     filterDataByStatus(data, status) {
-      console.log(
-        status,
-        data.filter((item) => item.status === status)
-      )
-      if (status === 1 && showAllPending === false)
-        return data.filter((item) => item.status === status)
-          ? data.filter((item) => item.status === status).slice(0, 3)
-          : []
-
       return data.filter((item) => item.status === status)
         ? data.filter((item) => item.status === status)
         : []
@@ -431,7 +428,6 @@ export default {
     },
 
     async triggerShareAction(resource, type) {
-      console.log(resource, type)
       try {
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
@@ -439,7 +435,6 @@ export default {
           method: type,
         })
         response = await response.json()
-        console.log(response, response.ocs, response.ocs.data)
         if (response.ocs.data && response.ocs.data.length > 0) {
           const sharedResource = await buildSharedResource(
             response.ocs.data[0],

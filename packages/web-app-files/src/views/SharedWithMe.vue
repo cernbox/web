@@ -4,8 +4,14 @@
     <template v-else>
       <!-- Pending shares: show always -->
       <div id="pending-shares" v-if="filterDataByStatus(activeFiles, 1).length > 0">
-        <div class="oc-app-bar">
+        <div class="oc-app-bar" style="display: flex; flex-direction: row; align-items: baseline">
           <h4>Pending Shares</h4>
+          <a
+            v-if="filterDataByStatus(activeFiles, 0).length === 0 && !getShowDeclined()"
+            @click="setShowDeclined(true)"
+            style="padding-left: 24px; margin: 0 0 20px"
+            >Show declined shares</a
+          >
         </div>
 
         <div style="background-color: aliceblue">
@@ -90,7 +96,11 @@
 
       <!-- Accepted shares -->
       <div v-if="!getShowDeclined()">
-        <div class="oc-app-bar" style="display: flex; flex-direction: row; align-items: baseline">
+        <div
+          v-if="filterDataByStatus(activeFiles, 0).length > 0"
+          class="oc-app-bar"
+          style="display: flex; flex-direction: row; align-items: baseline"
+        >
           <h4>Accepted Shares</h4>
 
           <a @click="setShowDeclined(true)" style="padding-left: 24px; margin: 0 0 20px"

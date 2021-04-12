@@ -144,7 +144,7 @@
               />
             </div>
           </template>
-          <template #footer>
+          <!-- <template #footer>
             <div
               v-if="activeFilesCount.folders > 0 || activeFilesCount.files > 0"
               class="uk-text-nowrap uk-text-meta uk-text-center uk-width-1-1"
@@ -159,7 +159,7 @@
                 >file</translate
               >
             </div>
-          </template>
+          </template>-->
         </oc-table-files>
       </div>
 
@@ -179,9 +179,7 @@
           icon="group"
         >
           <template #message>
-            <span v-translate>
-              You are currently not collaborating on other people's resources
-            </span>
+            <span v-translate> No declined files found </span>
           </template>
         </no-content-message>
         <oc-table-files
@@ -225,7 +223,7 @@
               />
             </div>
           </template>
-          <template #footer>
+          <!-- <template #footer>
             <div
               v-if="activeFilesCount.folders > 0 || activeFilesCount.files > 0"
               class="uk-text-nowrap uk-text-meta uk-text-center uk-width-1-1"
@@ -240,7 +238,7 @@
                 >file</translate
               >
             </div>
-          </template>
+          </template>-->
         </oc-table-files>
       </div>
     </template>

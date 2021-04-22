@@ -3,12 +3,12 @@
     <list-loader v-if="loading" />
     <template v-else>
       <!-- Pending shares: show always -->
-      <div id="pending-shares" v-if="filterDataByStatus(activeFiles, 1).length > 0">
+      <div v-if="filterDataByStatus(activeFiles, 1).length > 0" id="pending-shares">
         <div class="oc-app-bar shares-bar">
           <h4><translate>Pending Shares</translate></h4>
           <a
-            id="show-declined-shares-btn"
             v-if="filterDataByStatus(activeFiles, 0).length === 0 && !getShowDeclined()"
+            id="show-declined-shares-btn"
             @click="setShowDeclined(true)"
             >Show declined shares</a
           >
@@ -41,8 +41,8 @@
                   v-if="resource.status === 1 || resource.status === 2"
                   appearance="raw"
                   class="file-row-share-status-action uk-text-meta"
-                  @click.stop="triggerShareAction(resource, 'POST')"
                   style="color: #347235"
+                  @click.stop="triggerShareAction(resource, 'POST')"
                 >
                   <translate>Accept</translate>
                 </oc-button>
@@ -63,21 +63,21 @@
           </oc-table-files>
 
           <div
-            class="oc-app-bar"
             v-if="getShowAllPending() === false && filterDataByStatus(activeFiles, 1).length > 3"
+            class="oc-app-bar"
             style="text-align: center"
           >
-            <a @click="setShowAllPending(true)" class="show-hide-pending"> Show all</a>
+            <a class="show-hide-pending" @click="setShowAllPending(true)"> Show all</a>
           </div>
 
           <div
-            class="oc-app-bar"
             v-else-if="
               getShowAllPending() === true && filterDataByStatus(activeFiles, 1).length > 3
             "
+            class="oc-app-bar"
             style="text-align: center"
           >
-            <a @click="setShowAllPending(false)" class="show-hide-pending"> Show less </a>
+            <a class="show-hide-pending" @click="setShowAllPending(false)"> Show less </a>
           </div>
         </div>
       </div>
@@ -88,7 +88,7 @@
         <div v-if="filterDataByStatus(activeFiles, 0).length > 0" class="oc-app-bar shares-bar">
           <h4>Accepted Shares</h4>
 
-          <a @click="setShowDeclined(true)" class="show-accepted-declined-link"
+          <a class="show-accepted-declined-link" @click="setShowDeclined(true)"
             >Show declined shares</a
           >
         </div>
@@ -169,7 +169,7 @@
         <div class="oc-app-bar shares-bar">
           <h4><translate>Declined Shares</translate></h4>
 
-          <a @click="setShowDeclined(false)" class="show-accepted-declined-link"
+          <a class="show-accepted-declined-link" @click="setShowDeclined(false)"
             >Show accepted shares</a
           >
         </div>

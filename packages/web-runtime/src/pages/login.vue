@@ -5,14 +5,15 @@
     uk-height-viewport
     :style="{ backgroundImage: 'url(' + backgroundImg + ')' }"
   >
+    <h1 class="oc-invisible-sr">{{ pageTitle }}</h1>
     <div class="oc-login-card uk-position-center">
-      <img class="oc-login-logo" :src="logoImg" :alt="configuration.theme.general.name" />
+      <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
       <div class="oc-login-card-body">
-        <h3 class="oc-login-card-title">
+        <h2 class="oc-login-card-title">
           <translate :translate-params="{ productName: $_productName }"
             >Welcome to %{productName}</translate
           >
-        </h3>
+        </h2>
         <p v-translate>
           Please click the button below to authenticate and get access to your data.
         </p>
@@ -20,6 +21,7 @@
           id="authenticate"
           size="large"
           variation="primary"
+          appearance="filled"
           class="oc-login-authorize-button"
           @click="login()"
         >
@@ -47,6 +49,10 @@ export default {
   },
   computed: {
     ...mapGetters(['configuration']),
+
+    pageTitle() {
+      return this.$gettext(this.$route.meta.title)
+    },
 
     $_productName() {
       return this.configuration.theme.general.name

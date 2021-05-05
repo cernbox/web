@@ -13,6 +13,57 @@
     "loginPage": {
       "autoRedirect": true,
       "backgroundImg": "themes/owncloud/assets/loginBackground.jpg"
+    },
+    "designTokens": {
+      "colorPalette": {
+        "background": "#0d1117",
+        "background-muted": "#313842",
+        "background-highlight": "rgba(121, 192, 255, 0.1)",
+        "border-primary": "#30363d",
+        "brand-primary": "#161b22",
+        "brand-primary-hover": "#13161a",
+        "color": "#c9d1d9",
+        "color-muted": "#8b949e",
+        "color-inverse": "#464646",
+        "input-border": "#e1e4e8",
+        "input-background": "rgba(1,4,9,0.5)",
+        "input-color": "#c9d1d9",
+        "input-color-muted": "#8b949e",
+        "variation-primary": "#238636",
+        "variation-primary-hover": "#2ea043",
+        "variation-primary-muted": "",
+        "variation-passive": "#8b949e",
+        "variation-passive-hover": "",
+        "variation-passive-muted": "",
+        "variation-success": "",
+        "variation-success-hover": "",
+        "variation-success-muted": "",
+        "variation-warning": "",
+        "variation-warning-hover": "",
+        "variation-warning-muted": "",
+        "variation-danger": "",
+        "variation-danger-hover": "",
+        "variation-danger-muted": ""
+      },
+      "fontSizes": {
+        "default": "",
+        "large": "",
+        "medium": ""
+      },
+      "size": {
+        "form-check-default": "",
+        "height-small": "",
+        "icon-default": "",
+        "width-medium": ""
+      },
+      "spacing": {
+        "xsmall": "",
+        "small": "",
+        "medium": "",
+        "large": "",
+        "xlarge": "",
+        "xxlarge": ""
+      }
     }
   }
 }

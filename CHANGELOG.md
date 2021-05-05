@@ -9,9 +9,15 @@ Summary
 -------
 
 * Bugfix - Improve web container: [#4942](https://github.com/owncloud/web/pull/4942)
+* Bugfix - Display navigation for resolved private link: [#5023](https://github.com/owncloud/web/pull/5023)
 * Enhancement - Accessibility improvements: [#4965](https://github.com/owncloud/web/pull/4965)
+* Enhancement - Implement proper direct delete: [#4991](https://github.com/owncloud/web/pull/4991)
 * Enhancement - Enable files app search bar to be toggleable on a per-route basis: [#4815](https://github.com/owncloud/web/pull/4815)
+* Enhancement - Extension config: [#5024](https://github.com/owncloud/web/pull/5024)
+* Enhancement - Focus management: [#4993](https://github.com/owncloud/web/pull/4993)
+* Enhancement - Align headline hierarchy: [#5003](https://github.com/owncloud/web/issues/5003)
 * Enhancement - Use list for displaying added people: [#4915](https://github.com/owncloud/web/pull/4915)
+* Enhancement - Use real page title for location picker: [#5009](https://github.com/owncloud/web/pull/5009)
 * Enhancement - Show search button in search bar: [#4985](https://github.com/owncloud/web/pull/4985)
 
 Details
@@ -24,6 +30,13 @@ Details
 
    https://github.com/owncloud/web/pull/4942
 
+* Bugfix - Display navigation for resolved private link: [#5023](https://github.com/owncloud/web/pull/5023)
+
+   We've fixed that the navigation in the left sidebar is visible for a resolved private link as
+   well
+
+   https://github.com/owncloud/web/pull/5023
+
 * Enhancement - Accessibility improvements: [#4965](https://github.com/owncloud/web/pull/4965)
 
    A lot of random changes: - Extracted some helper classes to ODS & unified their usage - Removed
@@ -35,11 +48,42 @@ Details
    https://github.com/owncloud/web/pull/4965
    https://github.com/owncloud/web/pull/4975
 
+* Enhancement - Implement proper direct delete: [#4991](https://github.com/owncloud/web/pull/4991)
+
+   We implemented a proper delete action for a single file instead of reusing the batch action for
+   deleting multiple files. This also solves the issue with the checkbox being checked when
+   opening the delete modal, which was not a11y compliant.
+
+   https://github.com/owncloud/web/pull/4991
+
 * Enhancement - Enable files app search bar to be toggleable on a per-route basis: [#4815](https://github.com/owncloud/web/pull/4815)
 
    Permits the search bar in the files app to be toggleable on a per-route basis as shown or hidden.
 
    https://github.com/owncloud/web/pull/4815
+
+* Enhancement - Extension config: [#5024](https://github.com/owncloud/web/pull/5024)
+
+   Loading extension specific config was only possible for file editors. We now also load it in the
+   general app information, so that it's available in the `apps` getter of the global vuex store.
+
+   https://github.com/owncloud/web/pull/5024
+
+* Enhancement - Focus management: [#4993](https://github.com/owncloud/web/pull/4993)
+
+   We added a mixin that makes it able to manage, record and reverse-replay the focus for the
+   current document. The first components that using it are modal and sidebar in the files app.
+
+   https://github.com/owncloud/web/issues/4992
+   https://github.com/owncloud/web/pull/4993
+
+* Enhancement - Align headline hierarchy: [#5003](https://github.com/owncloud/web/issues/5003)
+
+   Streamlined headline tags so that pages have a h1 tag and the headline hierarchy is adhered.
+
+   https://github.com/owncloud/web/issues/5003
+   https://github.com/owncloud/web/pull/5004
+   https://github.com/owncloud/web/pull/5005
 
 * Enhancement - Use list for displaying added people: [#4915](https://github.com/owncloud/web/pull/4915)
 
@@ -48,6 +92,13 @@ Details
    readers.
 
    https://github.com/owncloud/web/pull/4915
+
+* Enhancement - Use real page title for location picker: [#5009](https://github.com/owncloud/web/pull/5009)
+
+   We've added real page titles to the location picker. The title is consisted of the current
+   action, target and product name.
+
+   https://github.com/owncloud/web/pull/5009
 
 * Enhancement - Show search button in search bar: [#4985](https://github.com/owncloud/web/pull/4985)
 

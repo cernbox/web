@@ -210,7 +210,8 @@ const routes = [
         component: PublicFiles,
         meta: {
           auth: false,
-          hasBulkActions: true
+          hasBulkActions: true,
+          title: $gettext('Public files')
         }
       }
     ]
@@ -221,7 +222,11 @@ const routes = [
     components: {
       fullscreen: PublicLink
     },
-    meta: { auth: false, hideHeadbar: true }
+    meta: {
+      auth: false,
+      hideHeadbar: true,
+      title: $gettext('Resolving public link')
+    }
   },
   {
     path: '/private-link/:fileId',
@@ -229,7 +234,7 @@ const routes = [
     components: {
       fullscreen: PrivateLink
     },
-    meta: { hideHeadbar: true }
+    meta: { hideHeadbar: true, title: $gettext('Resolving private link') }
   },
   {
     path: '/location-picker/:context/:action/:item?',
@@ -248,7 +253,7 @@ const routes = [
     components: {
       app: FilesDrop
     },
-    meta: { auth: false }
+    meta: { auth: false, title: $gettext('Public file upload') }
   }
 ]
 

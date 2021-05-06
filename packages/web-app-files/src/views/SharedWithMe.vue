@@ -10,13 +10,13 @@
         <div class="oc-app-bar shares-bar">
           <h2><translate>Pending Shares</translate></h2>
           <oc-button
-            appearance="raw"
-            v-translate
             v-if="
               filterDataByStatus(activeFiles, shareStatus.pending).length === 0 &&
-              !getShowDeclined()
+                !getShowDeclined()
             "
             id="show-declined-shares-btn"
+            v-translate
+            appearance="raw"
             @click="setShowDeclined(true)"
             >Show declined shares</oc-button
           >
@@ -73,7 +73,7 @@
           <div
             v-if="
               getShowAllPending() === false &&
-              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -85,7 +85,7 @@
           <div
             v-else-if="
               getShowAllPending() === true &&
-              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -193,8 +193,8 @@
           <h2><translate>Declined Shares</translate></h2>
           <div class="margin-div" style="display: none">
             <oc-button
-              style="display: none"
               v-translate
+              style="display: none"
               appearance="raw"
               @click="setShowDeclined(false)"
               >Show accepted shares</oc-button
@@ -298,7 +298,7 @@ export default {
   mixins: [FileActions, MixinFilesListPositioning],
   data: () => ({
     loading: true,
-    shareStatus,
+    shareStatus
   }),
   computed: {
     ...mapState(['app']),
@@ -308,7 +308,7 @@ export default {
       'activeFiles',
       'selectedFiles',
       'inProgress',
-      'activeFilesCount',
+      'activeFilesCount'
     ]),
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     selected: {
@@ -317,7 +317,7 @@ export default {
       },
       set(resources) {
         this.SELECT_RESOURCES(resources)
-      },
+      }
     },
     isEmpty() {
       return this.activeFiles.length < 1
@@ -333,12 +333,12 @@ export default {
     },
     displayPreviews() {
       return !this.configuration.options.disablePreviews
-    },
+    }
   },
   watch: {
     uploadProgressVisible() {
       this.adjustTableHeaderPosition()
-    },
+    }
   },
   created() {
     this.loadResources()
@@ -354,7 +354,7 @@ export default {
       'LOAD_FILES',
       'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
-      'UPDATE_RESOURCE',
+      'UPDATE_RESOURCE'
     ]),
     ...mapMutations(['SET_QUOTA']),
     setShowDeclined(value) {
@@ -372,7 +372,7 @@ export default {
       return showAllPending
     },
     filterDataByStatus(data, status) {
-      return data.filter((item) => item.status === status)
+      return data.filter(item => item.status === status)
     },
     async loadResources() {
       this.loading = true
@@ -380,7 +380,7 @@ export default {
       let resources = await this.$client.requests.ocs({
         service: 'apps/files_sharing',
         action: '/api/v1/shares?format=json&shared_with_me=true&state=all&include_tags=false',
-        method: 'GET',
+        method: 'GET'
       })
       let rootFolder = await this.$client.files.fileInfo('/', this.davProperties)
       resources = await resources.json()
@@ -405,7 +405,7 @@ export default {
           isPublic: false,
           mediaSource: this.mediaSource,
           encodePath: this.encodePath,
-          headers: this.requestHeaders,
+          headers: this.requestHeaders
         })
       }
       // Load quota
@@ -429,7 +429,7 @@ export default {
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
           action: `api/v1/shares/pending/${resource.share.id}`,
-          method: type,
+          method: type
         })
         response = await response.json()
         if (response.ocs.data?.length > 0) {
@@ -449,15 +449,14 @@ export default {
           desc: error.message,
           status: 'danger',
           autoClose: {
-            enabled: true,
-          },
+            enabled: true
+          }
         })
       }
-    },
-  },
+    }
+  }
 }
 </script>
-
 
 <style>
 .centered {

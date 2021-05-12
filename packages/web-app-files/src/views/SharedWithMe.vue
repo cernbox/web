@@ -391,12 +391,15 @@ export default {
         this.loading = false
         return
       }
-      resources = await aggregateResourceShares(
+
+      resources = aggregateResourceShares(
         resources,
         true,
         !this.isOcis,
         this.configuration.server,
-        this.getToken
+        this.getToken,
+        this.$client,
+        this.UPDATE_RESOURCE
       )
       this.LOAD_FILES({ currentFolder: rootFolder, files: resources })
       if (this.displayPreviews) {
@@ -426,15 +429,36 @@ export default {
     },
     async triggerShareAction(resource, type) {
       try {
+        // exec share action
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
           action: `api/v1/shares/pending/${resource.share.id}`,
           method: type,
         })
-        response = await response.json()
-        if (response.ocs.data?.length > 0) {
+
+        // exit on failure
+        if (response.status !== 200) {
+          throw new Error(response.statusText)
+        }
+        // get updated share from response or re-fetch it
+        let share = null
+        // oc10
+        if (parseInt(response.headers.get('content-length')) > 0) {
+          response = await response.json()
+
+          if (response.ocs.data.length > 0) {
+            share = response.ocs.data[0]
+          }
+        } else {
+          // ocis
+          const { shareInfo } = await this.$client.shares.getShare(resource.share.id)
+          share = shareInfo
+        }
+
+        // update share in store
+        if (share) {
           const sharedResource = await buildSharedResource(
-            response.ocs.data[0],
+            share,
             true,
             !this.isOcis,
             this.configuration.server,

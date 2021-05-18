@@ -6,6 +6,74 @@
     },
     "logo": {
       "sidebar": "themes/owncloud/assets/cernbox-lrg.svg",
+      "favicon": "themes/owncloud/assets/cernbox-abstract.svg",
+      "login": "themes/owncloud/assets/cernbox-lrg.svg",
+      "notFound": "themes/owncloud/assets/cloud.svg"
+    },
+    "loginPage": {
+      "autoRedirect": true,
+      "backgroundImg": "themes/owncloud/assets/loginBackground.jpg"
+    },
+    "designTokens": {
+      "colorPalette": {
+        "background-default": "",
+        "background-highlight": "#b8d4ee",
+        "background-muted": "",
+        "border": "",
+        "input-bg": "",
+        "input-border": "",
+        "input-text-default": "",
+        "input-text-muted": "",
+        "swatch-brand-default": "#03142b",
+        "swatch-brand-hover": "#3c5776",
+        "swatch-danger-default": "",
+        "swatch-danger-hover": "",
+        "swatch-danger-muted": "",
+        "swatch-passive-default": "",
+        "swatch-passive-hover": "",
+        "swatch-passive-muted": "",
+        "swatch-primary-default": "#3c7fd0",
+        "swatch-primary-hover": "#759ed2",
+        "swatch-primary-muted": "",
+        "swatch-success-default": "",
+        "swatch-success-hover": "",
+        "swatch-success-muted": "",
+        "swatch-warning-default": "",
+        "swatch-warning-hover": "",
+        "swatch-warning-muted": "",
+        "text-default": "#000",
+        "text-inverse": "",
+        "text-muted": ""
+      },
+      "fontSizes": {
+        "default": "",
+        "large": "",
+        "medium": ""
+      },
+      "size": {
+        "form-check-default": "",
+        "height-small": "",
+        "height-table-row": "",
+        "icon-default": "",
+        "width-medium": ""
+      },
+      "spacing": {
+        "xsmall": "",
+        "small": "",
+        "medium": "",
+        "large": "",
+        "xlarge": "",
+        "xxlarge": ""
+      }
+    }
+  },
+  "default-owncloud": {
+    "general": {
+      "name": "ownCloud",
+      "slogan": "ownCloud – A safe home for all your data"
+    },
+    "logo": {
+      "sidebar": "themes/owncloud/assets/cernbox-lrg.svg",
       "favicon": "themes/owncloud/assets/favicon.jpg",
       "login": "themes/owncloud/assets/logo.svg",
       "notFound": "themes/owncloud/assets/cloud.svg"
@@ -13,6 +81,58 @@
     "loginPage": {
       "autoRedirect": true,
       "backgroundImg": "themes/owncloud/assets/loginBackground.jpg"
+    },
+    "designTokens": {
+      "colorPalette": {
+        "background-default": "",
+        "background-highlight": "",
+        "background-muted": "",
+        "border": "",
+        "input-bg": "",
+        "input-border": "",
+        "input-text-default": "",
+        "input-text-muted": "",
+        "swatch-brand-default": "",
+        "swatch-brand-hover": "",
+        "swatch-danger-default": "",
+        "swatch-danger-hover": "",
+        "swatch-danger-muted": "",
+        "swatch-passive-default": "",
+        "swatch-passive-hover": "",
+        "swatch-passive-muted": "",
+        "swatch-primary-default": "",
+        "swatch-primary-hover": "",
+        "swatch-primary-muted": "",
+        "swatch-success-default": "",
+        "swatch-success-hover": "",
+        "swatch-success-muted": "",
+        "swatch-warning-default": "",
+        "swatch-warning-hover": "",
+        "swatch-warning-muted": "",
+        "text-default": "",
+        "text-inverse": "",
+        "text-muted": ""
+      },
+      "fontSizes": {
+        "default": "",
+        "large": "",
+        "medium": ""
+      },
+      "size": {
+        "form-check-default": "",
+        "height-small": "",
+        "height-table-row": "",
+        "icon-default": "",
+        "width-medium": ""
+      },
+      "spacing": {
+        "xsmall": "",
+        "small": "",
+        "medium": "",
+        "large": "",
+        "xlarge": "",
+        "xxlarge": ""
+      }
     }
   }
 }

@@ -2800,10 +2800,10 @@ color@^3.0.0:
     color-convert "^1.9.1"
     color-string "^1.5.4"
 
-colorette@^1.1.0, colorette@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/colorette/-/colorette-1.2.1.tgz#4d0b921325c14faf92633086a536db6e89564b1b"
-  integrity sha512-puCDz0CzydiSYOrnXpz/PKd69zRrribezjtE9yd4zvytoRc8+RY/KJPvtPFKZS3E3wP6neGyMe0vOTlHO5L3Pw==
+colorette@^1.1.0, colorette@^1.2.1, colorette@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/colorette/-/colorette-1.2.2.tgz#cbcc79d5e99caea2dbf10eb3a26fd8b3e6acfa94"
+  integrity sha512-MKGMzyfeuutC/ZJ1cba9NqcNpfeqMUcYmyF1ZFY6/Cn7CNSAKx6a+s48sqLqyAiZuaP2TcqMhoo+dlwFnVxT9w==
 
 colors@^1.1.2, colors@^1.4.0:
   version "1.4.0"
@@ -7217,10 +7217,10 @@ mz@^2.4.0:
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
 
-nanoid@^3.0.1, nanoid@^3.1.20:
-  version "3.1.20"
-  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.20.tgz#badc263c6b1dcf14b71efaa85f6ab4c1d6cfc788"
-  integrity sha512-a1cQNyczgKbLX9jwbS/+d7W8fX/RfgYR7lVWwWOGIPNgK2m0MWvrGF6/m4kk6U3QcFMnZf3RIhL0v2Jgh/0Uxw==
+nanoid@^3.0.1, nanoid@^3.1.23:
+  version "3.1.23"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.23.tgz#f744086ce7c2bc47ee0a8472574d5c78e4183a81"
+  integrity sha512-FiB0kzdP0FFVGDKlRLEQ1BgDzU87dy5NnzjeW9YZNt+/c3+q82EQDUwniSAUxp/F0gFNI1ZhKU1FqYsMuqZVnw==
 
 nanomatch@^1.2.9:
   version "1.2.13"
@@ -7613,10 +7613,10 @@ ospec@3.1.0:
   dependencies:
     glob "^7.1.3"
 
-owncloud-design-system@^6.0.1:
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/owncloud-design-system/-/owncloud-design-system-6.0.1.tgz#bfa8a797fd35b38d320ec7e8e74683c9dd1278be"
-  integrity sha512-nLcXRMYdcX7UDS3UkWim7urLOx00u2VUP+01SSpeN5Liuufh8UR88ENLIRW+fqcIPPGhu15qlr1JsV5+0MDgEA==
+owncloud-design-system@6.0.3:
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/owncloud-design-system/-/owncloud-design-system-6.0.3.tgz#c7cf5f4e9095120dce139ef52302f0114187dbb2"
+  integrity sha512-6iKYU0aq1Beei8W58TOOWUf/ekUSgdz5gy1yM4lHw/kPSC+fkXu7YWS53h2RjgPOZRP8PdqPxHE9oMqnBd9fnw==
 
 owncloud-sdk@^1.0.0-740:
   version "1.0.0-1716"
@@ -8428,13 +8428,13 @@ postcss@^7.0.0, postcss@^7.0.1, postcss@^7.0.14, postcss@^7.0.27, postcss@^7.0.3
     source-map "^0.6.1"
     supports-color "^6.1.0"
 
-postcss@^8.2.2:
-  version "8.2.6"
-  resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.2.6.tgz#5d69a974543b45f87e464bc4c3e392a97d6be9fe"
-  integrity sha512-xpB8qYxgPuly166AGlpRjUdEYtmOWx2iCwGmrv4vqZL9YPVviDVPZPRXxnXr6xPZOdxQ9lp3ZBFCRgWJ7LE3Sg==
+postcss@^8.2.15:
+  version "8.2.15"
+  resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.2.15.tgz#9e66ccf07292817d226fc315cbbf9bc148fbca65"
+  integrity sha512-2zO3b26eJD/8rb106Qu2o7Qgg52ND5HPjcyQiK2B98O388h43A448LCslC0dI2P97wCAQRJsFvwTRcXxTKds+Q==
   dependencies:
-    colorette "^1.2.1"
-    nanoid "^3.1.20"
+    colorette "^1.2.2"
+    nanoid "^3.1.23"
     source-map "^0.6.1"
 
 precond@0.2:
@@ -10677,11 +10677,6 @@ void-elements@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-3.1.0.tgz#614f7fbf8d801f0bb5f0661f5b2f5785750e4f09"
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
-
-vue-avatar@^2.2.0:
-  version "2.3.3"
-  resolved "https://registry.yarnpkg.com/vue-avatar/-/vue-avatar-2.3.3.tgz#e125bf4f4a6f4f9480da0c522020266a8609d2a8"
-  integrity sha512-Z57ILRTkFIAuCH9JiFBxX74C5zua5ub/jRDM/KZ+QKXNfscvmUOgWBs3kA2+wrpZMowIvfLHIT0gvQu1z+zpLg==
 
 vue-clipboard2@^0.3.1:
   version "0.3.1"

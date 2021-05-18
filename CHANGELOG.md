@@ -3,7 +3,30 @@ Changelog for ownCloud Web [unreleased] (UNRELEASED)
 The following sections list the changes in ownCloud web unreleased relevant to
 ownCloud admins and users.
 
-[unreleased]: https://github.com/owncloud/web/compare/v3.0.0...master
+[unreleased]: https://github.com/owncloud/web/compare/v3.1.0...master
+
+Summary
+-------
+
+* Bugfix - Correct sharee tag: [#5112](https://github.com/owncloud/web/pull/5112)
+
+Details
+-------
+
+* Bugfix - Correct sharee tag: [#5112](https://github.com/owncloud/web/pull/5112)
+
+   The tag _inside_ a shared folder always announced the current user as "owner", since the shares
+   lookup didn't check for the parent folders' ownership. This has been fixed now and users get the
+   correct tag (e.g. "Viewer", "Editor" etc) in the sidebar.
+
+   https://github.com/owncloud/web/pull/5112
+
+Changelog for ownCloud Web [3.1.0] (2021-05-12)
+=======================================
+The following sections list the changes in ownCloud web 3.1.0 relevant to
+ownCloud admins and users.
+
+[3.1.0]: https://github.com/owncloud/web/compare/v3.0.0...v3.1.0
 
 Summary
 -------
@@ -60,10 +83,12 @@ Details
    `<br>` tags that were incorrectly used for spacing - Used `<h4>` tags for headings in the files
    sidebar - Make skip-to-main button translate-able - Update searchbar label string - Renamed
    "personal files" to "all files" in routes (soft rename, due to changes in the future) - Updated
-   ODS to v5.1.0
+   ODS to v6.0.3, making row heights theme-able and bringing a more accessible avatar component
+   that improves loading of users' profile pictures
 
    https://github.com/owncloud/web/pull/4965
    https://github.com/owncloud/web/pull/4975
+   https://github.com/owncloud/web/pull/5098
 
 * Enhancement - Implement proper direct delete: [#4991](https://github.com/owncloud/web/pull/4991)
 

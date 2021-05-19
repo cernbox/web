@@ -61,9 +61,9 @@ comments.file
 # drone CI is in .drone.star, do not let someone accidentally commit a local .drone.yml
 .drone.yml
 
-# Themes
-/packages/web-runtime/themes/**
-!/packages/web-runtime/themes/owncloud/**
+# # Themes
+# /packages/web-runtime/themes/**
+# !/packages/web-runtime/themes/owncloud/**
 
 # Report for tests
 tests/report/cucumber_report.json

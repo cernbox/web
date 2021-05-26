@@ -4,18 +4,6 @@
     <template v-else>
       <!-- Pending shares -->
 
-      <oc-button
-        v-if="
-          filterDataByStatus(activeFiles, shareStatus.accepted).length === 0 &&
-          !showDeclined &&
-          filterDataByStatus(activeFiles, shareStatus.pending).length === 0
-        "
-        v-translate
-        class="oc-ml-m"
-        appearance="raw"
-        @click="showDeclined = true"
-        >Show declined shares</oc-button
-      >
       <div
         v-if="filterDataByStatus(activeFiles, shareStatus.pending).length > 0"
         id="pending-shares"
@@ -23,16 +11,6 @@
       >
         <div class="oc-app-bar shares-bar">
           <h2 v-translate>Pending Shares</h2>
-          <oc-button
-            v-if="
-              filterDataByStatus(activeFiles, shareStatus.accepted).length === 0 && !showDeclined
-            "
-            v-translate
-            class="oc-ml-m"
-            appearance="raw"
-            @click="showDeclined = true"
-            >Show declined shares</oc-button
-          >
         </div>
 
         <div id="pending-highlight">
@@ -126,10 +104,7 @@
 
       <!-- Accepted shares -->
       <div v-if="!showDeclined">
-        <div
-          v-if="filterDataByStatus(activeFiles, shareStatus.accepted).length > 0"
-          class="oc-app-bar shares-bar"
-        >
+        <div class="oc-app-bar shares-bar">
           <h2 key="accepted-shares-header" v-translate>Accepted Shares</h2>
 
           <div class="oc-ml-m">

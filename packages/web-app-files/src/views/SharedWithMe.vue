@@ -3,42 +3,55 @@
     <list-loader v-if="loading" />
     <template v-else>
       <!-- Pending shares -->
+
+      <oc-button
+        v-if="
+          filterDataByStatus(activeFiles, shareStatus.accepted).length === 0 &&
+          !showDeclined &&
+          filterDataByStatus(activeFiles, shareStatus.pending).length === 0
+        "
+        v-translate
+        class="oc-ml-m"
+        appearance="raw"
+        @click="showDeclined = true"
+        >Show declined shares</oc-button
+      >
       <div
         v-if="filterDataByStatus(activeFiles, shareStatus.pending).length > 0"
         id="pending-shares"
+        class="oc-mb"
       >
         <div class="oc-app-bar shares-bar">
-          <h2><translate>Pending Shares</translate></h2>
+          <h2 v-translate>Pending Shares</h2>
           <oc-button
             v-if="
-              filterDataByStatus(activeFiles, shareStatus.pending).length === 0 &&
-              !getShowDeclined()
+              filterDataByStatus(activeFiles, shareStatus.accepted).length === 0 && !showDeclined
             "
-            class="oc-ml-m"
             v-translate
+            class="oc-ml-m"
             appearance="raw"
-            @click="setShowDeclined(true)"
+            @click="showDeclined = true"
             >Show declined shares</oc-button
           >
         </div>
 
         <div id="pending-highlight">
           <oc-table-files
-            id="files-shared-with-me-table"
+            id="files-shared-with-me-pending-table"
             v-model="selected"
             class="files-table"
             :class="{ 'files-table-squashed': isSidebarOpen }"
             :are-previews-displayed="displayPreviews"
             :resources="
-              getShowAllPending() === false
+              showAllPending === false
                 ? filterDataByStatus(activeFiles, 1).slice(0, 3)
                 : filterDataByStatus(activeFiles, 1)
             "
             :target-route="targetRoute"
+            :are-resources-clickable="false"
             :highlighted="highlightedFile ? highlightedFile.id : null"
+            :has-actions="false"
             :header-position="headerPosition"
-            @showDetails="setHighlightedFile"
-            @fileClick="$_fileActions_triggerDefaultAction"
           >
             <template v-slot:status="{ resource }">
               <div
@@ -46,21 +59,23 @@
                 class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
               >
                 <oc-button
-                  v-if="resource.status === 1 || resource.status === 2"
-                  appearance="raw"
-                  class="file-row-share-status-action uk-text-meta"
-                  style="color: #347235"
+                  v-if="[shareStatus.declined, shareStatus.pending].includes(resource.status)"
+                  v-translate
+                  variation="success"
+                  size="small"
+                  class="file-row-share-status-action"
                   @click.stop="triggerShareAction(resource, 'POST')"
                 >
-                  <translate>Accept</translate>
+                  Accept
                 </oc-button>
                 <oc-button
-                  v-if="resource.status === 1 || resource.status === 0"
-                  appearance="raw"
-                  class="file-row-share-status-action uk-text-meta oc-ml"
+                  v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
+                  v-translate
+                  size="small"
+                  class="file-row-share-status-action oc-ml"
                   @click.stop="triggerShareAction(resource, 'DELETE')"
                 >
-                  <translate>Decline</translate>
+                  Decline
                 </oc-button>
                 <span
                   class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
@@ -72,24 +87,36 @@
 
           <div
             v-if="
-              getShowAllPending() === false &&
+              showAllPending === false &&
               filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
-            <oc-button appearance="raw" class="show-hide-pending" @click="setShowAllPending(true)">
+            <oc-button
+              key="show-all-button"
+              v-translate
+              appearance="raw"
+              class="show-hide-pending"
+              @click="showAllPending = true"
+            >
               Show all</oc-button
             >
           </div>
 
           <div
             v-else-if="
-              getShowAllPending() === true &&
+              showAllPending === true &&
               filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
-            <oc-button appearance="raw" class="show-hide-pending" @click="setShowAllPending(false)">
+            <oc-button
+              key="show-less-button"
+              v-translate
+              appearance="raw"
+              class="show-hide-pending"
+              @click="showAllPending = false"
+            >
               Show less
             </oc-button>
           </div>
@@ -98,26 +125,27 @@
       <br />
 
       <!-- Accepted shares -->
-      <div v-if="!getShowDeclined()">
+      <div v-if="!showDeclined">
         <div
           v-if="filterDataByStatus(activeFiles, shareStatus.accepted).length > 0"
           class="oc-app-bar shares-bar"
         >
-          <h2>Accepted Shares</h2>
+          <h2 key="accepted-shares-header" v-translate>Accepted Shares</h2>
 
           <div class="oc-ml-m">
             <oc-button
               id="show-declined"
+              key="show-declined-button"
               v-translate
               appearance="raw"
-              @click="setShowDeclined(true)"
+              @click="showDeclined = true"
               >Show declined shares</oc-button
             >
           </div>
         </div>
         <no-content-message
-          v-if="isEmpty || filterDataByStatus(activeFiles, 0).length === 0"
-          id="files-shared-with-me-empty"
+          v-if="isEmpty || filterDataByStatus(activeFiles, shareStatus.accepted).length === 0"
+          id="files-shared-with-me-accepted-empty"
           class="files-empty"
           icon="group"
         >
@@ -129,7 +157,7 @@
         </no-content-message>
         <oc-table-files
           v-else
-          id="files-shared-with-me-table"
+          id="files-shared-with-me-accepted-table"
           v-model="selected"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
@@ -147,20 +175,14 @@
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
               <oc-button
-                v-if="resource.status === 1 || resource.status === 2"
-                appearance="raw"
-                class="file-row-share-status-action uk-text-meta"
-                @click.stop="triggerShareAction(resource, 'POST')"
-              >
-                <translate>Accept</translate>
-              </oc-button>
-              <oc-button
                 v-if="resource.status === 1 || resource.status === 0"
+                v-translate
                 appearance="raw"
+                size="small"
                 class="file-row-share-status-action uk-text-meta oc-ml"
                 @click.stop="triggerShareAction(resource, 'DELETE')"
               >
-                <translate>Decline</translate>
+                Decline
               </oc-button>
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
@@ -168,61 +190,37 @@
               />
             </div>
           </template>
-          <!-- <template #footer>
-            <div
-              v-if="activeFilesCount.folders > 0 || activeFilesCount.files > 0"
-              class="uk-text-nowrap uk-text-meta uk-text-center uk-width-1-1"
-            >
-              <span id="files-list-count-folders" v-text="activeFilesCount.folders" />
-              <translate :translate-n="activeFilesCount.folders" translate-plural="folders"
-                >folder</translate
-              >
-              <translate>and</translate>
-              <span id="files-list-count-files" v-text="activeFilesCount.files" />
-              <translate :translate-n="activeFilesCount.files" translate-plural="files"
-                >file</translate
-              >
-            </div>
-          </template>-->
         </oc-table-files>
       </div>
 
       <!-- Declined shares -->
       <div v-else>
         <div class="oc-app-bar shares-bar">
-          <h2><translate>Declined Shares</translate></h2>
-          <div class="oc-ml-m" style="display: none">
-            <oc-button
-              v-translate
-              style="display: none"
-              appearance="raw"
-              @click="setShowDeclined(false)"
-              >Show accepted shares</oc-button
-            >
-          </div>
+          <h2 key="declined-shares-header" v-translate>Declined Shares</h2>
           <div class="oc-ml-m">
             <oc-button
               id="show-accepted"
+              key="show-accepted-button"
               v-translate
               appearance="raw"
-              @click="setShowDeclined(false)"
+              @click="showDeclined = false"
               >Show accepted shares</oc-button
             >
           </div>
         </div>
         <no-content-message
           v-if="isEmpty || filterDataByStatus(activeFiles, shareStatus.declined).length === 0"
-          id="files-shared-with-me-empty"
+          id="files-shared-with-me-declined-empty"
           class="files-empty"
           icon="group"
         >
           <template #message>
-            <span v-translate> No declined files found </span>
+            <span v-translate> No declined shares found </span>
           </template>
         </no-content-message>
         <oc-table-files
           v-else
-          id="files-shared-with-me-table"
+          id="files-shared-with-me-declined-table"
           v-model="selected"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
@@ -240,20 +238,13 @@
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
               <oc-button
-                v-if="resource.status === 1 || resource.status === 2"
-                appearance="raw"
+                v-translate
+                size="small"
+                variation="success"
                 class="file-row-share-status-action uk-text-meta"
                 @click.stop="triggerShareAction(resource, 'POST')"
               >
-                <translate>Accept</translate>
-              </oc-button>
-              <oc-button
-                v-if="resource.status === 1 || resource.status === 0"
-                appearance="raw"
-                class="file-row-share-status-action uk-text-meta oc-ml"
-                @click.stop="triggerShareAction(resource, 'DELETE')"
-              >
-                <translate>Decline</translate>
+                Accept
               </oc-button>
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
@@ -261,22 +252,6 @@
               />
             </div>
           </template>
-          <!-- <template #footer>
-            <div
-              v-if="activeFilesCount.folders > 0 || activeFilesCount.files > 0"
-              class="uk-text-nowrap uk-text-meta uk-text-center uk-width-1-1"
-            >
-              <span id="files-list-count-folders" v-text="activeFilesCount.folders" />
-              <translate :translate-n="activeFilesCount.folders" translate-plural="folders"
-                >folder</translate
-              >
-              <translate>and</translate>
-              <span id="files-list-count-files" v-text="activeFilesCount.files" />
-              <translate :translate-n="activeFilesCount.files" translate-plural="files"
-                >file</translate
-              >
-            </div>
-          </template>-->
         </oc-table-files>
       </div>
     </template>
@@ -291,14 +266,14 @@ import FileActions from '../mixins/fileActions'
 import MixinFilesListPositioning from '../mixins/filesListPositioning'
 import ListLoader from '../components/ListLoader.vue'
 import NoContentMessage from '../components/NoContentMessage.vue'
-let showDeclined = false
-let showAllPending = false
 export default {
   components: { ListLoader, NoContentMessage },
   mixins: [FileActions, MixinFilesListPositioning],
   data: () => ({
     loading: true,
     shareStatus,
+    showDeclined: false,
+    showAllPending: false,
   }),
   computed: {
     ...mapState(['app']),
@@ -357,20 +332,6 @@ export default {
       'UPDATE_RESOURCE',
     ]),
     ...mapMutations(['SET_QUOTA']),
-    setShowDeclined(value) {
-      showDeclined = value
-      this.$forceUpdate()
-    },
-    getShowDeclined() {
-      return showDeclined
-    },
-    setShowAllPending(value) {
-      showAllPending = value
-      this.$forceUpdate()
-    },
-    getShowAllPending() {
-      return showAllPending
-    },
     filterDataByStatus(data, status) {
       return data.filter((item) => item.status === status)
     },
@@ -391,7 +352,6 @@ export default {
         this.loading = false
         return
       }
-
       resources = aggregateResourceShares(
         resources,
         true,
@@ -435,7 +395,6 @@ export default {
           action: `api/v1/shares/pending/${resource.share.id}`,
           method: type,
         })
-
         // exit on failure
         if (response.status !== 200) {
           throw new Error(response.statusText)
@@ -445,7 +404,6 @@ export default {
         // oc10
         if (parseInt(response.headers.get('content-length')) > 0) {
           response = await response.json()
-
           if (response.ocs.data.length > 0) {
             share = response.ocs.data[0]
           }
@@ -454,7 +412,6 @@ export default {
           const { shareInfo } = await this.$client.shares.getShare(resource.share.id)
           share = shareInfo
         }
-
         // update share in store
         if (share) {
           const sharedResource = await buildSharedResource(
@@ -493,9 +450,8 @@ export default {
   flex-direction: row;
   align-items: baseline;
 }
-
 #pending-highlight {
-  background-color: var(--oc-color-background-highlight);
+  background-color: #f0f8ff;
 }
 .show-hide-pending {
   text-align: center;

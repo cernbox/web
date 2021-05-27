@@ -12,7 +12,7 @@
     },
     "loginPage": {
       "autoRedirect": true,
-      "backgroundImg": ""
+      "backgroundImg": "themes/cernbox/assets/loginBackground.png"
     },
     "designTokens": {
       "colorPalette": {

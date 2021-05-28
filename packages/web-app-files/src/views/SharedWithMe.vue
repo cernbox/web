@@ -11,6 +11,9 @@
       >
         <div class="oc-app-bar shares-bar">
           <h2 v-translate>Pending Shares</h2>
+          <div class="oc-ml-s">
+            <p>({{ filterDataByStatus(activeFiles, shareStatus.pending).length }})</p>
+          </div>
         </div>
 
         <div id="pending-highlight">
@@ -106,6 +109,12 @@
       <div v-if="!showDeclined">
         <div class="oc-app-bar shares-bar">
           <h2 key="accepted-shares-header" v-translate>Accepted Shares</h2>
+          <div
+            v-if="filterDataByStatus(activeFiles, shareStatus.accepted).length > 0"
+            class="oc-ml-s"
+          >
+            <p>({{ filterDataByStatus(activeFiles, shareStatus.accepted).length }})</p>
+          </div>
 
           <div class="oc-ml-m">
             <oc-button
@@ -172,6 +181,12 @@
       <div v-else>
         <div class="oc-app-bar shares-bar">
           <h2 key="declined-shares-header" v-translate>Declined Shares</h2>
+          <div
+            v-if="filterDataByStatus(activeFiles, shareStatus.declined).length > 0"
+            class="oc-ml-s"
+          >
+            <p>({{ filterDataByStatus(activeFiles, shareStatus.declined).length }})</p>
+          </div>
           <div class="oc-ml-m">
             <oc-button
               id="show-accepted"

@@ -441,7 +441,7 @@ export default {
   align-items: baseline;
 }
 #pending-highlight {
-  background-color: #f0f8ff;
+  background-color: var(--oc-color-background-highlight);
 }
 .show-hide-pending {
   text-align: center;

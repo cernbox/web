@@ -5,7 +5,6 @@
         v-if="selectedFiles.length > 0"
         id="restore-selected-btn"
         key="restore-btn"
-        variation="primary"
         class="oc-mr-s"
         @click="restoreFiles()"
       >
@@ -13,14 +12,12 @@
         <translate>Restore</translate>
       </oc-button>
       <oc-button
-        v-if="!isEmpty"
         id="delete-selected-btn"
         key="delete-btn"
-        variation="danger"
         @click="selectedFiles.length < 1 ? emptyTrashbin() : $_deleteResources_displayDialog()"
       >
         <oc-icon name="delete" />
-        {{ emptyTrashbinButtonText }}
+        {{ clearTrashbinButtonText }}
       </oc-button>
     </template>
     <oc-grid v-if="displayBulkActions" gutter="small">
@@ -28,7 +25,6 @@
         <oc-button
           id="copy-selected-btn"
           key="copy-selected-btn"
-          variation="primary"
           @click="triggerLocationPicker('copy')"
         >
           <oc-icon name="file_copy" />
@@ -39,7 +35,6 @@
         <oc-button
           id="move-selected-btn"
           key="move-selected-btn"
-          variation="primary"
           @click="triggerLocationPicker('move')"
         >
           <oc-icon name="folder-move" />
@@ -50,7 +45,6 @@
         <oc-button
           id="delete-selected-btn"
           key="delete-selected-btn"
-          variation="primary"
           @click="$_deleteResources_displayDialog"
         >
           <oc-icon name="delete" />
@@ -101,10 +95,8 @@ export default {
   computed: {
     ...mapGetters('Files', ['selectedFiles', 'currentFolder', 'activeFiles']),
 
-    emptyTrashbinButtonText() {
-      return this.selectedFiles.length < 1
-        ? this.$gettext('Empty trash bin')
-        : this.$gettext('Delete')
+    clearTrashbinButtonText() {
+      return this.selectedFiles.length < 1 ? this.$gettext('Empty') : this.$gettext('Delete')
     },
 
     canMove() {
@@ -142,6 +134,9 @@ export default {
       if (this.isPublicFilesRoute) {
         return this.currentFolder.canBeDeleted()
       }
+      if (checkRoute(['files-shared-with-me'], this.$route.name)) {
+        return false
+      }
 
       const deleteDisabled = this.selectedFiles.some(resource => {
         return !resource.canBeDeleted()
@@ -150,33 +145,32 @@ export default {
     },
 
     canAccept() {
-      if (!this.isSharedWithMeRoute) {
+      if (!checkRoute(['files-shared-with-me'], this.$route.name)) {
         return false
       }
-
-      const acceptDisabled = this.selectedFiles.some(resource => {
-        return resource.status === shareStatus.accepted
+      let canAccept = true
+      this.selectedFiles.forEach(file => {
+        if (file.status === shareStatus.accepted) {
+          canAccept = false
+        }
       })
-      return !acceptDisabled
+
+      return canAccept
     },
 
     canDecline() {
-      if (!this.isSharedWithMeRoute) {
+      if (!checkRoute(['files-shared-with-me'], this.$route.name)) {
         return false
       }
-
-      const declineDisabled = this.selectedFiles.some(resource => {
-        return resource.status === shareStatus.declined
+      let canDecline = true
+      this.selectedFiles.forEach(file => {
+        if (file.status === shareStatus.declined) canDecline = false
       })
-      return !declineDisabled
+      return canDecline
     },
 
     displayBulkActions() {
       return this.$route.meta.hasBulkActions && this.selectedFiles.length > 0
-    },
-
-    isEmpty() {
-      return this.activeFiles.length < 1
     }
   },
 
@@ -187,7 +181,7 @@ export default {
       'LOAD_FILES',
       'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
-      'UPDATE_RESOURCE',
+      'UPDATE_RESOURCE'
     ]),
 
     restoreFiles(resources = this.selectedFiles) {
@@ -199,20 +193,20 @@ export default {
             this.showMessage({
               title: this.$gettextInterpolate(translated, { resource: resource.name }, true),
               autoClose: {
-                enabled: true,
-              },
+                enabled: true
+              }
             })
             this.removeFilesFromTrashbin([resource])
           })
-          .catch((error) => {
+          .catch(error => {
             const translated = this.$gettext('Restoration of %{resource} failed')
             this.showMessage({
               title: this.$gettextInterpolate(translated, { resource: resource.name }, true),
               desc: error.message,
               status: 'danger',
               autoClose: {
-                enabled: true,
-              },
+                enabled: true
+              }
             })
           })
       }
@@ -227,19 +221,19 @@ export default {
           this.showMessage({
             title: this.$gettext('All deleted files were removed'),
             autoClose: {
-              enabled: true,
-            },
+              enabled: true
+            }
           })
           this.removeFilesFromTrashbin(this.activeFiles)
         })
-        .catch((error) => {
+        .catch(error => {
           this.showMessage({
             title: this.$gettext('Could not delete files'),
             desc: error.message,
             status: 'danger',
             autoClose: {
-              enabled: true,
-            },
+              enabled: true
+            }
           })
         })
     },
@@ -260,6 +254,13 @@ export default {
             return resource.path
           })
         }
+      })
+    },
+
+    // Lisas implementation
+    acceptShares() {
+      this.selectedFiles.forEach(resource => {
+        this.triggerShareAction(resource, 'POST')
       })
     },
 

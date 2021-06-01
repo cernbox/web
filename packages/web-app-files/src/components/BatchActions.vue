@@ -131,9 +131,13 @@ export default {
         return false
       }
       let canAccept = true
+<<<<<<< HEAD
 
       this.selectedFiles.forEach((file) => {
 
+=======
+      this.selectedFiles.forEach(file => {
+>>>>>>> Add "Accept" and "Decline" batch actions, remove "Delete" from "shared with me" view
         if (file.status === shareStatus.accepted) {
           canAccept = false
         }
@@ -147,9 +151,13 @@ export default {
         return false
       }
       let canDecline = true
+<<<<<<< HEAD
 
       this.selectedFiles.forEach((file) => {
 
+=======
+      this.selectedFiles.forEach(file => {
+>>>>>>> Add "Accept" and "Decline" batch actions, remove "Delete" from "shared with me" view
         if (file.status === shareStatus.declined) canDecline = false
       })
       return canDecline
@@ -167,7 +175,11 @@ export default {
       'LOAD_FILES',
       'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
+<<<<<<< HEAD
       'UPDATE_RESOURCE',
+=======
+      'UPDATE_RESOURCE'
+>>>>>>> Add "Accept" and "Decline" batch actions, remove "Delete" from "shared with me" view
     ]),
 
     restoreFiles(resources = this.selectedFiles) {
@@ -243,17 +255,16 @@ export default {
       })
     },
 
+
     // Lisas implementation
     acceptShares() {
-      this.selectedFiles.forEach((resource) => {
+      this.selectedFiles.forEach(resource => {
         this.triggerShareAction(resource, 'POST')
       })
     },
 
-
     declineShares() {
       this.selectedFiles.forEach(resource => {
-
         this.triggerShareAction(resource, 'DELETE')
       })
     },
@@ -264,7 +275,7 @@ export default {
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
           action: `api/v1/shares/pending/${resource.share.id}`,
-          method: type,
+          method: type
         })
         // exit on failure
         if (response.status !== 200) {

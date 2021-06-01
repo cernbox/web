@@ -4,7 +4,6 @@
       <oc-button
         v-if="selectedFiles.length > 0"
         key="restore-btn"
-        variation="primary"
         class="oc-mr-s"
         @click="restoreFiles()"
       >
@@ -12,14 +11,12 @@
         <translate>Restore</translate>
       </oc-button>
       <oc-button
-        v-if="!isEmpty"
         id="delete-selected-btn"
         key="delete-btn"
-        variation="danger"
         @click="selectedFiles.length < 1 ? emptyTrashbin() : $_deleteResources_displayDialog()"
       >
         <oc-icon name="delete" />
-        {{ emptyTrashbinButtonText }}
+        {{ clearTrashbinButtonText }}
       </oc-button>
     </template>
     <oc-grid v-if="displayBulkActions" gutter="small">
@@ -27,7 +24,6 @@
         <oc-button
           id="copy-selected-btn"
           key="copy-selected-btn"
-          variation="primary"
           @click="triggerLocationPicker('copy')"
         >
           <oc-icon name="file_copy" />
@@ -38,7 +34,6 @@
         <oc-button
           id="move-selected-btn"
           key="move-selected-btn"
-          variation="primary"
           @click="triggerLocationPicker('move')"
         >
           <oc-icon name="folder-move" />
@@ -49,11 +44,22 @@
         <oc-button
           id="delete-selected-btn"
           key="delete-selected-btn"
-          variation="primary"
           @click="$_deleteResources_displayDialog"
         >
           <oc-icon name="delete" />
           <translate>Delete</translate>
+        </oc-button>
+      </div>
+      <div v-if="canAccept">
+        <oc-button id="accept-shares-btn" key="accept-shares-btn" @click="acceptShares()">
+          <oc-icon name="add" />
+          <translate>Accept</translate>
+        </oc-button>
+      </div>
+      <div v-if="canDecline">
+        <oc-button id="decline-shares-btn" key="decline-shares-btn" @click="declineShares()">
+          <oc-icon name="not_interested" />
+          <translate>Decline</translate>
         </oc-button>
       </div>
     </oc-grid>
@@ -61,13 +67,15 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters, mapActions, mapMutations } from 'vuex'
 
 import MixinRoutes from '../../../mixins/routes'
 import MixinDeleteResources from '../../../mixins/deleteResources'
 import { cloneStateObject } from '../../../helpers/store'
 import { canBeMoved } from '../../../helpers/permissions'
 import { checkRoute } from '../../../helpers/route'
+import { shareStatus } from '../../../helpers/shareStatus'
+import { buildSharedResource } from '../../../helpers/resources'
 
 export default {
   mixins: [MixinRoutes, MixinDeleteResources],
@@ -75,10 +83,8 @@ export default {
   computed: {
     ...mapGetters('Files', ['selectedFiles', 'currentFolder', 'activeFiles']),
 
-    emptyTrashbinButtonText() {
-      return this.selectedFiles.length < 1
-        ? this.$gettext('Empty trash bin')
-        : this.$gettext('Delete')
+    clearTrashbinButtonText() {
+      return this.selectedFiles.length < 1 ? this.$gettext('Empty') : this.$gettext('Delete')
     },
 
     canMove() {
@@ -88,7 +94,7 @@ export default {
         return false
       }
 
-      const insufficientPermissions = this.selectedFiles.some(resource => {
+      const insufficientPermissions = this.selectedFiles.some((resource) => {
         return canBeMoved(resource, this.currentFolder.path) === false
       })
 
@@ -110,25 +116,55 @@ export default {
     },
 
     canDelete() {
-      if (this.isPublicFilesRoute) {
+      if (this.isPublicFilesRoute && !checkRoute(['files-shared-with-me'], this.$route.name)) {
         return this.currentFolder.canBeDeleted()
+      }
+      if (checkRoute(['files-shared-with-me'], this.$route.name)) {
+        return false
       }
 
       return true
     },
 
+    canAccept() {
+      if (!checkRoute(['files-shared-with-me'], this.$route.name)) {
+        return false
+      }
+      let canAccept = true
+      this.selectedFiles.forEach((file) => {
+        if (file.status === shareStatus.accepted) {
+          canAccept = false
+        }
+      })
+
+      return canAccept
+    },
+
+    canDecline() {
+      if (!checkRoute(['files-shared-with-me'], this.$route.name)) {
+        return false
+      }
+      let canDecline = true
+      this.selectedFiles.forEach((file) => {
+        if (file.status === shareStatus.declined) canDecline = false
+      })
+      return canDecline
+    },
+
     displayBulkActions() {
       return this.$route.meta.hasBulkActions && this.selectedFiles.length > 0
     },
-
-    isEmpty() {
-      return this.activeFiles.length < 1
-    }
   },
 
   methods: {
     ...mapActions('Files', ['removeFilesFromTrashbin', 'resetFileSelection', 'setHighlightedFile']),
     ...mapActions(['showMessage']),
+    ...mapMutations('Files', [
+      'LOAD_FILES',
+      'SELECT_RESOURCES',
+      'CLEAR_CURRENT_FILES_LIST',
+      'UPDATE_RESOURCE',
+    ]),
 
     restoreFiles(resources = this.selectedFiles) {
       for (const resource of resources) {
@@ -137,16 +173,22 @@ export default {
           .then(() => {
             const translated = this.$gettext('%{resource} was restored successfully')
             this.showMessage({
-              title: this.$gettextInterpolate(translated, { resource: resource.name }, true)
+              title: this.$gettextInterpolate(translated, { resource: resource.name }, true),
+              autoClose: {
+                enabled: true,
+              },
             })
             this.removeFilesFromTrashbin([resource])
           })
-          .catch(error => {
+          .catch((error) => {
             const translated = this.$gettext('Restoration of %{resource} failed')
             this.showMessage({
               title: this.$gettextInterpolate(translated, { resource: resource.name }, true),
               desc: error.message,
-              status: 'danger'
+              status: 'danger',
+              autoClose: {
+                enabled: true,
+              },
             })
           })
       }
@@ -159,15 +201,21 @@ export default {
         .clearTrashBin()
         .then(() => {
           this.showMessage({
-            title: this.$gettext('All deleted files were removed')
+            title: this.$gettext('All deleted files were removed'),
+            autoClose: {
+              enabled: true,
+            },
           })
           this.removeFilesFromTrashbin(this.activeFiles)
         })
-        .catch(error => {
+        .catch((error) => {
           this.showMessage({
             title: this.$gettext('Could not delete files'),
             desc: error.message,
-            status: 'danger'
+            status: 'danger',
+            autoClose: {
+              enabled: true,
+            },
           })
         })
     },
@@ -181,15 +229,80 @@ export default {
         params: {
           context,
           item: this.currentFolder.path,
-          action
+          action,
         },
         query: {
-          resource: resources.map(resource => {
+          resource: resources.map((resource) => {
             return resource.path
-          })
-        }
+          }),
+        },
       })
-    }
-  }
+    },
+
+    // Lisas implementation
+    acceptShares() {
+      this.selectedFiles.forEach((resource) => {
+        this.triggerShareAction(resource, 'POST')
+      })
+    },
+
+    declineShares() {
+      this.selectedFiles.forEach((resource) => {
+        this.triggerShareAction(resource, 'DELETE')
+      })
+    },
+
+    async triggerShareAction(resource, type) {
+      try {
+        // exec share action
+        let response = await this.$client.requests.ocs({
+          service: 'apps/files_sharing',
+          action: `api/v1/shares/pending/${resource.share.id}`,
+          method: type,
+        })
+        // exit on failure
+        if (response.status !== 200) {
+          throw new Error(response.statusText)
+        }
+        // get updated share from response or re-fetch it
+        let share = null
+        // oc10
+        if (parseInt(response.headers.get('content-length')) > 0) {
+          response = await response.json()
+          if (response.ocs.data.length > 0) {
+            share = response.ocs.data[0]
+          }
+        } else {
+          // ocis
+          const { shareInfo } = await this.$client.shares.getShare(resource.share.id)
+          share = shareInfo
+        }
+        // update share in store
+        if (share) {
+          const sharedResource = await buildSharedResource(
+            share,
+            true,
+            !this.isOcis,
+            this.configuration.server,
+            this.getToken
+          )
+          this.UPDATE_RESOURCE(sharedResource)
+          this.SELECT_RESOURCES([])
+        }
+      } catch (error) {
+        // this.loadResources()
+        this.showMessage({
+          title: this.$gettext('Error while changing share state'),
+          desc: error.message,
+          status: 'danger',
+          autoClose: {
+            enabled: true,
+          },
+        })
+        location.reload()
+      }
+    },
+  },
 }
 </script>
+

@@ -158,16 +158,15 @@
               :key="resource.id + resource.status"
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
-              <oc-button
-                v-if="resource.status === 1 || resource.status === 0"
-                v-translate
-                appearance="raw"
-                size="small"
-                class="file-row-share-status-action uk-text-meta oc-ml"
-                @click.stop="triggerShareAction(resource, 'DELETE')"
-              >
-                Decline
-              </oc-button>
+               <oc-button
+                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
+                 v-translate
+                 size="small"
+                 class="file-row-share-status-action oc-ml"
+                 @click.stop="triggerShareAction(resource, 'DELETE')"
+               >
+                 Decline
+               </oc-button>
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
                 v-text="getShareStatusText(resource.status)"
@@ -228,10 +227,10 @@
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
               <oc-button
+                v-if="[shareStatus.declined, shareStatus.pending].includes(resource.status)"
                 v-translate
                 size="small"
-                variation="success"
-                class="file-row-share-status-action uk-text-meta"
+                class="file-row-share-status-action"
                 @click.stop="triggerShareAction(resource, 'POST')"
               >
                 Accept

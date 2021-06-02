@@ -131,7 +131,9 @@ export default {
         return false
       }
       let canAccept = true
+
       this.selectedFiles.forEach((file) => {
+
         if (file.status === shareStatus.accepted) {
           canAccept = false
         }
@@ -145,7 +147,9 @@ export default {
         return false
       }
       let canDecline = true
+
       this.selectedFiles.forEach((file) => {
+
         if (file.status === shareStatus.declined) canDecline = false
       })
       return canDecline
@@ -246,8 +250,10 @@ export default {
       })
     },
 
+
     declineShares() {
-      this.selectedFiles.forEach((resource) => {
+      this.selectedFiles.forEach(resource => {
+
         this.triggerShareAction(resource, 'DELETE')
       })
     },

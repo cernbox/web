@@ -50,10 +50,10 @@
         "large": "",
         "medium": ""
       },
-      "size": {
+      "sizes": {
         "form-check-default": "",
         "height-small": "",
-        "height-table-row": "",
+        "height-table-row": "49px",
         "icon-default": "",
         "width-medium": ""
       },

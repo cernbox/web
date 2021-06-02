@@ -158,6 +158,7 @@
               :key="resource.id + resource.status"
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
+<<<<<<< HEAD
               <oc-button
                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
                 v-translate
@@ -167,6 +168,17 @@
               >
                 Decline
               </oc-button>
+=======
+               <oc-button
+                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
+                 v-translate
+                 size="small"
+                 class="file-row-share-status-action oc-ml"
+                 @click.stop="triggerShareAction(resource, 'DELETE')"
+               >
+                 Decline
+               </oc-button>
+>>>>>>> Accept, Decline buttons same style as in pending
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
                 v-text="getShareStatusText(resource.status)"

@@ -11,7 +11,11 @@ export default {
           label: () => this.$gettext('Delete'),
           handler: this.$_delete_trigger,
           isEnabled: ({ resource }) => {
+<<<<<<< HEAD
             if (checkRoute(['files-shared-with-me', 'files-trashbin'], this.$route.name)) {
+=======
+            if (checkRoute(['files-trashbin', 'files-shared-with-me'], this.$route.name)) {
+>>>>>>> "Delete" action not possible for Shared with me
               return false
             }
 

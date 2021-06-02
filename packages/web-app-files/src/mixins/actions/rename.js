@@ -1,6 +1,6 @@
 import { mapActions, mapGetters } from 'vuex'
 
-import { isTrashbinRoute } from '../../helpers/route'
+import { isTrashbinRoute, isSharedWithMeRoute } from '../../helpers/route'
 import { isSameResource } from '../../helpers/resource'
 
 export default {
@@ -17,6 +17,10 @@ export default {
           handler: this.$_rename_trigger,
           isEnabled: ({ resource }) => {
             if (isTrashbinRoute(this.$route)) {
+              return false
+            }
+
+            if (isSharedWithMeRoute(this.$route)) {
               return false
             }
 

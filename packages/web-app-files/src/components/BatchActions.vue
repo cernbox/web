@@ -94,7 +94,7 @@ export default {
         return false
       }
 
-      const insufficientPermissions = this.selectedFiles.some(resource => {
+      const insufficientPermissions = this.selectedFiles.some((resource) => {
         return canBeMoved(resource, this.currentFolder.path) === false
       })
 
@@ -131,7 +131,9 @@ export default {
         return false
       }
       let canAccept = true
-      this.selectedFiles.forEach(file => {
+
+      this.selectedFiles.forEach((file) => {
+
         if (file.status === shareStatus.accepted) {
           canAccept = false
         }
@@ -145,7 +147,9 @@ export default {
         return false
       }
       let canDecline = true
-      this.selectedFiles.forEach(file => {
+
+      this.selectedFiles.forEach((file) => {
+
         if (file.status === shareStatus.declined) canDecline = false
       })
       return canDecline
@@ -153,7 +157,7 @@ export default {
 
     displayBulkActions() {
       return this.$route.meta.hasBulkActions && this.selectedFiles.length > 0
-    }
+    },
   },
 
   methods: {
@@ -163,7 +167,7 @@ export default {
       'LOAD_FILES',
       'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
-      'UPDATE_RESOURCE'
+      'UPDATE_RESOURCE',
     ]),
 
     restoreFiles(resources = this.selectedFiles) {
@@ -175,20 +179,20 @@ export default {
             this.showMessage({
               title: this.$gettextInterpolate(translated, { resource: resource.name }, true),
               autoClose: {
-                enabled: true
-              }
+                enabled: true,
+              },
             })
             this.removeFilesFromTrashbin([resource])
           })
-          .catch(error => {
+          .catch((error) => {
             const translated = this.$gettext('Restoration of %{resource} failed')
             this.showMessage({
               title: this.$gettextInterpolate(translated, { resource: resource.name }, true),
               desc: error.message,
               status: 'danger',
               autoClose: {
-                enabled: true
-              }
+                enabled: true,
+              },
             })
           })
       }
@@ -203,19 +207,19 @@ export default {
           this.showMessage({
             title: this.$gettext('All deleted files were removed'),
             autoClose: {
-              enabled: true
-            }
+              enabled: true,
+            },
           })
           this.removeFilesFromTrashbin(this.activeFiles)
         })
-        .catch(error => {
+        .catch((error) => {
           this.showMessage({
             title: this.$gettext('Could not delete files'),
             desc: error.message,
             status: 'danger',
             autoClose: {
-              enabled: true
-            }
+              enabled: true,
+            },
           })
         })
     },
@@ -229,25 +233,27 @@ export default {
         params: {
           context,
           item: this.currentFolder.path,
-          action
+          action,
         },
         query: {
-          resource: resources.map(resource => {
+          resource: resources.map((resource) => {
             return resource.path
-          })
-        }
+          }),
+        },
       })
     },
 
     // Lisas implementation
     acceptShares() {
-      this.selectedFiles.forEach(resource => {
+      this.selectedFiles.forEach((resource) => {
         this.triggerShareAction(resource, 'POST')
       })
     },
 
+
     declineShares() {
       this.selectedFiles.forEach(resource => {
+
         this.triggerShareAction(resource, 'DELETE')
       })
     },
@@ -258,7 +264,7 @@ export default {
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
           action: `api/v1/shares/pending/${resource.share.id}`,
-          method: type
+          method: type,
         })
         // exit on failure
         if (response.status !== 200) {
@@ -287,6 +293,7 @@ export default {
             this.getToken
           )
           this.UPDATE_RESOURCE(sharedResource)
+          location.reload()
         }
       } catch (error) {
         // this.loadResources()
@@ -295,12 +302,13 @@ export default {
           desc: error.message,
           status: 'danger',
           autoClose: {
-            enabled: true
-          }
+            enabled: true,
+          },
         })
+        location.reload()
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

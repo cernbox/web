@@ -417,8 +417,10 @@ export default {
           console.log('built shared ressource for web', sharedResource)
           this.UPDATE_RESOURCE(sharedResource)
 
+
           this.loadResources()
           this.$forceUpdate()
+
         }
       } catch (error) {
         this.loadResources()

@@ -350,6 +350,7 @@ export default {
         this.$client,
         this.UPDATE_RESOURCE
       )
+      console.log('got resources, agregated', resources)
       this.LOAD_FILES({ currentFolder: rootFolder, files: resources })
       if (this.displayPreviews) {
         await this.loadPreviews({
@@ -384,6 +385,8 @@ export default {
           action: `api/v1/shares/pending/${resource.share.id}`,
           method: type
         })
+
+        console.log('show server response', response)
         // exit on failure
         if (response.status !== 200) {
           throw new Error(response.statusText)
@@ -400,6 +403,7 @@ export default {
           // ocis
           const { shareInfo } = await this.$client.shares.getShare(resource.share.id)
           share = shareInfo
+          console.log('got updated resource from ocis', share)
         }
         // update share in store
         if (share) {
@@ -410,8 +414,13 @@ export default {
             this.configuration.server,
             this.getToken
           )
+          console.log('built shared ressource for web', sharedResource)
           this.UPDATE_RESOURCE(sharedResource)
+
+
           this.loadResources()
+          this.$forceUpdate()
+
         }
       } catch (error) {
         this.loadResources()
@@ -423,6 +432,7 @@ export default {
             enabled: true
           }
         })
+        this.$forceUpdate()
       }
     }
   }

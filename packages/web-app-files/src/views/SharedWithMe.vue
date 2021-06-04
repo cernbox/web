@@ -69,7 +69,7 @@
           <div
             v-if="
               showAllPending === false &&
-                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -87,7 +87,7 @@
           <div
             v-else-if="
               showAllPending === true &&
-                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -158,7 +158,6 @@
               :key="resource.id + resource.status"
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
-<<<<<<< HEAD
               <oc-button
                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
                 v-translate
@@ -168,17 +167,6 @@
               >
                 Decline
               </oc-button>
-=======
-               <oc-button
-                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
-                 v-translate
-                 size="small"
-                 class="file-row-share-status-action oc-ml"
-                 @click.stop="triggerShareAction(resource, 'DELETE')"
-               >
-                 Decline
-               </oc-button>
->>>>>>> Accept, Decline buttons same style as in pending
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
                 v-text="getShareStatusText(resource.status)"
@@ -274,7 +262,7 @@ export default {
     loading: true,
     shareStatus,
     showDeclined: false,
-    showAllPending: false
+    showAllPending: false,
   }),
   computed: {
     ...mapState(['app']),
@@ -284,7 +272,7 @@ export default {
       'activeFiles',
       'selectedFiles',
       'inProgress',
-      'activeFilesCount'
+      'activeFilesCount',
     ]),
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     selected: {
@@ -293,7 +281,7 @@ export default {
       },
       set(resources) {
         this.SELECT_RESOURCES(resources)
-      }
+      },
     },
     isEmpty() {
       return this.activeFiles.length < 1
@@ -309,12 +297,12 @@ export default {
     },
     displayPreviews() {
       return !this.configuration.options.disablePreviews
-    }
+    },
   },
   watch: {
     uploadProgressVisible() {
       this.adjustTableHeaderPosition()
-    }
+    },
   },
   created() {
     this.loadResources()
@@ -330,11 +318,11 @@ export default {
       'LOAD_FILES',
       'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
-      'UPDATE_RESOURCE'
+      'UPDATE_RESOURCE',
     ]),
     ...mapMutations(['SET_QUOTA']),
     filterDataByStatus(data, status) {
-      return data.filter(item => item.status === status)
+      return data.filter((item) => item.status === status)
     },
     async loadResources() {
       this.loading = true
@@ -342,7 +330,7 @@ export default {
       let resources = await this.$client.requests.ocs({
         service: 'apps/files_sharing',
         action: '/api/v1/shares?format=json&shared_with_me=true&state=all&include_tags=false',
-        method: 'GET'
+        method: 'GET',
       })
       let rootFolder = await this.$client.files.fileInfo('/', this.davProperties)
       resources = await resources.json()
@@ -370,7 +358,7 @@ export default {
           isPublic: false,
           mediaSource: this.mediaSource,
           encodePath: this.encodePath,
-          headers: this.requestHeaders
+          headers: this.requestHeaders,
         })
       }
       // Load quota
@@ -395,7 +383,7 @@ export default {
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
           action: `api/v1/shares/pending/${resource.share.id}`,
-          method: type
+          method: type,
         })
 
         console.log('show server response', response)
@@ -429,10 +417,8 @@ export default {
           console.log('built shared ressource for web', sharedResource)
           this.UPDATE_RESOURCE(sharedResource)
 
-
           this.loadResources()
           this.$forceUpdate()
-
         }
       } catch (error) {
         this.loadResources()
@@ -441,13 +427,13 @@ export default {
           desc: error.message,
           status: 'danger',
           autoClose: {
-            enabled: true
-          }
+            enabled: true,
+          },
         })
         this.$forceUpdate()
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

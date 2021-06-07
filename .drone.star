@@ -1,3 +1,8 @@
+# UI Test suite types
+FULL = 1
+FEDERATED = 2
+NOTIFICATIONS = 3
+
 config = {
     "app": "web",
     "rocketchat": {
@@ -12,6 +17,7 @@ config = {
     "yarnlint": True,
     "acceptance": {
         "webUI": {
+            "type": FULL,
             "suites": {
                 "webUIBasic": [
                     "webUIAccount",
@@ -27,10 +33,8 @@ config = {
                     "webUIWebdavLockProtection",
                     "webUIWebdavLocks",
                 ],
-                "webUICreate": [
+                "webUICreateDelete": [
                     "webUICreateFilesFolders",
-                ],
-                "webUIDelete": [
                     "webUIDeleteFilesFolders",
                 ],
                 "webUIRename": [
@@ -41,65 +45,89 @@ config = {
                     "webUISharingAcceptShares",
                     "webUISharingAcceptSharesToRoot",
                 ],
-                "webUIFavorites": "Favorites",
-                "webUIMarkdownEditor": "MarkdownEditor",
                 "webUIFiles1": [
                     "webUIFiles",
                     "webUIFilesActionMenu",
                     "webUIFilesCopy",
+                    "webUIMarkdownEditor",
+                    "webUIFavorites",
                 ],
                 "webUIFiles2": [
                     "webUIFilesDetails",
                     "webUIFilesList",
                     "webUIFilesSearch",
                 ],
-                "webUIMoveFilesFolders": "Move",
+                "Move-Upload": [
+                    "webUIMoveFilesFolders",
+                    "webUIUpload",
+                ],
                 "webUIResharing": [
                     "webUIResharing1",
                     "webUIResharing2",
                 ],
+                "SharingBasic": [
+                    "webUIRestrictSharing",
+                    "webUISharingAutocompletion",
+                ],
                 "webUIResharingToRoot": "ResharingToRoot",
-                "webUIRestrictSharing": "RestrictSharing",
-                "webUISharingAutocompletion": "SharingAutocompletion",
-                "webUISharingFilePermissionMultipleUsers": "SharingFilePermissionMultipleUsers",
-                "webUISharingFilePermissionsGroups": "SharingFilePermissionsGroups",
+                "SharingFilePermission": [
+                    "webUISharingFilePermissionMultipleUsers",
+                    "webUISharingFilePermissionsGroups",
+                ],
                 "webUISharingFolderAdvancedPermissionMultipleUsers": "SharingFolderAdvancedPermissionMU",
                 "webUISharingFolderAdvancedPermissionsGroups": "SharingFolderAdvPermissionsGrp",
-                "webUISharingFolderPermissionMultipleUsers": "SharingFolderPermissionMultipleUsers",
-                "webUISharingFolderPermissionsGroups": "SharingFolderPermissionsGroups",
-                "webUISharingInternalGroups": "SharingInternalGroups",
-                "webUISharingInternalGroupsEdgeCases": "SharingInternalGroupsEdgeCases",
-                "webUISharingInternalGroupsSharingIndicator": "SharingInternalGroupsSharingIndicator",
-                "webUISharingInternalGroupsToRoot": "SharingInternalGroupsRoot",
-                "webUISharingInternalGroupsToRootEdgeCases": "SharingInternalGroupsRootEdgeCases",
-                "webUISharingInternalGroupsToRootSharingIndicator": "SharingInternalGroupsRootSharingIndicator",
+                "SharingFolderPermissions": [
+                    "webUISharingFolderPermissionMultipleUsers",
+                    "webUISharingFolderPermissionsGroups",
+                ],
+                "SharingInternalGroups": [
+                    "webUISharingInternalGroups",
+                    "webUISharingInternalGroupsEdgeCases",
+                ],
+                "SharingInternalGroupsToRoot": [
+                    "webUISharingInternalGroupsToRoot",
+                    "webUISharingInternalGroupsToRootEdgeCases",
+                ],
+                "SharingInternalGroupsSharingIndicator": [
+                    "webUISharingInternalGroupsSharingIndicator",
+                    "webUISharingInternalGroupsToRootSharingIndicator",
+                ],
                 "webUISharingInternalUsers": [
                     "webUISharingInternalUsers",
                     "webUISharingInternalUsersCollaborator",
                     "webUISharingInternalUsersShareWithPage",
                 ],
                 "webUISharingInternalUsersBlacklisted": "SharingInternalUsersBlacklisted",
-                "webUISharingInternalUsersExpire": "SharingInternalUsersExpire",
-                "webUISharingInternalUsersExpireToRoot": "SharingInternalUsersExpireToRoot",
-                "webUISharingInternalUsersSharingIndicator": "SharingInternalUsersSharingIndicator",
-                "webUISharingInternalUsersToRoot": "webUISharingInternalUsersRoot1",
-                "webUISharingInternalUsersRoot2": [
+                "SharingInternalUsersExpire": [
+                    "webUISharingInternalUsersExpire",
+                    "webUISharingInternalUsersExpireToRoot",
+                ],
+                "SharingInternalUsersSharingIndicator": [
+                    "webUISharingInternalUsersSharingIndicator",
+                    "webUISharingInternalUsersToRootSharingIndicator",
+                ],
+                "SharingInternalUsersRoot1": [
+                    "webUISharingInternalUsersToRoot",
+                    "webUISharingInternalUsersToRootBlacklisted",
+                ],
+                "SharingInternalUsersRoot2": [
                     "webUISharingInternalUsersToRootCollaborator",
                     "webUISharingInternalUsersToRootPreviews",
                     "webUISharingInternalUsersToRootShareWithPage",
                 ],
-                "webUISharingInternalUsersToRootBlacklisted": "SharingInternalUsersRootBlacklisted",
-                "webUISharingInternalUsersToRootSharingIndicator": "SharingInternalUsersRootSharingIndicator",
                 "webUISharingPermissionsUsers": "SharingPermissionsUsers",
                 "webUISharingPermissionToRoot": "SharingPermissionToRoot",
                 "webUISharingPublicBasic": "SharingPublicBasic",
                 "webUISharingPublicManagement": "SharingPublicManagement",
-                "webUISharingPublicDifferentRoles": "SharingPublicDifferentRoles",
-                "webUISharingPublicExpire": "SharingPublicExpire",
-                "webUITrashbinDelete": "TrashbinDelete",
-                "webUITrashbinFilesFolders": "TrashbinFilesFolders",
-                "webUITrashbinRestore": "TrashbinRestore",
-                "webUIUpload": "Upload",
+                "SharingPublicExpireAndRoles": [
+                    "webUISharingPublicDifferentRoles",
+                    "webUISharingPublicExpire",
+                ],
+                "Trashbin": [
+                    "webUITrashbinDelete",
+                    "webUITrashbinFilesFolders",
+                    "webUITrashbinRestore",
+                ],
             },
             "extraEnvironment": {
                 "EXPECTED_FAILURES_FILE": "/var/www/owncloud/web/tests/acceptance/expected-failures-with-oc10-server-oauth2-login.md",
@@ -109,6 +137,7 @@ config = {
             "screenShots": True,
         },
         "webUINotification": {
+            "type": NOTIFICATIONS,
             "suites": {
                 "webUINotificationBasic": [
                     "webUINotifications",
@@ -127,6 +156,7 @@ config = {
             "notificationsAppNeeded": True,
         },
         "webUIFederation": {
+            "type": FEDERATED,
             "suites": {
                 "webUISharingExternal": "SharingExternal",
                 "webUISharingExternalToRoot": "SharingExternalRoot",
@@ -140,6 +170,7 @@ config = {
             "federatedServerVersion": "daily-master-qa",
         },
         "webUI-XGA-Notifications": {
+            "type": NOTIFICATIONS,
             "suites": {
                 "XGAPortrait1-Notifications": [
                     "webUINotifications",
@@ -155,6 +186,7 @@ config = {
             "filterTags": "@smokeTest and not @skipOnXGAPortraitResolution and not @skip and not @skipOnOC10",
         },
         "webUI-XGA": {
+            "type": FULL,
             "suites": {
                 "XGAPortrait1": [
                     "webUIAccount",
@@ -175,6 +207,7 @@ config = {
                     "webUIRestrictSharing",
                     "webUISharingAcceptShares",
                     "webUISharingAcceptSharesToRoot",
+                    "webUIMarkdownEditor",
                     # The following suites may have all scenarios currently skipped.
                     # The suites are listed here so that scenarios will run when
                     # they are enabled.
@@ -233,6 +266,7 @@ config = {
             "filterTags": "@smokeTest and not @skipOnXGAPortraitResolution and not @skip and not @skipOnOC10",
         },
         "webUI-Notifications-iPhone": {
+            "type": NOTIFICATIONS,
             "suites": {
                 "iPhone1-Notifications": [
                     "webUINotifications",
@@ -248,6 +282,7 @@ config = {
             "filterTags": "@smokeTest and not @skipOnIphoneResolution and not @skip and not @skipOnOC10",
         },
         "webUI-iPhone": {
+            "type": FULL,
             "suites": {
                 "iPhone1": [
                     "webUIAccount",
@@ -268,6 +303,8 @@ config = {
                     "webUIRestrictSharing",
                     "webUISharingAcceptShares",
                     "webUISharingAcceptSharesToRoot",
+                    "webUIMarkdownEditor",
+                    "webUISharingInternalUsersBlacklisted",
                     # The following suites may have all scenarios currently skipped.
                     # The suites are listed here so that scenarios will run when
                     # they are enabled.
@@ -326,6 +363,7 @@ config = {
             "filterTags": "@smokeTest and not @skipOnIphoneResolution and not @skip and not @skipOnOC10",
         },
         "webUI-ocis": {
+            "type": FULL,
             "suites": {
                 "webUIOCISBasic": [
                     "webUILogin",
@@ -342,40 +380,29 @@ config = {
                     "webUIWebdavLockProtection",
                     "webUIWebdavLocks",
                 ],
-                "webUIOCISCreate": [
-                    "webUICreateFilesFolders",
-                ],
-                "webUIOCISDelete": [
-                    "webUIDeleteFilesFolders",
-                ],
                 "webUIOCISRename": [
                     "webUIRenameFiles",
                     "webUIRenameFolders",
                 ],
                 "webUIOCISSharingBasic": [
                     "webUISharingAcceptShares",
-                ],
-                "webUIOCISRestrictSharing": [
                     "webUIRestrictSharing",
-                ],
-                "webUIOCISSharingNotifications": [
                     "webUISharingNotifications",
                 ],
                 "webUIFavorites": "OCISFavorites",
-                "webUIMarkdownEditor": "OCISMarkdownEditor",
                 "webUIOCISFiles1": [
+                    "webUICreateFilesFolders",
+                    "webUIDeleteFilesFolders",
                     "webUIFiles",
                     "webUIFilesActionMenu",
                     "webUIFilesCopy",
+                    "webUIFilesList",
+                    "webUIMarkdownEditor",
                 ],
                 "webUIOCISFiles2": [
                     "webUIFilesDetails",
                     "webUIFilesSearch",
                 ],
-                "webUIOCISFiles3": [
-                    "webUIFilesList",
-                ],
-                "webUISharingAutocompletion": "OCISSharingAutocompletion",
                 "OCISSharingInternalGroups": [
                     "webUISharingInternalGroups",
                     "webUISharingInternalGroupsEdgeCases",
@@ -383,6 +410,8 @@ config = {
                 ],
                 "OCISSharingInternalUsers1": [
                     "webUISharingInternalUsers",
+                    "webUISharingAutocompletion",
+                    "webUISharingInternalUsersExpire",
                 ],
                 "OCISSharingInternalUsers2": [
                     "webUISharingInternalUsersBlacklisted",
@@ -390,31 +419,39 @@ config = {
                     "webUISharingInternalUsersShareWithPage",
                     "webUISharingInternalUsersSharingIndicator",
                 ],
-                "webUISharingInternalUsersExpire": "OCISSharingInternalUsersExpire",
-                "webUISharingPermissionsUsers": "OCISSharingPermissionsUsers",
-                "webUISharingFilePermissionsGroups": "OCISSharingFilePermissionsGroups",
-                "webUISharingFolderPermissionsGroups": "OCISSharingFolderPermissionsGroups",
-                "webUISharingFolderAdvancedPermissionsGroups": "OCISSharingFolderAdvPermissionsGrp",
-                # for now run this suite by itself see https://github.com/owncloud/ocis/issues/736
+                "OCISSharingPermissions1": [
+                    "webUISharingPermissionsUsers",
+                    "webUISharingFilePermissionsGroups",
+                ],
+                "OCISSharingPermissions2": [
+                    "webUISharingFolderPermissionsGroups",
+                    "webUISharingFolderAdvancedPermissionsGroups",
+                ],
+                "OCISSharingPermissions3": [
+                    "webUISharingFilePermissionMultipleUsers",
+                    "webUISharingFolderPermissionMultipleUsers",
+                    "webUISharingFolderAdvancedPermissionMultipleUsers",
+                ],
                 "OCISResharing1": [
                     "webUIResharing1",
-                ],
-                "OCISResharing2": [
                     "webUIResharing2",
                 ],
-                "webUISharingPublicBasic": "OCISSharingPublicBasic",
-                "webUISharingPublicManagement": "OCISSharingPublicManagement",
-                "webUISharingPublicExpire": "OCISSharingPublicExpire",
-                "webUISharingPublicDifferentRoles": "OCISSharingPublicDifferentRoles",
-                "webUITrashbinDelete": "OCISTrashbinDelete",
-                "webUITrashbinFilesFolders": "OCISTrashbinFilesFolders",
-                "webUITrashbinRestore": "OCISTrashbinRestore",
-                "webUIUpload": "OCISUpload",
-                "webUISharingFilePermissionMultipleUsers": "OCISSharingFilePermissionMultipleUsers",
-                "webUISharingFolderPermissionMultipleUsers": "OCISSharingFolderPermissionMultipleUsers",
-                "webUISharingFolderAdvancedPermissionMultipleUsers": "OCISSharingFolderAdvancedPermissionMU",
-                "webUIMoveFilesFolders": "OCISMove",
-                "webUIUserJourney": "OCISJourney",
+                "OCISSharingPublic": [
+                    "webUISharingPublicBasic",
+                    "webUISharingPublicManagement",
+                ],
+                "OCISSharingPublicExpireAndRoles": [
+                    "webUISharingPublicDifferentRoles",
+                    "webUISharingPublicExpire",
+                ],
+                "OCIS-Trashbin-Upload-Move-Journey": [
+                    "webUITrashbinDelete",
+                    "webUITrashbinFilesFolders",
+                    "webUITrashbinRestore",
+                    "webUIUpload",
+                    "webUIMoveFilesFolders",
+                    "webUIUserJourney",
+                ],
             },
             "extraEnvironment": {
                 "NODE_TLS_REJECT_UNAUTHORIZED": "0",
@@ -431,6 +468,7 @@ config = {
             "filterTags": "not @skip and not @skipOnOCIS and not @notToImplementOnOCIS",
         },
         "webUI-notifications-oc10-integration": {
+            "type": NOTIFICATIONS,
             "suites": {
                 "oc10-integration-notifications": [
                     "webUINotifications",
@@ -449,6 +487,7 @@ config = {
             "screenShots": True,
         },
         "webUI-oc10-integration": {
+            "type": FULL,
             "suites": {
                 "IntegrationApp1": [
                     "webUIAccount",
@@ -469,6 +508,8 @@ config = {
                     "webUIRestrictSharing",
                     "webUISharingAcceptShares",
                     "webUISharingAcceptSharesToRoot",
+                    "webUIMarkdownEditor",
+                    "webUISharingInternalUsersBlacklisted",
                     # The following suites may have all scenarios currently skipped.
                     # The suites are listed here so that scenarios will run when
                     # they are enabled.
@@ -533,7 +574,143 @@ config = {
     "build": True,
 }
 
+# UI Test Suites
+# These list contains all the test suites that are present
+# When adding new test suites, make sure to update these lists
+federatedTestSuites = [
+    "webUISharingExternal",
+]
+
+federatedRootTestSuites = [
+    "webUISharingExternalToRoot",
+]
+
+rootSharingTestSuites = [
+    "webUIResharingToRoot",
+    "webUISharingAcceptSharesToRoot",
+    "webUISharingInternalGroupsToRoot",
+    "webUISharingInternalGroupsToRootEdgeCases",
+    "webUISharingInternalGroupsToRootSharingIndicator",
+    "webUISharingInternalUsersExpireToRoot",
+    "webUISharingInternalUsersToRoot",
+    "webUISharingInternalUsersToRootBlacklisted",
+    "webUISharingInternalUsersToRootCollaborator",
+    "webUISharingInternalUsersToRootPreviews",
+    "webUISharingInternalUsersToRootShareWithPage",
+    "webUISharingInternalUsersToRootSharingIndicator",
+    "webUISharingPermissionToRoot",
+]
+
+notificationsTestSuites = [
+    "webUINotifications",
+    "webUISharingNotifications",
+]
+
+notificationsRootTestSuites = [
+    "webUISharingNotificationsToRoot",
+]
+
+basicTestSuites = [
+    "webUIAccount",
+    "webUIAdminSettings",
+    "webUIComments",
+    "webUICreateFilesFolders",
+    "webUIDeleteFilesFolders",
+    "webUIFavorites",
+    "webUIFiles",
+    "webUIFilesActionMenu",
+    "webUIFilesCopy",
+    "webUIFilesDetails",
+    "webUIFilesList",
+    "webUIFilesSearch",
+    "webUILogin",
+    "webUIMarkdownEditor",
+    "webUIMoveFilesFolders",
+    "webUIPreview",
+    "webUIPrivateLinks",
+    "webUIRenameFiles",
+    "webUIRenameFolders",
+    "webUIResharing1",
+    "webUIResharing2",
+    "webUIRestrictSharing",
+    "webUISharingAcceptShares",
+    "webUISharingAutocompletion",
+    "webUISharingFilePermissionMultipleUsers",
+    "webUISharingFilePermissionsGroups",
+    "webUISharingFolderAdvancedPermissionMultipleUsers",
+    "webUISharingFolderAdvancedPermissionsGroups",
+    "webUISharingFolderPermissionMultipleUsers",
+    "webUISharingFolderPermissionsGroups",
+    "webUISharingInternalGroups",
+    "webUISharingInternalGroupsEdgeCases",
+    "webUISharingInternalGroupsSharingIndicator",
+    "webUISharingInternalUsers",
+    "webUISharingInternalUsersBlacklisted",
+    "webUISharingInternalUsersCollaborator",
+    "webUISharingInternalUsersExpire",
+    "webUISharingInternalUsersShareWithPage",
+    "webUISharingInternalUsersSharingIndicator",
+    "webUISharingPermissionsUsers",
+    "webUISharingPublicBasic",
+    "webUISharingPublicDifferentRoles",
+    "webUISharingPublicExpire",
+    "webUISharingPublicManagement",
+    "webUITags",
+    "webUITrashbinDelete",
+    "webUITrashbinFilesFolders",
+    "webUITrashbinRestore",
+    "webUIUpload",
+    "webUIWebdavLockProtection",
+    "webUIWebdavLocks",
+]
+
+ocisSpecificTestSuites = [
+    "webUIUserJourney",
+]
+
+def checkTestSuites():
+    for testGroupName, test in config["acceptance"].items():
+        suites = []
+        for key, items in test["suites"].items():
+            if (type(items) == "list"):
+                suites += items
+            elif (type(items) == "string"):
+                suites += [key]
+            else:
+                print("Error: invalid value for suite, it must be a list or string")
+                return False
+
+        expected = []
+        if (test["type"] == FULL):
+            expected += basicTestSuites
+            if ("runningOnOCIS" not in test or test["runningOnOCIS"] != True):
+                expected += rootSharingTestSuites
+        elif (test["type"] == NOTIFICATIONS):
+            expected += notificationsTestSuites
+            if ("runningOnOCIS" not in test or test["runningOnOCIS"] != True):
+                expected += notificationsRootTestSuites
+        elif (test["type"] == FEDERATED):
+            expected += federatedTestSuites + federatedRootTestSuites
+
+        if ("runningOnOCIS" in test and test["runningOnOCIS"] == True):
+            expected += notificationsTestSuites + ocisSpecificTestSuites
+
+        if (sorted(suites) != sorted(expected)):
+            print("Error: Suites dont match " + testGroupName)
+            print(Diff(sorted(suites), sorted(expected)))
+
+    return True
+
+def Diff(li1, li2):
+    li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
+    return li_dif
+
 def main(ctx):
+    uiSuitesCheck = checkTestSuites()
+    if (uiSuitesCheck == False):
+        print("Errors detected. Review messages above.")
+        return []
+
     before = beforePipelines(ctx)
 
     stages = stagePipelines(ctx)
@@ -546,17 +723,12 @@ def main(ctx):
     after = afterPipelines(ctx)
     dependsOn(stages, after)
 
-    if ctx.build.event == "cron":
-        return example_deploys(ctx)
-
     pipelines = before + stages + after
 
     deploys = example_deploys(ctx)
     dependsOn(pipelines, deploys)
 
     return pipelines + deploys + checkStarlark()
-
-    return pipelines
 
 def beforePipelines(ctx):
     return yarnlint() + changelog(ctx) + website(ctx) + cacheOcisPipeline(ctx)
@@ -755,7 +927,7 @@ def unitTests():
                  buildWeb() +
                  [{
                      "name": "tests",
-                     "image": "owncloudci/nodejs:12",
+                     "image": "owncloudci/nodejs:14",
                      "pull": "always",
                      "commands": [
                          "yarn test:unit",
@@ -837,6 +1009,9 @@ def acceptance(ctx):
             params = {}
             for item in default:
                 params[item] = matrix[item] if item in matrix else default[item]
+
+            if ("full-ci" in ctx.build.title.lower()):
+                params["earlyFail"] = False
 
             for server in params["servers"]:
                 for browser in params["browsers"]:
@@ -1299,7 +1474,7 @@ def installFederatedServer(version, db, dbSuffix = "-federated"):
 def installNPM():
     return [{
         "name": "npm-install",
-        "image": "owncloudci/nodejs:12",
+        "image": "owncloudci/nodejs:14",
         "pull": "always",
         "commands": [
             "yarn install --frozen-lockfile",
@@ -1309,7 +1484,7 @@ def installNPM():
 def lintTest():
     return [{
         "name": "lint-test",
-        "image": "owncloudci/nodejs:12",
+        "image": "owncloudci/nodejs:14",
         "pull": "always",
         "commands": [
             "yarn run lint",
@@ -1319,7 +1494,7 @@ def lintTest():
 def buildWebApp():
     return [{
         "name": "build-web-integration-app",
-        "image": "owncloudci/nodejs:12",
+        "image": "owncloudci/nodejs:14",
         "pull": "always",
         "commands": [
             "yarn build",
@@ -1356,7 +1531,7 @@ def setupIntegrationWebApp():
 def buildWeb():
     return [{
         "name": "build-web",
-        "image": "owncloudci/nodejs:12",
+        "image": "owncloudci/nodejs:14",
         "pull": "always",
         "commands": [
             "yarn build",
@@ -1400,7 +1575,7 @@ def buildRelease(ctx):
     return [
         {
             "name": "make",
-            "image": "owncloudci/nodejs:12",
+            "image": "owncloudci/nodejs:14",
             "pull": "always",
             "commands": [
                 "cd /var/www/owncloud/web",
@@ -1820,6 +1995,7 @@ def setupServerAndAppsForIntegrationApp(logLevel):
             "php occ config:system:set enable_previews --type=boolean --value=false",
             'php occ config:system:set web.baseUrl --value="http://owncloud/index.php/apps/web"',
             "php occ config:system:set sharing.federation.allowHttpFallback --value=true --type=bool",
+            "php occ config:system:set web.rewriteLinks --value=true",
         ],
     }]
 
@@ -1839,6 +2015,7 @@ def setupServerAndApp(logLevel):
             "php occ config:system:set skeletondirectory --value=/var/www/owncloud/server/apps/testing/data/webUISkeleton",
             'php occ config:system:set web.baseUrl --value="http://web"',
             "php occ config:system:set sharing.federation.allowHttpFallback --value=true --type=bool",
+            "php occ config:system:set web.rewriteLinks --value=true",
         ],
     }]
 
@@ -1883,7 +2060,7 @@ def fixPermissionsFederated():
 def owncloudLog():
     return [{
         "name": "owncloud-log",
-        "image": "owncloud/ubuntu:16.04",
+        "image": "owncloud/ubuntu:20.04",
         "pull": "always",
         "detach": True,
         "commands": [
@@ -1894,7 +2071,7 @@ def owncloudLog():
 def owncloudLogFederated():
     return [{
         "name": "owncloud-federated-log",
-        "image": "owncloud/ubuntu:16.04",
+        "image": "owncloud/ubuntu:20.04",
         "pull": "always",
         "detach": True,
         "commands": [
@@ -1955,7 +2132,7 @@ def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironm
 
     return [{
         "name": "webui-acceptance-tests",
-        "image": "owncloudci/nodejs:12",
+        "image": "owncloudci/nodejs:14",
         "pull": "always",
         "environment": environment,
         "commands": [
@@ -2133,7 +2310,7 @@ def uploadScreenshots():
 def listScreenShots():
     return [{
         "name": "list screenshots-visual",
-        "image": "owncloudci/nodejs:12",
+        "image": "owncloudci/nodejs:14",
         "pull": "always",
         "commands": [
             "ls -laR /var/www/owncloud/web/tests/vrt",
@@ -2216,10 +2393,13 @@ def buildGithubCommentVisualDiff(ctx, suite, alternateSuiteName, runningOnOCIS):
     branch = ctx.build.source if ctx.build.event == "pull_request" else "master"
     return [{
         "name": "build-github-comment-vrt",
-        "image": "owncloud/ubuntu:16.04",
+        "image": "owncloud/ubuntu:20.04",
         "pull": "always",
         "commands": [
-            "cd /var/www/owncloud/web/tests/vrt/diff",
+            "cd /var/www/owncloud/web/tests/vrt",
+            "if [ ! -d diff ]; then exit 0; fi",
+            "cd diff",
+            "if [ ! -d %s ]; then exit 0; fi" % backend,
             "cd %s" % backend,
             "ls -la",
             'echo "<details><summary>:boom: Visual regression tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> /var/www/owncloud/web/comments.file' % alternateSuiteName,
@@ -2253,7 +2433,7 @@ def buildGithubCommentVisualDiff(ctx, suite, alternateSuiteName, runningOnOCIS):
 def buildGithubComment(suite, alternateSuiteName):
     return [{
         "name": "build-github-comment",
-        "image": "owncloud/ubuntu:16.04",
+        "image": "owncloud/ubuntu:20.04",
         "pull": "always",
         "commands": [
             "cd /var/www/owncloud/web/tests/reports/screenshots/",
@@ -2281,7 +2461,7 @@ def buildGithubComment(suite, alternateSuiteName):
 def buildGithubCommentForBuildStopped(suite, alternateSuiteName):
     return [{
         "name": "build-github-comment-buildStop",
-        "image": "owncloud/ubuntu:16.04",
+        "image": "owncloud/ubuntu:20.04",
         "pull": "always",
         "commands": [
             'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. The build is cancelled...</summary>\\n\\n" >> /var/www/owncloud/web/comments.file' % alternateSuiteName,
@@ -2305,8 +2485,8 @@ def githubComment():
             "message_file": "/var/www/owncloud/web/comments.file",
         },
         "environment": {
-            "PLUGIN_API_KEY": {
-                "from_secret": "plugin_api_key",
+            "GITHUB_TOKEN": {
+                "from_secret": "github_token",
             },
         },
         "when": {

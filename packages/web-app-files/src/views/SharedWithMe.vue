@@ -19,7 +19,7 @@
         <div id="pending-highlight">
           <oc-table-files
             id="files-shared-with-me-pending-table"
-            v-model="selected"
+            v-model="selectedPending"
             class="files-table"
             :class="{ 'files-table-squashed': isSidebarOpen }"
             :are-previews-displayed="displayPreviews"
@@ -69,7 +69,7 @@
           <div
             v-if="
               showAllPending === false &&
-              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -87,7 +87,7 @@
           <div
             v-else-if="
               showAllPending === true &&
-              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -142,7 +142,7 @@
         <oc-table-files
           v-else
           id="files-shared-with-me-accepted-table"
-          v-model="selected"
+          v-model="selectedAccepted"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
           :are-previews-displayed="displayPreviews"
@@ -210,15 +210,16 @@
         <oc-table-files
           v-else
           id="files-shared-with-me-declined-table"
-          v-model="selected"
+          v-model="selectedDeclined"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
           :are-previews-displayed="displayPreviews"
           :resources="filterDataByStatus(activeFiles, shareStatus.declined)"
           :target-route="targetRoute"
+          :are-resources-clickable="false"
           :highlighted="highlightedFile ? highlightedFile.id : null"
+          :has-actions="false"
           :header-position="headerPosition"
-          @showDetails="setHighlightedFile"
           @fileClick="$_fileActions_triggerDefaultAction"
         >
           <template v-slot:status="{ resource }">
@@ -283,6 +284,33 @@ export default {
         this.SELECT_RESOURCES(resources)
       },
     },
+    selectedPending: {
+      get() {
+        return this.selectedFiles.filter(r => r.status === shareStatus.pending)
+      },
+      set(resources) {
+        resources = resources.filter(r => r.status === shareStatus.pending)
+        this.SELECT_RESOURCES(resources)
+      }
+    },
+    selectedAccepted: {
+      get() {
+        return this.selectedFiles.filter(r => r.status === shareStatus.accepted)
+      },
+      set(resources) {
+        resources = resources.filter(r => r.status === shareStatus.accepted)
+        this.SELECT_RESOURCES(resources)
+      }
+    },
+    selectedDeclined: {
+      get() {
+        return this.selectedFiles.filter(r => r.status === shareStatus.declined)
+      },
+      set(resources) {
+        resources = resources.filter(r => r.status === shareStatus.declined)
+        this.SELECT_RESOURCES(resources)
+      }
+    },
     isEmpty() {
       return this.activeFiles.length < 1
     },
@@ -322,7 +350,7 @@ export default {
     ]),
     ...mapMutations(['SET_QUOTA']),
     filterDataByStatus(data, status) {
-      return data.filter((item) => item.status === status)
+      return data.filter(item => item.status === status)
     },
     async loadResources() {
       this.loading = true

@@ -19,7 +19,7 @@
         <div id="pending-highlight">
           <oc-table-files
             id="files-shared-with-me-pending-table"
-            v-model="selected"
+            v-model="selectedPending"
             class="files-table"
             :class="{ 'files-table-squashed': isSidebarOpen }"
             :are-previews-displayed="displayPreviews"
@@ -69,7 +69,7 @@
           <div
             v-if="
               showAllPending === false &&
-              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -87,7 +87,7 @@
           <div
             v-else-if="
               showAllPending === true &&
-              filterDataByStatus(activeFiles, shareStatus.pending).length > 3
+                filterDataByStatus(activeFiles, shareStatus.pending).length > 3
             "
             class="oc-app-bar centered"
           >
@@ -142,7 +142,7 @@
         <oc-table-files
           v-else
           id="files-shared-with-me-accepted-table"
-          v-model="selected"
+          v-model="selectedAccepted"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
           :are-previews-displayed="displayPreviews"
@@ -210,15 +210,16 @@
         <oc-table-files
           v-else
           id="files-shared-with-me-declined-table"
-          v-model="selected"
+          v-model="selectedDeclined"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
           :are-previews-displayed="displayPreviews"
           :resources="filterDataByStatus(activeFiles, shareStatus.declined)"
           :target-route="targetRoute"
+          :are-resources-clickable="false"
           :highlighted="highlightedFile ? highlightedFile.id : null"
+          :has-actions="false"
           :header-position="headerPosition"
-          @showDetails="setHighlightedFile"
           @fileClick="$_fileActions_triggerDefaultAction"
         >
           <template v-slot:status="{ resource }">
@@ -263,6 +264,7 @@ export default {
     shareStatus,
     showDeclined: false,
     showAllPending: false,
+    lastSelectedTable: false
   }),
   computed: {
     ...mapState(['app']),
@@ -272,7 +274,7 @@ export default {
       'activeFiles',
       'selectedFiles',
       'inProgress',
-      'activeFilesCount',
+      'activeFilesCount'
     ]),
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     selected: {
@@ -281,7 +283,35 @@ export default {
       },
       set(resources) {
         this.SELECT_RESOURCES(resources)
+      }
+    },
+
+    selectedPending: {
+      get() {
+        return this.selectedFiles.filter(r => r.status === shareStatus.pending)
       },
+      set(resources) {
+        resources = resources.filter(r => r.status === shareStatus.pending)
+        this.SELECT_RESOURCES(resources)
+      }
+    },
+    selectedAccepted: {
+      get() {
+        return this.selectedFiles.filter(r => r.status === shareStatus.accepted)
+      },
+      set(resources) {
+        resources = resources.filter(r => r.status === shareStatus.accepted)
+        this.SELECT_RESOURCES(resources)
+      }
+    },
+    selectedDeclined: {
+      get() {
+        return this.selectedFiles.filter(r => r.status === shareStatus.declined)
+      },
+      set(resources) {
+        resources = resources.filter(r => r.status === shareStatus.declined)
+        this.SELECT_RESOURCES(resources)
+      }
     },
     isEmpty() {
       return this.activeFiles.length < 1
@@ -297,12 +327,12 @@ export default {
     },
     displayPreviews() {
       return !this.configuration.options.disablePreviews
-    },
+    }
   },
   watch: {
     uploadProgressVisible() {
       this.adjustTableHeaderPosition()
-    },
+    }
   },
   created() {
     this.loadResources()
@@ -318,11 +348,11 @@ export default {
       'LOAD_FILES',
       'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
-      'UPDATE_RESOURCE',
+      'UPDATE_RESOURCE'
     ]),
     ...mapMutations(['SET_QUOTA']),
     filterDataByStatus(data, status) {
-      return data.filter((item) => item.status === status)
+      return data.filter(item => item.status === status)
     },
     async loadResources() {
       this.loading = true
@@ -330,7 +360,7 @@ export default {
       let resources = await this.$client.requests.ocs({
         service: 'apps/files_sharing',
         action: '/api/v1/shares?format=json&shared_with_me=true&state=all&include_tags=false',
-        method: 'GET',
+        method: 'GET'
       })
       let rootFolder = await this.$client.files.fileInfo('/', this.davProperties)
       resources = await resources.json()
@@ -357,7 +387,7 @@ export default {
           isPublic: false,
           mediaSource: this.mediaSource,
           encodePath: this.encodePath,
-          headers: this.requestHeaders,
+          headers: this.requestHeaders
         })
       }
       // Load quota
@@ -382,7 +412,7 @@ export default {
         let response = await this.$client.requests.ocs({
           service: 'apps/files_sharing',
           action: `api/v1/shares/pending/${resource.share.id}`,
-          method: type,
+          method: type
         })
         // exit on failure
         if (response.status !== 200) {
@@ -420,12 +450,12 @@ export default {
           desc: error.message,
           status: 'danger',
           autoClose: {
-            enabled: true,
-          },
+            enabled: true
+          }
         })
       }
-    },
-  },
+    }
+  }
 }
 </script>
 

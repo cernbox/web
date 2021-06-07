@@ -158,15 +158,15 @@
               :key="resource.id + resource.status"
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
-               <oc-button
-                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
-                 v-translate
-                 size="small"
-                 class="file-row-share-status-action oc-ml"
-                 @click.stop="triggerShareAction(resource, 'DELETE')"
-               >
-                 Decline
-               </oc-button>
+              <oc-button
+                v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
+                v-translate
+                size="small"
+                class="file-row-share-status-action oc-ml"
+                @click.stop="triggerShareAction(resource, 'DELETE')"
+              >
+                Decline
+              </oc-button>
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
                 v-text="getShareStatusText(resource.status)"
@@ -411,6 +411,7 @@ export default {
             this.getToken
           )
           this.UPDATE_RESOURCE(sharedResource)
+          this.loadResources()
         }
       } catch (error) {
         this.loadResources()

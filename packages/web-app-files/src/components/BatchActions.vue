@@ -287,6 +287,7 @@ export default {
             this.getToken
           )
           this.UPDATE_RESOURCE(sharedResource)
+          this.SELECT_RESOURCES([])
         }
       } catch (error) {
         // this.loadResources()

@@ -727,7 +727,9 @@ def main(ctx):
     pipelines = before + stages + after
 
     deploys = example_deploys(ctx)
-    dependsOn(pipelines, deploys)
+    if ctx.build.event != "cron":
+        # run example deploys on cron even if some prior pipelines fail
+        dependsOn(pipelines, deploys)
 
     return pipelines + deploys + checkStarlark()
 
@@ -737,9 +739,9 @@ def beforePipelines(ctx):
 def stagePipelines(ctx):
     acceptancePipelines = acceptance(ctx)
     if acceptancePipelines == False:
-        return unitTests()
+        return unitTests(ctx)
 
-    return unitTests() + acceptancePipelines
+    return unitTests(ctx) + acceptancePipelines
 
 def afterPipelines(ctx):
     return build(ctx) + notify()
@@ -857,7 +859,7 @@ def changelog(ctx):
             },
             {
                 "name": "diff",
-                "image": "owncloud/alpine:latest",
+                "image": "owncloudci/alpine:latest",
                 "pull": "always",
                 "commands": [
                     "git diff",
@@ -915,7 +917,21 @@ def changelog(ctx):
 
     return pipelines
 
-def unitTests():
+def unitTests(ctx):
+    sonar_env = {
+        "SONAR_TOKEN": {
+            "from_secret": "sonar_token",
+        },
+    }
+    if ctx.build.event == "pull_request":
+        sonar_env.update({
+            "SONAR_PULL_REQUEST_BASE": "%s" % (ctx.build.target),
+            "SONAR_PULL_REQUEST_BRANCH": "%s" % (ctx.build.source),
+            "SONAR_PULL_REQUEST_KEY": "%s" % (ctx.build.ref.replace("refs/pull/", "").split("/")[0]),
+        })
+
+    repo_slug = ctx.build.source_repo if ctx.build.source_repo else ctx.repo.slug
+
     return [{
         "kind": "pipeline",
         "type": "docker",
@@ -924,16 +940,35 @@ def unitTests():
             "base": "/var/www/owncloud",
             "path": config["app"],
         },
-        "steps": installNPM() +
-                 buildWeb() +
-                 [{
-                     "name": "tests",
-                     "image": "owncloudci/nodejs:14",
-                     "pull": "always",
+        "clone": {
+            "disable": True,  # Sonarcloud does not apply issues on already merged branch
+        },
+        "steps": [{
+                     "name": "clone",
+                     "image": "owncloudci/alpine:latest",
                      "commands": [
-                         "yarn test:unit",
+                         "git clone https://github.com/%s.git ." % (repo_slug),
+                         "git checkout $DRONE_COMMIT",
                      ],
-                 }],
+                 }] +
+                 installNPM() +
+                 buildWeb() +
+                 [
+                     {
+                         "name": "tests",
+                         "image": "owncloudci/nodejs:14",
+                         "pull": "always",
+                         "commands": [
+                             "yarn test:unit",
+                         ],
+                     },
+                     {
+                         "name": "sonarcloud",
+                         "image": "sonarsource/sonar-scanner-cli:latest",
+                         "pull": "always",
+                         "environment": sonar_env,
+                     },
+                 ],
         "depends_on": [],
         "trigger": {
             "ref": [
@@ -946,7 +981,7 @@ def unitTests():
 def acceptance(ctx):
     pipelines = []
 
-    if "acceptance" not in config:
+    if "acceptance" not in config or "unit-tests-only" in ctx.build.title.lower():
         return pipelines
 
     if type(config["acceptance"]) == "bool":

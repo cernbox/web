@@ -8,23 +8,27 @@ export default {
       return [
         {
           icon: 'delete',
-          ariaLabel: () => {
+          label: () => {
             return this.$gettext('Delete')
           },
           handler: this.$_delete_trigger,
           isEnabled: ({ resource }) => {
-            if (checkRoute(['files-trashbin'], this.$route.name)) {
+            if (checkRoute(['files-trashbin', 'files-shared-with-me'], this.$route.name)) {
               return false
             }
 
             return resource.canBeDeleted()
-          }
+          },
+          componentType: 'oc-button',
+          class: 'oc-files-actions-sidebar-delete-trigger'
         },
         {
           icon: 'delete',
-          ariaLabel: () => this.$gettext('Delete'),
+          label: () => this.$gettext('Delete'),
           handler: this.$_delete_trigger,
-          isEnabled: () => checkRoute(['files-trashbin'], this.$route.name)
+          isEnabled: () => checkRoute(['files-trashbin'], this.$route.name),
+          componentType: 'oc-button',
+          class: 'oc-files-actions-sidebar-delete-trigger'
         }
       ]
     }

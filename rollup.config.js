@@ -50,9 +50,6 @@ const plugins = [
   }),
   modify({
     'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
-    // todo: remove after pending PR is merged
-    // fix for 'assignment to undeclared variable dav' in davclient.js/lib/client.js 6:0
-    "if (typeof dav === 'undefined') { dav = {}; }": 'var dav = dav || {}',
     // todo: owncloud-sdk _makeOCSrequest has no catch
     // this is required if a network error for example 'blocked by CORS' happened
     'l(o.instance+p,{method:e,body:d.body,headers:h})':
@@ -85,7 +82,7 @@ const plugins = [
       },
       {
         name: 'viewport',
-        content: 'initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no'
+        content: 'initial-scale=1.0, minimum-scale=1.0'
       },
       {
         name: 'theme-color',

@@ -10,17 +10,19 @@ export default {
       return [
         {
           icon: 'edit',
-          ariaLabel: () => {
+          label: () => {
             return this.$gettext('Rename')
           },
           handler: this.$_rename_trigger,
           isEnabled: ({ resource }) => {
-            if (checkRoute(['files-trashbin'], this.$route.name)) {
+            if (checkRoute(['files-trashbin', 'files-shared-with-me'], this.$route.name)) {
               return false
             }
 
             return resource.canRename()
-          }
+          },
+          componentType: 'oc-button',
+          class: 'oc-files-actions-sidebar-rename-trigger'
         }
       ]
     }
@@ -43,11 +45,13 @@ export default {
         this.$_rename_checkNewName(resource.name, newName)
       }
 
+      const title = this.$gettextInterpolate(
+        isFolder ? this.$gettext('Rename folder %{name}') : this.$gettext('Rename file %{name}'),
+        { name: resource.name }
+      )
       const modal = {
         variation: 'passive',
-        title: isFolder
-          ? this.$gettext('Rename folder ') + resource.name
-          : this.$gettext('Rename file ' + resource.name),
+        title,
         cancelText: this.$gettext('Cancel'),
         confirmText: this.$gettext('Rename'),
         hasInput: true,

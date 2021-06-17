@@ -59,9 +59,24 @@
                 </oc-sidebar-nav-item>
               </oc-list>
             </template>
-            <template v-if="sidebar.sidebarFooterContentComponent" #footer>
-              <component :is="sidebar.sidebarFooterContentComponent" />
+            <template #footer>
+              <div style="display: flex; align-items: center; justify-content: center">
+                <oc-button
+                  variation="inverse"
+                  :aria-label="$gettext('Give Feedback')"
+                  @click="toggleFeedbackModal"
+                >
+                  <oc-icon name="tag_faces" /> Feedback
+                </oc-button>
+              </div>
+              <component
+                :is="sidebar.sidebarFooterContentComponent"
+                v-if="sidebar.sidebarFooterContentComponent"
+              />
             </template>
+            <!--<template v-if="sidebar.sidebarFooterContentComponent" #footer>
+              <component :is="sidebar.sidebarFooterContentComponent" />
+            </template>-->
           </oc-sidebar-nav>
         </focus-trap>
       </transition>
@@ -313,6 +328,14 @@ export default {
   },
 
   mounted() {
+    const _this = this
+
+    if (localStorage.getItem('feedback') !== 'true' && !this.feedbackModal) {
+      setTimeout(function() {
+        _this.toggleFeedbackModal()
+        localStorage.setItem('feedback', 'true')
+      }, 30000)
+    }
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize)
       this.onResize()
@@ -324,8 +347,39 @@ export default {
   },
 
   methods: {
-    ...mapActions(['initAuth', 'fetchNotifications', 'deleteMessage']),
+    ...mapActions(['initAuth', 'fetchNotifications', 'deleteMessage', 'createModal', 'hideModal']),
 
+    /// // Feedback
+    toggleFeedbackModal() {
+      if (!this.feedbackModal) {
+        const modal = {
+          variation: 'passive',
+          icon: 'tag_faces',
+          title: 'Give Us Feedback',
+          message: this.$gettext(
+            'This version of the user inferface is currently in development. We encourage you to provide feedback, we’ll take it on with the ownCloud company and with our engineering team.'
+          ),
+          cancelText: this.$gettext('Cancel'),
+          confirmText: this.$gettext('To Feedback Page'),
+          onCancel: this.cancelFeedbackModal,
+          onConfirm: this.openFeedbackDoc
+        }
+
+        this.createModal(modal)
+        this.feedbackModal = !this.feedbackModal
+      } else {
+        this.cancelFeedbackModal()
+      }
+    },
+    cancelFeedbackModal() {
+      this.hideModal()
+      this.feedbackModal = !this.feedbackModal
+    },
+    openFeedbackDoc() {
+      window.open('https://codimd.web.cern.ch/TKGx1_6nQMK2OEHfmQ4XUQ', '_blank').focus()
+      this.cancelFeedbackModal()
+    },
+    /// //
     focusModal(component, event) {
       this.focus({
         revert: event === 'beforeDestroy'

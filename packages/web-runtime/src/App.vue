@@ -357,10 +357,10 @@ export default {
           icon: 'tag_faces',
           title: 'Give Us Feedback',
           message: this.$gettext(
-            'This version of the user inferface is currently in development. We encourage you to provide feedback, we’ll take it on with the ownCloud company and with our engineering team.'
+            'This version is still in development and your feedback is very important to us! Please add your comments in the following document.'
           ),
           cancelText: this.$gettext('Cancel'),
-          confirmText: this.$gettext('To Feedback Page'),
+          confirmText: this.$gettext('To Feedback Document'),
           onCancel: this.cancelFeedbackModal,
           onConfirm: this.openFeedbackDoc
         }

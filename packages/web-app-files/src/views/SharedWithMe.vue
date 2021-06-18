@@ -160,14 +160,11 @@ import MixinMountSideBar from '../mixins/sidebar/mountSideBar'
 import { VisibilityObserver } from 'web-pkg/src/observer'
 import { ImageDimension, ImageType } from '../constants'
 import debounce from 'lodash-es/debounce'
-
 import ListLoader from '../components/FilesList/ListLoader.vue'
 import NoContentMessage from '../components/FilesList/NoContentMessage.vue'
 import ListInfo from '../components/FilesList/ListInfo.vue'
 import ContextActions from '../components/FilesList/ContextActions.vue'
-
 const visibilityObserver = new VisibilityObserver()
-
 export default {
   components: {
     ListLoader,
@@ -175,7 +172,6 @@ export default {
     ListInfo,
     ContextActions
   },
-
   mixins: [
     FileActions,
     MixinAcceptShare,
@@ -184,25 +180,21 @@ export default {
     MixinMountSideBar,
     MixinFilesListFilter
   ],
-
   data: () => ({
     loading: true,
     shareStatus,
     showMorePending: false
   }),
-
   computed: {
     ...mapGetters('Files', ['activeFiles', 'selectedFiles', 'inProgress']),
     ...mapGetters(['isOcis', 'configuration', 'getToken']),
     ...mapState('Files/sidebar', { sidebarClosed: 'closed' }),
-
     viewMode() {
       if (Object.prototype.hasOwnProperty.call(this.$route.query, 'view-mode')) {
         return parseInt(this.$route.query['view-mode'])
       }
       return shareStatus.accepted
     },
-
     // pending shares
     pendingSelected: {
       get() {
@@ -231,7 +223,6 @@ export default {
     pending() {
       return this.activeFiles.filter(file => file.status === shareStatus.pending)
     },
-
     // accepted or declined shares
     sharesSelected: {
       get() {
@@ -287,7 +278,6 @@ export default {
         }
       }
     },
-
     // misc
     uploadProgressVisible() {
       return this.inProgress.length > 0
@@ -299,26 +289,21 @@ export default {
       return !this.configuration.options.disablePreviews
     }
   },
-
   watch: {
     uploadProgressVisible() {
       this.adjustTableHeaderPosition()
     }
   },
-
   created() {
     this.loadResources()
     window.onresize = this.adjustTableHeaderPosition
   },
-
   mounted() {
     this.adjustTableHeaderPosition()
   },
-
   beforeDestroy() {
     visibilityObserver.disconnect()
   },
-
   methods: {
     ...mapActions('Files', ['loadIndicators', 'loadPreview', 'loadAvatars']),
     ...mapActions(['showMessage']),
@@ -328,16 +313,13 @@ export default {
       'CLEAR_CURRENT_FILES_LIST',
       'UPDATE_RESOURCE'
     ]),
-
     rowMounted(resource, component) {
       const debounced = debounce(({ unobserve }) => {
         unobserve()
         this.loadAvatars({ resource })
-
         if (!this.displayThumbnails) {
           return
         }
-
         this.loadPreview({
           resource,
           isPublic: false,
@@ -345,26 +327,21 @@ export default {
           type: ImageType.Thumbnail
         })
       }, 250)
-
       visibilityObserver.observe(component.$el, {
         onEnter: debounced,
         onExit: debounced.cancel
       })
     },
-
     async loadResources() {
       this.loading = true
       this.CLEAR_CURRENT_FILES_LIST()
-
       let resources = await this.$client.requests.ocs({
         service: 'apps/files_sharing',
         action: '/api/v1/shares?format=json&shared_with_me=true&state=all&include_tags=false',
         method: 'GET'
       })
-
       resources = await resources.json()
       resources = resources.ocs.data
-
       if (resources.length) {
         resources = aggregateResourceShares(
           resources,
@@ -374,12 +351,9 @@ export default {
           this.getToken
         )
       }
-
       this.LOAD_FILES({ currentFolder: null, files: resources })
-
       this.loading = false
     },
-
     togglePendingShowMore() {
       this.showMorePending = !this.showMorePending
     }

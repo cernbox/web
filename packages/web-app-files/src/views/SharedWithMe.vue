@@ -267,6 +267,8 @@ export default {
             return row.owner[0].displayName
           },
           alphabetically: function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
             return row.name.charAt(0).toLowerCase()
           },
           creation: function(row) {
@@ -296,6 +298,8 @@ export default {
             return row.owner[0].displayName
           },
           alphabetically: function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
             return row.name.charAt(0).toLowerCase()
           },
           creation: function(row) {

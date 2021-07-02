@@ -24,6 +24,7 @@
             :class="{ 'files-table-squashed': isSidebarOpen }"
             :are-previews-displayed="displayPreviews"
 <<<<<<< HEAD
+<<<<<<< HEAD
             :resources="filterDataByStatus(activeFiles, 1)"
 =======
             :resources="
@@ -32,15 +33,22 @@
                 : filterDataByStatus(activeFiles, 1)
             "
 >>>>>>> Pending shares and approval
+=======
+            :resources="filterDataByStatus(activeFiles, 1)"
+>>>>>>> new functions by ods tableFiles
             :target-route="targetRoute"
             :are-resources-clickable="false"
             :highlighted="highlightedFile ? highlightedFile.id : null"
             :has-actions="false"
             :header-position="headerPosition"
 <<<<<<< HEAD
+<<<<<<< HEAD
             :grouping-settings="groupingSettingsPending"
 =======
 >>>>>>> Pending shares and approval
+=======
+            :grouping-settings="groupingSettingsPending"
+>>>>>>> new functions by ods tableFiles
           >
             <template v-slot:status="{ resource }">
               <div
@@ -73,6 +81,7 @@
               </div>
             </template>
           </oc-table-files>
+<<<<<<< HEAD
 <<<<<<< HEAD
         </div>
       </div>
@@ -210,8 +219,11 @@
               Show less
             </oc-button>
           </div>
+=======
+>>>>>>> new functions by ods tableFiles
         </div>
       </div>
+
       <br />
 
       <!-- Accepted shares -->
@@ -259,6 +271,7 @@
           :target-route="targetRoute"
           :highlighted="highlightedFile ? highlightedFile.id : null"
           :header-position="headerPosition"
+          :grouping-settings="groupingSettingsAccepted"
           @showDetails="setHighlightedFile"
           @fileClick="$_fileActions_triggerDefaultAction"
         >
@@ -267,15 +280,15 @@
               :key="resource.id + resource.status"
               class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
             >
-               <oc-button
-                 v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
-                 v-translate
-                 size="small"
-                 class="file-row-share-status-action oc-ml"
-                 @click.stop="triggerShareAction(resource, 'DELETE')"
-               >
-                 Decline
-               </oc-button>
+              <oc-button
+                v-if="[shareStatus.accepted, shareStatus.pending].includes(resource.status)"
+                v-translate
+                size="small"
+                class="file-row-share-status-action oc-ml"
+                @click.stop="triggerShareAction(resource, 'DELETE')"
+              >
+                Decline
+              </oc-button>
               <span
                 class="uk-text-small oc-ml file-row-share-status-text uk-text-baseline"
                 v-text="getShareStatusText(resource.status)"
@@ -331,9 +344,13 @@
           :has-actions="false"
           :header-position="headerPosition"
 <<<<<<< HEAD
+<<<<<<< HEAD
           :grouping-settings="groupingSettingsAccepted"
 =======
 >>>>>>> Pending shares and approval
+=======
+          :grouping-settings="groupingSettingsAccepted"
+>>>>>>> new functions by ods tableFiles
           @fileClick="$_fileActions_triggerDefaultAction"
         >
           <template v-slot:status="{ resource }">
@@ -407,15 +424,27 @@ export default {
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     groupingSettingsAccepted() {
       return {
+<<<<<<< HEAD
         groupingBy: 'creation',
         showGroupingOptions: true,
+=======
+        groupingAllowed: true,
+        defaultGroupingBy: 'creation',
+        passedGroupingBy: '', // None, creation, owner,alphabetically
+        showGroupingOptions: true,
+        previewTable: false,
+        previewAmount: 4,
+>>>>>>> new functions by ods tableFiles
         groupingFunctions: {
           owner: function(row) {
             return row.owner[0].displayName
           },
           alphabetically: function(row) {
+<<<<<<< HEAD
             if (!isNaN(row.name.charAt(0))) return '#'
             if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+=======
+>>>>>>> new functions by ods tableFiles
             return row.name.charAt(0).toLowerCase()
           },
           creation: function(row) {
@@ -423,9 +452,16 @@ export default {
             interval1.setDate(interval1.getDate() - 7)
             const interval2 = new Date()
             interval2.setDate(interval2.getDate() - 30)
+<<<<<<< HEAD
             if (row.sdate > interval1.getTime()) {
               return 'Recent'
             } else if (row.sdate > interval2.getTime()) {
+=======
+
+            if (Date.parse(row.sdate) > interval1.getTime()) {
+              return 'Recent'
+            } else if (Date.parse(row.sdate) > interval2.getTime()) {
+>>>>>>> new functions by ods tableFiles
               return 'This Month'
             } else return 'Older'
           }
@@ -434,9 +470,17 @@ export default {
     },
     groupingSettingsPending() {
       return {
+<<<<<<< HEAD
         previewAmount: 3
       }
     },
+=======
+        previewTable: true,
+        previewAmount: 4
+      }
+    },
+
+>>>>>>> new functions by ods tableFiles
     selected: {
       get() {
         return this.selectedFiles

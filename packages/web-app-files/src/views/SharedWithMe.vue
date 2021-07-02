@@ -444,10 +444,15 @@ export default {
           },
           alphabetically: function(row) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             if (!isNaN(row.name.charAt(0))) return '#'
             if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
 =======
 >>>>>>> new functions by ods tableFiles
+=======
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+>>>>>>> alphabetically group files starting with number in name under #
             return row.name.charAt(0).toLowerCase()
           },
           creation: function(row) {
@@ -498,6 +503,8 @@ export default {
             return row.owner[0].displayName
           },
           alphabetically: function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
             return row.name.charAt(0).toLowerCase()
           },
           creation: function(row) {

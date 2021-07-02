@@ -433,8 +433,11 @@ export default {
         passedGroupingBy: '', // None, creation, owner,alphabetically
         showGroupingOptions: true,
         previewTable: false,
+<<<<<<< HEAD
         previewAmount: 4,
 >>>>>>> new functions by ods tableFiles
+=======
+>>>>>>> some fitting for settings
         groupingFunctions: {
           owner: function(row) {
             return row.owner[0].displayName
@@ -453,6 +456,7 @@ export default {
             const interval2 = new Date()
             interval2.setDate(interval2.getDate() - 30)
 <<<<<<< HEAD
+<<<<<<< HEAD
             if (row.sdate > interval1.getTime()) {
               return 'Recent'
             } else if (row.sdate > interval2.getTime()) {
@@ -462,6 +466,11 @@ export default {
               return 'Recent'
             } else if (Date.parse(row.sdate) > interval2.getTime()) {
 >>>>>>> new functions by ods tableFiles
+=======
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+>>>>>>> some fitting for settings
               return 'This Month'
             } else return 'Older'
           }
@@ -471,12 +480,39 @@ export default {
     groupingSettingsPending() {
       return {
 <<<<<<< HEAD
+<<<<<<< HEAD
         previewAmount: 3
       }
     },
 =======
+=======
+        groupingAllowed: false,
+        defaultGroupingBy: 'None',
+        passedGroupingBy: '', // None, creation, owner,alphabetically
+        showGroupingOptions: false,
+>>>>>>> some fitting for settings
         previewTable: true,
-        previewAmount: 4
+        previewAmount: 4,
+        groupingFunctions: {
+          owner: function(row) {
+            return row.owner[0].displayName
+          },
+          alphabetically: function(row) {
+            return row.name.charAt(0).toLowerCase()
+          },
+          creation: function(row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+
+            if (Date.parse(row.sdate) > interval1.getTime()) {
+              return 'Recent'
+            } else if (Date.parse(row.sdate) > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        }
       }
     },
 
@@ -594,6 +630,7 @@ export default {
       })
     },
     filterDataByStatus(data, status) {
+      data.forEach(d => console.log(this.groupingSettingsAccepted.groupingFunctions.creation(d)))
       return data.filter(item => item.status === status)
     },
 <<<<<<< HEAD
@@ -716,11 +753,17 @@ export default {
   background-color: var(--oc-color-background-highlight);
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 #pending-highlight th {
   background-color: var(--oc-color-background-highlight);
 }
 =======
 >>>>>>> Pending shares and approval
+=======
+#pending-highlight th {
+  background-color: var(--oc-color-background-highlight);
+}
+>>>>>>> some fitting for settings
 .show-hide-pending {
   text-align: center;
 }

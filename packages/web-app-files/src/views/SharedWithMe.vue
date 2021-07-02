@@ -423,7 +423,6 @@ export default {
       visibilityObserver.observe(component.$el, { onEnter: debounced, onExit: debounced.cancel })
     },
     filterDataByStatus(data, status) {
-      data.forEach(d => console.log(this.groupingSettingsAccepted.groupingFunctions.creation(d)))
       return data.filter(item => item.status === status)
     },
     async loadResources() {

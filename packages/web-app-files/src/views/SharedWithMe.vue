@@ -630,7 +630,6 @@ export default {
       })
     },
     filterDataByStatus(data, status) {
-      data.forEach(d => console.log(this.groupingSettingsAccepted.groupingFunctions.creation(d)))
       return data.filter(item => item.status === status)
     },
 <<<<<<< HEAD

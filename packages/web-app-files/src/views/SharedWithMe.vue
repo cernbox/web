@@ -262,6 +262,34 @@ export default {
         passedGroupingBy: '', // None, creation, owner,alphabetically
         showGroupingOptions: true,
         previewTable: false,
+        groupingFunctions: {
+          owner: function(row) {
+            return row.owner[0].displayName
+          },
+          alphabetically: function(row) {
+            return row.name.charAt(0).toLowerCase()
+          },
+          creation: function(row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        }
+      }
+    },
+    groupingSettingsPending() {
+      return {
+        groupingAllowed: false,
+        defaultGroupingBy: 'None',
+        passedGroupingBy: '', // None, creation, owner,alphabetically
+        showGroupingOptions: false,
+        previewTable: true,
         previewAmount: 4,
         groupingFunctions: {
           owner: function(row) {
@@ -283,12 +311,6 @@ export default {
             } else return 'Older'
           }
         }
-      }
-    },
-    groupingSettingsPending() {
-      return {
-        previewTable: true,
-        previewAmount: 4
       }
     },
 
@@ -401,6 +423,7 @@ export default {
       visibilityObserver.observe(component.$el, { onEnter: debounced, onExit: debounced.cancel })
     },
     filterDataByStatus(data, status) {
+      data.forEach(d => console.log(this.groupingSettingsAccepted.groupingFunctions.creation(d)))
       return data.filter(item => item.status === status)
     },
     async loadResources() {
@@ -514,6 +537,9 @@ export default {
   align-items: baseline;
 }
 #pending-highlight {
+  background-color: var(--oc-color-background-highlight);
+}
+#pending-highlight th {
   background-color: var(--oc-color-background-highlight);
 }
 .show-hide-pending {

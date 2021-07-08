@@ -63,7 +63,8 @@ export default {
   mixins: [FileActions, MixinFilesListPositioning, MixinFilesListPagination],
 
   data: () => ({
-    loading: true
+    loading: true,
+    resourcesMaybe: []
   }),
 
   computed: {
@@ -104,12 +105,32 @@ export default {
     targetRoute() {
       return { name: 'projects' }
     },
-
-    displayPreviews() {
-      return !this.configuration.options.disablePreviews
-    },
-
     resources() {
+      /*         let response = await this.$client.requests.ocs({
+          service: 'apps/files_sharing',
+          action: `api/v1/shares/pending/${resource.share.id}`,
+          method: type,
+        })
+
+
+let response = await this.$client.requests.ocs({
+          service: '??',
+          action: `api/v0/projects`,
+          method: "GET",
+        }) 
+
+      console.log('here')
+
+      fetch('api/v0/projects')
+        .then(response => {
+          console.log(response)
+          response.json()
+        })
+        .then(data => console.log('here', data))
+        .catch(err => console.log('here', err)) */
+
+      console.log('get client', this.$client)
+
       return [
         {
           id: 'Project1',
@@ -128,6 +149,10 @@ export default {
           type: 'folder'
         }
       ]
+    },
+
+    displayPreviews() {
+      return !this.configuration.options.disablePreviews
     }
   },
 
@@ -142,6 +167,12 @@ export default {
   },
 
   created() {
+    fetch('api/v0/projects')
+      .then(response => {
+        response.json()
+      })
+      .then(data => console.log('here', data))
+      .catch(err => console.log('here', err))
     this.loadResources()
     window.onresize = this.adjustTableHeaderPosition
   },

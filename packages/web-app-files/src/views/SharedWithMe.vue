@@ -257,11 +257,8 @@ export default {
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     groupingSettingsAccepted() {
       return {
-        groupingAllowed: true,
-        defaultGroupingBy: 'creation',
-        passedGroupingBy: '', // None, creation, owner,alphabetically
+        groupingBy: 'creation',
         showGroupingOptions: true,
-        previewTable: false,
         groupingFunctions: {
           owner: function(row) {
             return row.owner[0].displayName
@@ -287,8 +284,6 @@ export default {
     },
     groupingSettingsPending() {
       return {
-        groupingAllowed: false,
-        previewTable: true,
         previewAmount: 3
       }
     },

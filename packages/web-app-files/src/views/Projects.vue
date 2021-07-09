@@ -21,13 +21,14 @@
         </no-content-message>
         <oc-table-files
           v-else
-          id="files-shared-with-me-accepted-table"
+          id="projects-table"
           v-model="selected"
           class="files-table"
           :class="{ 'files-table-squashed': isSidebarOpen }"
           :are-previews-displayed="displayPreviews"
-          :resources="resources"
+          :resources="getResources()"
           :target-route="targetRoute"
+          :are-paths-displayed="true"
           :highlighted="highlightedFile ? highlightedFile.id : null"
           :header-position="headerPosition"
           @showDetails="setHighlightedFile"
@@ -41,8 +42,7 @@
 
 <script>
 import { mapGetters, mapState, mapActions, mapMutations } from 'vuex'
-import { shareStatus } from '../helpers/shareStatus'
-import { buildResource, aggregateResourceShares, buildSharedResource } from '../helpers/resources'
+import { buildResource } from '../helpers/resources'
 
 import FileActions from '../mixins/fileActions'
 import MixinFilesListPositioning from '../mixins/filesListPositioning'
@@ -63,8 +63,7 @@ export default {
   mixins: [FileActions, MixinFilesListPositioning, MixinFilesListPagination],
 
   data: () => ({
-    loading: true,
-    resourcesMaybe: []
+    loading: true
   }),
 
   computed: {
@@ -91,7 +90,7 @@ export default {
       }
     },
     isEmpty() {
-      return this.resources.length < 1
+      return this.getResources().length < 1
     },
 
     isSidebarOpen() {
@@ -103,52 +102,7 @@ export default {
     },
 
     targetRoute() {
-      return { name: 'projects' }
-    },
-    resources() {
-      /*         let response = await this.$client.requests.ocs({
-          service: 'apps/files_sharing',
-          action: `api/v1/shares/pending/${resource.share.id}`,
-          method: type,
-        })
-
-
-let response = await this.$client.requests.ocs({
-          service: '??',
-          action: `api/v0/projects`,
-          method: "GET",
-        }) 
-
-      console.log('here')
-
-      fetch('api/v0/projects')
-        .then(response => {
-          console.log(response)
-          response.json()
-        })
-        .then(data => console.log('here', data))
-        .catch(err => console.log('here', err)) */
-
-      console.log('get client', this.$client)
-
-      return [
-        {
-          id: 'Project1',
-          name: 'Project1',
-          path: '/Docs',
-          icon: 'folder',
-          indicators: [],
-          type: 'folder'
-        },
-        {
-          id: 'Project2',
-          name: 'Project2',
-          path: '/Pic',
-          icon: 'folder',
-          indicators: [],
-          type: 'folder'
-        }
-      ]
+      return { name: '/eos/project/' }
     },
 
     displayPreviews() {
@@ -167,12 +121,6 @@ let response = await this.$client.requests.ocs({
   },
 
   created() {
-    fetch('api/v0/projects')
-      .then(response => {
-        response.json()
-      })
-      .then(data => console.log('here', data))
-      .catch(err => console.log('here', err))
     this.loadResources()
     window.onresize = this.adjustTableHeaderPosition
   },
@@ -196,6 +144,47 @@ let response = await this.$client.requests.ocs({
     ]),
     ...mapMutations(['SET_QUOTA']),
 
+    getResources() {
+      const exampleProjects = [
+        {
+          name: 'example',
+          path: '/eos/project/e/example',
+          permissions: 'admin'
+        },
+        { name: 'fdo', path: '/eos/project/f/fdo', permissions: 'writer' }
+      ]
+
+      exampleProjects.forEach((p, i) => {
+        p.id = i + p.name
+        p.icon = 'folder'
+        p.type = 'folder'
+        p.indicators = []
+      })
+
+      fetch('api/v0/projects')
+        .then(response => {
+          response.json()
+        })
+        .then(data => {
+          let projects
+          data
+            ? (projects = data.forEach((p, i) => {
+                p.id = i + p.name
+                p.icon = 'folder'
+                p.type = 'folder'
+                p.indicators = []
+              }))
+            : (projects = exampleProjects)
+
+          this.loading = false
+          return projects
+        })
+        .catch(err => {
+          console.log(err)
+          return exampleProjects
+        })
+    },
+
     rowMounted(resource, component) {
       const debounced = debounce(({ unobserve }) => {
         unobserve()
@@ -216,68 +205,6 @@ let response = await this.$client.requests.ocs({
     },
 
     async loadResources() {
-      this.loading = true
-      this.CLEAR_CURRENT_FILES_LIST()
-
-      try {
-        let resources = await this.$client.files.list(
-          this.$route.params.item,
-          1,
-          this.davProperties
-        )
-        console.log(resources[0])
-        resources = resources.map(buildResource)
-        console.log(resources[0])
-        resources = [
-          [
-            {
-              id: 'fjsiefjasldkas',
-              fileId: 'fjsiefjasldkas',
-              name: 'awesomeproject',
-              type: 'folder',
-              path: '/eos/project/a/awesomeproject',
-              permissions: 'admin',
-              icon: 'folder'
-            },
-            {
-              id: 'sifijskd',
-              fileId: 'sifijskd',
-              name: 'awesomeproject8',
-              type: 'folder',
-              path: '/eos/project/a/awesomeproject8',
-              permissions: 'reader',
-              icon: 'folder'
-            },
-            {
-              id: 'sfisjf',
-              fileId: 'sfisjf',
-              name: 'storage-ci',
-              type: 'folder',
-              path: '/eos/project/s/storage-ci',
-              permissions: 'writer',
-              icon: 'folder'
-            }
-          ]
-        ]
-        this.LOAD_FILES({
-          currentFolder: resources[0],
-          files: resources.slice(1)
-        })
-        this.loadIndicators({
-          client: this.$client,
-          currentFolder: this.$route.params.item
-        })
-
-        // Load quota
-        const user = await this.$client.users.getUser(this.user.id)
-
-        this.SET_QUOTA(user.quota)
-      } catch (error) {
-        this.SET_CURRENT_FOLDER(null)
-        console.error(error)
-      }
-
-      this.adjustTableHeaderPosition()
       this.loading = false
     }
   }

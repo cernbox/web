@@ -10,7 +10,8 @@
     "scope": "openid profile email"
   },
   "options": {
-    "hideSearchBar": true
+    "hideSearchBar": true,
+    "disableFeedbackLink": true
   },
   "apps": [
     "files",

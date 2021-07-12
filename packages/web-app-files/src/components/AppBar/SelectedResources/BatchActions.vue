@@ -5,6 +5,7 @@
         v-if="selectedFiles.length > 0"
         id="restore-selected-btn"
         key="restore-btn"
+        variation="primary"
         class="oc-mr-s"
         @click="restoreFiles()"
       >
@@ -12,12 +13,14 @@
         <translate>Restore</translate>
       </oc-button>
       <oc-button
+        v-if="!isEmpty"
         id="delete-selected-btn"
         key="delete-btn"
+        variation="danger"
         @click="selectedFiles.length < 1 ? emptyTrashbin() : $_deleteResources_displayDialog()"
       >
         <oc-icon name="delete" />
-        {{ clearTrashbinButtonText }}
+        {{ emptyTrashbinButtonText }}
       </oc-button>
     </template>
     <oc-grid v-if="displayBulkActions" gutter="small">
@@ -25,6 +28,7 @@
         <oc-button
           id="copy-selected-btn"
           key="copy-selected-btn"
+          variation="primary"
           @click="triggerLocationPicker('copy')"
         >
           <oc-icon name="file_copy" />
@@ -35,6 +39,7 @@
         <oc-button
           id="move-selected-btn"
           key="move-selected-btn"
+          variation="primary"
           @click="triggerLocationPicker('move')"
         >
           <oc-icon name="folder-move" />
@@ -45,6 +50,7 @@
         <oc-button
           id="delete-selected-btn"
           key="delete-selected-btn"
+          variation="primary"
           @click="$_deleteResources_displayDialog"
         >
           <oc-icon name="delete" />
@@ -79,7 +85,6 @@
 
 <script>
 import { mapGetters, mapActions, mapMutations } from 'vuex'
-
 import MixinRoutes from '../../../mixins/routes'
 import MixinDeleteResources from '../../../mixins/deleteResources'
 import { cloneStateObject } from '../../../helpers/store'
@@ -88,62 +93,49 @@ import { checkRoute } from '../../../helpers/route'
 import { shareStatus } from '../../../helpers/shareStatus'
 import { triggerShareAction } from '../../../helpers/share/triggerShareAction'
 import PQueue from 'p-queue'
-
 export default {
   mixins: [MixinRoutes, MixinDeleteResources],
-
   computed: {
     ...mapGetters('Files', ['selectedFiles', 'currentFolder', 'activeFiles']),
-
-    clearTrashbinButtonText() {
-      return this.selectedFiles.length < 1 ? this.$gettext('Empty') : this.$gettext('Delete')
+    emptyTrashbinButtonText() {
+      return this.selectedFiles.length < 1
+        ? this.$gettext('Empty trash bin')
+        : this.$gettext('Delete')
     },
-
     canMove() {
       if (
         !checkRoute(['files-personal', 'files-public-list', 'files-favorites'], this.$route.name)
       ) {
         return false
       }
-
       const moveDisabled = this.selectedFiles.some(resource => {
         return canBeMoved(resource, this.currentFolder.path) === false
       })
       return !moveDisabled
     },
-
     canCopy() {
       if (
         !checkRoute(['files-personal', 'files-public-list', 'files-favorites'], this.$route.name)
       ) {
         return false
       }
-
       if (this.isPublicFilesRoute) {
         return this.currentFolder.canCreate()
       }
-
       return true
     },
-
     canDelete() {
       if (this.isSharedWithMeRoute) {
         return false
       }
-
       if (this.isPublicFilesRoute) {
         return this.currentFolder.canBeDeleted()
       }
-      if (checkRoute(['files-shared-with-me'], this.$route.name)) {
-        return false
-      }
-
       const deleteDisabled = this.selectedFiles.some(resource => {
         return !resource.canBeDeleted()
       })
       return !deleteDisabled
     },
-
     canAccept() {
       if (!checkRoute(['files-shared-with-me'], this.$route.name)) {
         return false
@@ -171,9 +163,11 @@ export default {
 
     displayBulkActions() {
       return this.$route.meta.hasBulkActions && this.selectedFiles.length > 0
+    },
+    isEmpty() {
+      return this.activeFiles.length < 1
     }
   },
-
   methods: {
     ...mapActions('Files', ['removeFilesFromTrashbin', 'resetFileSelection', 'setHighlightedFile']),
     ...mapActions(['showMessage']),
@@ -183,7 +177,6 @@ export default {
       'CLEAR_CURRENT_FILES_LIST',
       'UPDATE_RESOURCE'
     ]),
-
     restoreFiles(resources = this.selectedFiles) {
       for (const resource of resources) {
         this.$client.fileTrash
@@ -213,7 +206,6 @@ export default {
       this.resetFileSelection()
       this.setHighlightedFile(null)
     },
-
     emptyTrashbin() {
       this.$client.fileTrash
         .clearTrashBin()
@@ -237,11 +229,9 @@ export default {
           })
         })
     },
-
     triggerLocationPicker(action) {
       const resources = cloneStateObject(this.selectedFiles)
       const context = this.isPublicPage ? 'public' : 'private'
-
       this.$router.push({
         name: 'files-location-picker',
         params: {
@@ -256,22 +246,12 @@ export default {
         }
       })
     },
-
-    // Lisas implementation
-    acceptShares() {
-      this.selectedFiles.forEach(resource => {
-        this.triggerShareAction(resource, 'POST')
-      })
-    },
-
     acceptShares() {
       this.triggerShareActions(shareStatus.accepted)
     },
-
     declineShares() {
       this.triggerShareActions(shareStatus.declined)
     },
-
     async triggerShareActions(newShareStatus) {
       const errors = []
       const triggerPromises = []
@@ -296,12 +276,10 @@ export default {
         )
       })
       await Promise.all(triggerPromises)
-
       if (errors.length === 0) {
         this.resetFileSelection()
         return
       }
-
       console.log(errors)
       if (newShareStatus === shareStatus.accepted) {
         this.showMessage({

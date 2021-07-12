@@ -224,7 +224,7 @@ import ListLoader from '../components/FilesList/ListLoader.vue'
 import NoContentMessage from '../components/FilesList/NoContentMessage.vue'
 import ListInfo from '../components/FilesList/ListInfo.vue'
 import { VisibilityObserver } from 'web-pkg/src/observer'
-import { ImageDimension } from '../constants'
+import { ImageDimension, ImageType } from '../constants'
 import debounce from 'lodash-es/debounce'
 
 const visibilityObserver = new VisibilityObserver()

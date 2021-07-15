@@ -173,6 +173,7 @@ export default {
           response.json()
         })
         .then(data => {
+          /* Data from the backend */
           if (data.length > 0) {
             let resources = data.forEach((p, i) => {
               p.id = i + p.name
@@ -209,7 +210,8 @@ export default {
           this.loading = false
         })
 
-      /* const recievedResources = [
+      /* For testing locally if no projects in the backend */
+      const recievedResources = [
         {
           name: '/example',
           path: '/eos/project/e/example',
@@ -238,7 +240,7 @@ export default {
         })
       })
 
-      console.log('project data from api', resources[0])
+      console.log('project data from api', resources)
       resources = resources.map(buildResource)
       this.LOAD_FILES({
         currentFolder: null,
@@ -247,7 +249,7 @@ export default {
 
       this.LOAD_FILES({ currentFolder: null, files: resources })
 
-      this.loading = false */
+      this.loading = false
     }
   }
 }

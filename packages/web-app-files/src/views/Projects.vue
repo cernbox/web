@@ -201,7 +201,6 @@ export default {
               files: resources
             })
 
-            this.LOAD_FILES({ currentFolder: null, files: resources })
           }
           this.loading = false
         })
@@ -213,11 +212,13 @@ export default {
       /* For testing locally if no projects in the backend */
       const recievedResources = [
         {
-          name: '/example',
-          path: '/eos/project/e/example',
+          name: '/eos/project/e/example',
           permissions: 'admin'
         },
-        { name: '/fdo', path: '/eos/project/f/fdo', permissions: 'writer' }
+        {
+          name: '/eos/project/f/fdo',
+          permissions: 'writer'
+        }
       ]
 
       let resources = []
@@ -229,7 +230,6 @@ export default {
           type: 'dir',
           fileInfo: {
             '{http://owncloud.org/ns}permissions': 'RDNVCK',
-
             '{http://owncloud.org/ns}fileid': i + p.name,
             '{http://owncloud.org/ns}owner-id': 'einstein',
             '{http://owncloud.org/ns}owner-display-name': 'Albert Einstein',
@@ -246,8 +246,6 @@ export default {
         currentFolder: null,
         files: resources
       })
-
-      this.LOAD_FILES({ currentFolder: null, files: resources })
 
       this.loading = false
     }

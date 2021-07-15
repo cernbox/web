@@ -91,7 +91,7 @@ export default {
       }
     },
     isEmpty() {
-      console.log('active files projects', this.activeFiles)
+      console.log('project after mapping', this.activeFiles)
       return this.activeFiles.length < 1
     },
 
@@ -209,61 +209,37 @@ export default {
           this.loading = false
         })
 
-      let resources = [
+      /* const recievedResources = [
         {
-          name: 'example',
+          name: '/example',
           path: '/eos/project/e/example',
           permissions: 'admin'
         },
-        { name: 'fdo', path: '/eos/project/f/fdo', permissions: 'writer' }
+        { name: '/fdo', path: '/eos/project/f/fdo', permissions: 'writer' }
       ]
 
-      resources.forEach((p, i) => {
-        p.id = i + p.name
-        p.type = 'dir'
-        p.fileInfo = {
-          '{http://owncloud.org/ns}permissions': 'RDNVCK',
-          '{http://owncloud.org/ns}favorite': '0',
-          '{http://owncloud.org/ns}fileid': i + p.name,
-          '{http://owncloud.org/ns}owner-id': 'einstein',
-          '{http://owncloud.org/ns}owner-display-name': 'Albert Einstein',
-          '{http://owncloud.org/ns}size': '0',
-          '{DAV:}getlastmodified': 'Tue, 06 Jul 2021 13:46:50 GMT',
-          '{DAV:}getetag': '"ac531ba650fd4912447b22fa5d66c600"',
-          '{DAV:}resourcetype': ['{DAV:}collection']
-        }
-        p.tusSupport = {
-          version: ['1.0.0'],
-          extension: ['creation', 'creation-with-upload'],
-          resumable: '1.0.0'
-        }
-      })
-      /* let resources = [
-        {
-          name: '/a',
+      let resources = []
+
+      recievedResources.forEach((p, i) => {
+        resources.push({
+          id: i + p.name,
+          name: p.name,
           type: 'dir',
           fileInfo: {
             '{http://owncloud.org/ns}permissions': 'RDNVCK',
-            '{http://owncloud.org/ns}favorite': '0',
-            '{http://owncloud.org/ns}fileid':
-              'MTI4NGQyMzgtYWE5Mi00MmNlLWJkYzQtMGIwMDAwMDA5MTU3OjA4MmY2NGUzLTEyNzEtNGE2NC04YzcyLTgwZjUyNjRiMTcyNg==',
+
+            '{http://owncloud.org/ns}fileid': i + p.name,
             '{http://owncloud.org/ns}owner-id': 'einstein',
             '{http://owncloud.org/ns}owner-display-name': 'Albert Einstein',
             '{http://owncloud.org/ns}size': '0',
             '{DAV:}getlastmodified': 'Tue, 06 Jul 2021 13:46:50 GMT',
-            '{DAV:}getetag': '"ac531ba650fd4912447b22fa5d66c600"',
             '{DAV:}resourcetype': ['{DAV:}collection']
-          },
-          tusSupport: {
-            version: ['1.0.0'],
-            extension: ['creation', 'creation-with-upload'],
-            resumable: '1.0.0'
           }
-        }
-      ] */
+        })
+      })
 
+      console.log('project data from api', resources[0])
       resources = resources.map(buildResource)
-
       this.LOAD_FILES({
         currentFolder: null,
         files: resources
@@ -271,7 +247,7 @@ export default {
 
       this.LOAD_FILES({ currentFolder: null, files: resources })
 
-      this.loading = false
+      this.loading = false */
     }
   }
 }

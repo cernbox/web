@@ -74,6 +74,14 @@ const navItems = [
       name: 'files-trashbin',
       path: `/${appInfo.id}/list/trash-bin`
     }
+  },
+  {
+    name: $gettext('Projects'),
+    iconMaterial: 'library_books',
+    route: {
+      name: 'projects',
+      path: `/${appInfo.id}/list/projects`
+    }
   }
 ]
 

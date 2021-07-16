@@ -66,6 +66,14 @@ const navItems = [
     }
   },
   {
+    name: $gettext('Projects'),
+    iconMaterial: 'library_books',
+    route: {
+      name: 'projects',
+      path: `/${appInfo.id}/list/projects`
+    }
+  },
+  {
     name: $gettext('Deleted files'),
     iconMaterial: 'delete',
     enabled(capabilities) {

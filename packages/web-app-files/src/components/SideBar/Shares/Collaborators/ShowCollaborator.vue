@@ -127,7 +127,10 @@
               </oc-drop>
             </li>
             <li class="oc-py-rm">
-              <oc-tag class="files-collaborators-collaborator-role">
+              <oc-tag
+                class="files-collaborators-collaborator-role"
+                :class="{ deny: originalRole.label === 'Deny' }"
+              >
                 <oc-icon :name="roleTagIcon" />
                 {{ originalRole.label }}
               </oc-tag>
@@ -399,6 +402,15 @@ export default {
   li {
     float: left;
     margin: 5px;
+
+    .oc-tag.deny {
+      color: var(--oc-color-swatch-danger-default);
+      border-color: var(--oc-color-swatch-danger-default);
+
+      ::v-deep svg {
+        fill: var(--oc-color-swatch-danger-default);
+      }
+    }
   }
 }
 

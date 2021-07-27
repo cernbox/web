@@ -190,7 +190,7 @@ export default {
       let role = { name: '' }
 
       if (permissions > 0) {
-        role = bitmaskToRole(permissions, isFolder, !this.isOcis)
+        role = bitmaskToRole(permissions, isFolder, !this.isOcis, this.highlightedFile.canDeny())
       } else {
         role.name = 'owner'
       }

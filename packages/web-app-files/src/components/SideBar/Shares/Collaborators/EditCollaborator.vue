@@ -195,7 +195,7 @@ export default {
         client: this.$client,
         share: this.collaborator,
         // Map bitmask to role to get the correct role in case the advanced role was mapped to existing role
-        role: bitmaskToRole(bitmask, this.highlightedFile.type === 'folder', !this.isOcis),
+        role: bitmaskToRole(bitmask, this.highlightedFile.type === 'folder', !this.isOcis, this.highlightedFile.canDeny()),
         permissions: bitmask,
         expirationDate: this.expirationDate
       })

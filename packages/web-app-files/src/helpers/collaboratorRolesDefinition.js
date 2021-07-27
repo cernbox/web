@@ -11,9 +11,14 @@ function returnOriginal(string) {
  * @param {boolean} allowSharePerm Asserts whether share permission is allowed
  * @returns {object}  Collaborator roles
  */
-export default ({ isFolder = false, $gettext = returnOriginal, allowSharePerm = false }) => {
+export default ({
+  isFolder = false,
+  $gettext = returnOriginal,
+  allowSharePerm = false,
+  allowDenyPerm = false
+}) => {
   if (isFolder) {
-    return [
+    const roles = [
       {
         name: 'viewer',
         label: $gettext('Viewer'),
@@ -35,6 +40,15 @@ export default ({ isFolder = false, $gettext = returnOriginal, allowSharePerm = 
           : ['read', 'update', 'create', 'delete']
       }
     ]
+    if (allowDenyPerm) {
+      roles.push({
+        name: 'deny',
+        label: $gettext('Deny'),
+        description: $gettext('Deny'),
+        permissions: ['deny']
+      })
+    }
+    return roles
   }
 
   return [

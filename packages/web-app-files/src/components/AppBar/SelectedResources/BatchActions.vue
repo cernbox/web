@@ -12,7 +12,7 @@
         <oc-icon name="restore" />
         <translate>Restore</translate>
       </oc-button>
-      <oc-button
+      <!--<oc-button
         v-if="!isEmpty"
         id="delete-selected-btn"
         key="delete-btn"
@@ -21,7 +21,7 @@
       >
         <oc-icon name="delete" />
         {{ emptyTrashbinButtonText }}
-      </oc-button>
+      </oc-button>-->
     </template>
     <oc-grid v-if="displayBulkActions" gutter="small">
       <div v-if="canDownload">

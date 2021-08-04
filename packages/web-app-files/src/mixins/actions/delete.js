@@ -26,8 +26,8 @@ export default {
           },
           componentType: 'oc-button',
           class: 'oc-files-actions-delete-trigger'
-        },
-        {
+        }
+        /* { //disable for CERNBox
           // this menu item is ONLY for the trashbin (permanently delete a file/folder)
           icon: 'delete',
           label: () => this.$gettext('Delete'),
@@ -35,7 +35,7 @@ export default {
           isEnabled: () => checkRoute(['files-trashbin'], this.$route.name),
           componentType: 'oc-button',
           class: 'oc-files-actions-delete-trigger'
-        }
+        } */
       ]
     }
   },

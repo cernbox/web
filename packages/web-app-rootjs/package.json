@@ -1,0 +1,9 @@
+{
+  "name": "rootjs",
+  "version": "0.0.0",
+  "description": "CERN rootjs integration",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "vuex": "3.1.3"
+  }
+}

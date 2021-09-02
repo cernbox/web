@@ -241,25 +241,41 @@
 <script>
 import { mapGetters, mapState, mapActions, mapMutations } from 'vuex'
 import { shareStatus } from '../helpers/shareStatus'
-import { aggregateResourceShares, buildSharedResource } from '../helpers/resources'
+import { aggregateResourceShares } from '../helpers/resources'
 import FileActions from '../mixins/fileActions'
+import MixinAcceptShare from '../mixins/actions/acceptShare'
+import MixinDeclineShare from '../mixins/actions/declineShare'
+import MixinFilesListFilter from '../mixins/filesListFilter'
 import MixinFilesListPositioning from '../mixins/filesListPositioning'
 import MixinFilesListPagination from '../mixins/filesListPagination'
-
-import ListLoader from '../components/FilesList/ListLoader.vue'
-import NoContentMessage from '../components/FilesList/NoContentMessage.vue'
-import ListInfo from '../components/FilesList/ListInfo.vue'
+import MixinMountSideBar from '../mixins/sidebar/mountSideBar'
 import { VisibilityObserver } from 'web-pkg/src/observer'
 import { ImageDimension, ImageType } from '../constants'
 import debounce from 'lodash-es/debounce'
-
+import ListLoader from '../components/FilesList/ListLoader.vue'
+import NoContentMessage from '../components/FilesList/NoContentMessage.vue'
+import ListInfo from '../components/FilesList/ListInfo.vue'
+import Pagination from '../components/FilesList/Pagination.vue'
+import ContextActions from '../components/FilesList/ContextActions.vue'
 const visibilityObserver = new VisibilityObserver()
 
 export default {
-  components: { ListLoader, NoContentMessage, ListInfo },
-
-  mixins: [FileActions, MixinFilesListPositioning, MixinFilesListPagination],
-
+  components: {
+    ListLoader,
+    NoContentMessage,
+    ListInfo,
+    Pagination,
+    ContextActions
+  },
+  mixins: [
+    FileActions,
+    MixinAcceptShare,
+    MixinDeclineShare,
+    MixinFilesListPositioning,
+    MixinFilesListPagination,
+    MixinMountSideBar,
+    MixinFilesListFilter
+  ],
   data: () => ({
     loading: true,
     shareStatus,

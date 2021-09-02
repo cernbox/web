@@ -6,7 +6,7 @@
       class="files-list-wrapper uk-width-expand"
       @dragover="$_ocApp_dragOver"
     >
-      <app-bar id="files-app-bar" />
+      <app-bar v-if="!$route.fullPath.includes('/files/list/apps/')" id="files-app-bar" />
       <progress-bar v-show="$_uploadProgressVisible" id="files-upload-progress" class="oc-p-s" />
       <router-view id="files-view" />
     </div>

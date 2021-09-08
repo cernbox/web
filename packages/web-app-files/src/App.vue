@@ -72,6 +72,16 @@ export default {
     this.$root.$on('upload-end', () => {
       this.delayForScreenreader(() => this.$refs.filesListWrapper.focus())
     })
+
+    fetch('/app/list', {
+      method: 'GET'
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data['mime-types'] && data['mime-types']['application/compressed-markdown'])
+          localStorage.mimetypes = JSON.stringify(data)
+      })
+      .catch(err => console.log(err))
   },
 
   beforeDestroy() {

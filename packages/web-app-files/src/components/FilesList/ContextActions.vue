@@ -8,10 +8,11 @@
       <li v-for="(app, index) in appList" :key="`app-${index}`" class="oc-py-xs pointer">
         <div :class="['oc-text-bold']" @click="openLink(app)">
           <img :src="app.icon" :alt="app.name" class="oc-icon-m" />
-          <span class="oc-files-actions-sidebar-action-label">{{ 'Open in ' + app.name }}</span>
+          <span class="oc-files-context-action-label">{{ 'Open in ' + app.name }}</span>
         </div>
       </li>
     </ul>
+    <hr :key="`section-external-apps-separator`" />
     <ul id="oc-files-context-actions" class="uk-list oc-mt-s">
       <template v-for="(section, i) in menuSections">
         <li

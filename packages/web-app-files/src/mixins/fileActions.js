@@ -136,17 +136,103 @@ export default {
     },
 
     $_fileActions_triggerDefaultAction(resource) {
-      let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
+      console.log('resource', resource) &&
+        this.$_fileActions_loadApps(resource).then(res => {
+          if (resource.extension !== 'pdf' && resource.extension !== 'drawio' && res && res[0]) {
+            this.$_fileActions_openLink(res[0], resource)
+          } else {
+            let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
 
-      actions = actions.filter(action => {
-        return (
-          action.isEnabled({
-            resource: resource,
-            parent: this.currentFolder
-          }) && action.canBeDefault
-        )
+            actions = actions.filter(action => {
+              return (
+                action.isEnabled({
+                  resource: resource,
+                  parent: this.currentFolder
+                }) && action.canBeDefault
+              )
+            })
+            actions[0].handler(resource, actions[0].handlerData)
+          }
+        })
+    },
+
+    async $_fileActions_loadApps(resource) {
+      const data = JSON.parse(localStorage.mimetypes)
+      const url = 'remote.php/dav/files/' + this.user.id + resource.path
+      const headers = new Headers()
+      headers.append('Authorization', 'Bearer ' + this.getToken)
+      headers.append('X-Requested-With', 'XMLHttpRequest')
+      const resp = await fetch(url, { method: 'PROPFIND', headers })
+      if (!resp.ok) {
+        const message = `An error has occured: ${resp.status}`
+        throw new Error(message)
+      }
+      const prop = await resp.text()
+      const a = prop.match(new RegExp('<d:getcontenttype>' + '(.*)' + '</d:getcontenttype>'))
+      const mimetype = a[0].split('<d:getcontenttype>')[1].split('</d:getcontenttype>')[0]
+      /* if (!data) {
+        data = {
+          'mime-types': {
+            'application/msword': {
+              app_providers: [
+                {
+                  address: 'localhost:19000',
+                  name: 'Collabora',
+                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
+                },
+                {
+                  address: 'localhost:18000',
+                  name: 'MS Office 365',
+                  icon:
+                    'https://upload.wikimedia.org/wikipedia/commons/5/5f/Microsoft_Office_logo_%282019%E2%80%93present%29.svg'
+                }
+              ]
+            },
+            'application/vnd.sun.xml.calc.template': {
+              app_providers: [
+                {
+                  address: 'localhost:19000',
+                  name: 'Collabora',
+                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
+                }
+              ]
+            },
+            'application/vnd.sun.xml.draw': {
+              app_providers: [
+                {
+                  address: 'localhost:19000',
+                  name: 'Collabora',
+                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
+                }
+              ]
+            },
+            'application/vnd.sun.xml.draw.template': {
+              app_providers: [
+                {
+                  address: 'localhost:19000',
+                  name: 'Collabora',
+                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
+                }
+              ]
+            }
+          }
+        }
+      } */
+      if (data['mime-types'][mimetype] && data['mime-types'][mimetype].app_providers)
+        this.appList = data['mime-types'][mimetype].app_providers
+      else {
+        this.appList = []
+        return null
+      }
+      return data['mime-types'][mimetype].app_providers
+    },
+
+    $_fileActions_openLink(app, resource) {
+      const path = '/files/list/apps/' + app.name + '/' + resource.fileId || resource.id
+      const routeData = this.$router.resolve({
+        path: path
       })
-      actions[0].handler(resource, actions[0].handlerData)
+      window.open(routeData.href, '_blank')
     }
   }
 }

@@ -1,6 +1,7 @@
 import App from './App.vue'
 import Personal from './views/Personal.vue'
 import Projects from './views/Projects.vue'
+import externalApps from './views/ExternalApps.vue'
 import Favorites from './views/Favorites.vue'
 import SharedWithMe from './views/SharedWithMe.vue'
 import SharedWithOthers from './views/SharedWithOthers.vue'
@@ -47,6 +48,16 @@ export default [
           hideFilelistActions: true,
           hasBulkActions: false,
           title: $gettext('Projects')
+        }
+      },
+      {
+        name: 'apps',
+        path: 'apps/:app/:file_id',
+        component: externalApps,
+        meta: {
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('External App')
         }
       },
       {

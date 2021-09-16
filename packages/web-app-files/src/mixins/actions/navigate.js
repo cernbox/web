@@ -1,4 +1,5 @@
 import { isTrashbinRoute } from '../../helpers/route'
+import { isSharedWithMeRoute } from '../../helpers/route'
 import { mapState } from 'vuex'
 import { isSameResource } from '../../helpers/resource'
 
@@ -14,6 +15,10 @@ export default {
             this.$pgettext('Action in the files list row to open a folder', 'Open folder'),
           isEnabled: ({ resource }) => {
             if (isTrashbinRoute(this.$route)) {
+              return false
+            }
+            
+            if (isSharedWithMeRoute(this.$route) && resource.status !== 0) {
               return false
             }
 

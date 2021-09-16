@@ -35,7 +35,7 @@ export default {
           },
           componentType: 'oc-button',
           class: 'oc-files-actions-delete-trigger'
-        },
+        } /*,
         {
           // this menu item is ONLY for the trashbin (permanently delete a file/folder)
           name: 'delete-permanent',
@@ -50,7 +50,7 @@ export default {
           },
           componentType: 'oc-button',
           class: 'oc-files-actions-delete-permanent-trigger'
-        }
+        } */
       ]
     }
   },

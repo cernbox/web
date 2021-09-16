@@ -24,6 +24,7 @@
         :resources="activeFilesCurrentPage"
         :target-route="targetRoute"
         :header-position="headerPosition"
+        :grouping-settings="groupingSettings"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >
@@ -94,6 +95,31 @@ export default {
     ]),
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     ...mapState('Files/sidebar', { sidebarClosed: 'closed' }),
+
+    groupingSettings() {
+      return {
+        groupingBy: 'Shared date/on',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Name alphabetically': function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared date/on': function(row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        }
+      }
+    },
 
     selected: {
       get() {

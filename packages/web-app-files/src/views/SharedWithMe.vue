@@ -102,6 +102,8 @@
         :resources="shares"
         :target-route="targetRoute"
         :header-position="headerPosition"
+        :grouping-settings="groupingSettings"
+        :are-resources-clickable="viewMode === shareStatus.declined ? false : true"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >
@@ -202,7 +204,33 @@ export default {
       }
       return shareStatus.accepted
     },
-
+    groupingSettings() {
+      return {
+        groupingBy: 'Shared date/on',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Share owner': function(row) {
+            return row.owner[0].displayName
+          },
+          'Name alphabetically': function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared date/on': function(row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        }
+      }
+    },
     // pending shares
     pendingSelected: {
       get() {
@@ -386,3 +414,10 @@ export default {
   }
 }
 </script>
+
+<style>
+#files-shared-with-me-pending-table,
+#files-shared-with-me-pending-table th {
+  background-color: var(--oc-color-background-highlight);
+}
+</style>

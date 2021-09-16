@@ -2,39 +2,12 @@
   <div>
     <list-loader v-if="loading" />
     <template v-else>
-<<<<<<< HEAD
-      <no-content-message
-        v-if="isEmpty"
-        id="files-shared-with-me-empty"
-        class="files-empty"
-        icon="group"
-      >
-        <template #message>
-          <span v-translate>
-            You are currently not collaborating on other people's resources
-          </span>
-        </template>
-      </no-content-message>
-      <oc-table-files
-        v-else
-        id="files-shared-with-me-table"
-        v-model="selected"
-        class="files-table"
-        :class="{ 'files-table-squashed': !sidebarClosed }"
-        :are-thumbnails-displayed="displayThumbnails"
-        :resources="activeFiles"
-        :target-route="targetRoute"
-        :header-position="headerPosition"
-        @fileClick="$_fileActions_triggerDefaultAction"
-        @rowMounted="rowMounted"
-=======
       <!-- Pending shares -->
 
       <div
         v-if="filterDataByStatus(activeFiles, shareStatus.pending).length > 0"
         id="pending-shares"
         class="oc-mb"
->>>>>>> 969ddfbe... Pending shares and approval
       >
         <div class="oc-app-bar shares-bar">
           <h2 v-translate>Pending Shares</h2>

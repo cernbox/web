@@ -17,6 +17,9 @@ export default {
             if (isTrashbinRoute(this.$route)) {
               return false
             }
+            if (isSharedWithMeRoute(this.$route) && resources[0].status !== shareStatus.accepted) {
+              return false
+            }
             if (resources.length !== 1) {
               return false
             }
@@ -25,15 +28,7 @@ export default {
               return false
             }
 
-            if (!resources[0].isFolder) {
-              return false
-            }
-
-            if (isSharedWithMeRoute(this.$route) && resources[0].status !== shareStatus.accepted) {
-              return false
-            }
-
-            return true
+            return resources[0].isFolder
           },
           canBeDefault: true,
           componentType: 'router-link',

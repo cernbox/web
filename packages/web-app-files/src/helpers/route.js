@@ -28,6 +28,10 @@ export function isSharedWithOthersRoute(route) {
   return route.name === 'files-shared-with-others'
 }
 
+export function isSharedViaLink(route) {
+  return route.name === 'files-shared-via-link'
+}
+
 export function isAnySharedWithRoute(route) {
   return isSharedWithMeRoute(route) || isSharedWithOthersRoute(route)
 }

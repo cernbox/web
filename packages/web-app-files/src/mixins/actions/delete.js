@@ -1,5 +1,12 @@
 import MixinDeleteResources from '../../mixins/deleteResources'
-import { isPersonalRoute, isPublicFilesRoute, isTrashbinRoute } from '../../helpers/route'
+import {
+  isPersonalRoute,
+  isPublicFilesRoute,
+  isTrashbinRoute,
+  isSharedWithMeRoute,
+  isSharedWithOthersRoute,
+  isSharedViaLink
+} from '../../helpers/route'
 import { mapState } from 'vuex'
 
 export default {
@@ -15,6 +22,14 @@ export default {
           handler: this.$_delete_trigger,
           isEnabled: ({ resources }) => {
             if (!isPersonalRoute(this.$route) && !isPublicFilesRoute(this.$route)) {
+              return false
+            }
+            if (
+              isSharedWithMeRoute(this.$route) ||
+              isTrashbinRoute(this.$route) ||
+              isSharedWithOthersRoute(this.$route) ||
+              isSharedViaLink(this.$route)
+            ) {
               return false
             }
             if (resources.length === 0) {

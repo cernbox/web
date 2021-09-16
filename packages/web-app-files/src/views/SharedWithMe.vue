@@ -16,8 +16,9 @@
           class="files-table"
           :class="{ 'files-table-squashed': !sidebarClosed }"
           :are-thumbnails-displayed="displayThumbnails"
-          :resources="showMorePending ? pending : pending.slice(0, 3)"
+          :resources="pending"
           :target-route="targetRoute"
+          :grouping-settings="groupingSettingsPreview"
           :are-resources-clickable="false"
           :header-position="fileListHeaderY"
         >
@@ -51,7 +52,7 @@
               :items="pendingSelected"
             />
           </template>
-          <template v-if="pendingHasMore" #footer>
+          <!--<template v-if="pendingHasMore" #footer>
             <div class="uk-width-1-1 uk-text-center oc-mt">
               <oc-button
                 id="files-shared-with-me-pending-show-all"
@@ -65,7 +66,7 @@
                 <oc-icon :name="'chevron_' + (showMorePending ? 'up' : 'down')" />
               </oc-button>
             </div>
-          </template>
+          </template>-->
         </resource-table>
       </div>
 
@@ -105,6 +106,8 @@
         :resources="shares"
         :target-route="targetRoute"
         :header-position="fileListHeaderY"
+        :grouping-settings="groupingSettings"
+        :are-resources-clickable="viewMode === shareStatus.declined ? false : true"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >
@@ -237,7 +240,42 @@ export default {
       }
       return shareStatus.accepted
     },
-
+    groupingSettings() {
+      return {
+        groupingBy: 'Shared date',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Share owner': function (row) {
+            return row.owner[0].displayName
+          },
+          'Name alphabetically': function (row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared date': function (row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        },
+        functionColMappings: {
+          'Share owner': 'owner',
+          'Shared date': 'sdate'
+        }
+      }
+    },
+    groupingSettingsPreview() {
+      return {
+        previewAmount: 3
+      }
+    },
     // pending shares
     pendingSelected: {
       get() {
@@ -387,3 +425,10 @@ export default {
   }
 }
 </script>
+
+<style>
+#files-shared-with-me-pending-table,
+#files-shared-with-me-pending-table th {
+  background-color: var(--oc-color-background-highlight);
+}
+</style>

@@ -19,11 +19,13 @@
         id="files-shared-with-others-table"
         v-model="selected"
         class="files-table"
-        :class="{ 'files-table-squashed': !sidebarClosed }"
+        :class="{ 'files-table-squashed': isSidebarOpen }"
         :are-thumbnails-displayed="displayThumbnails"
         :resources="activeFilesCurrentPage"
         :target-route="targetRoute"
+        :highlighted="highlightedFile ? highlightedFile.id : null"
         :header-position="headerPosition"
+        :grouping-settings="groupingSettings"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >
@@ -49,7 +51,6 @@ import { mapGetters, mapState, mapActions, mapMutations } from 'vuex'
 
 import { aggregateResourceShares } from '../helpers/resources'
 import FileActions from '../mixins/fileActions'
-import MixinFilesListFilter from '../mixins/filesListFilter'
 import MixinFilesListPositioning from '../mixins/filesListPositioning'
 import MixinResources from '../mixins/resources'
 import MixinFilesListPagination from '../mixins/filesListPagination'
@@ -74,8 +75,7 @@ export default {
     MixinFilesListPositioning,
     MixinResources,
     MixinFilesListPagination,
-    MixinMountSideBar,
-    MixinFilesListFilter
+    MixinMountSideBar
   ],
 
   data: () => ({
@@ -86,6 +86,7 @@ export default {
     ...mapState(['app']),
     ...mapState('Files', ['files']),
     ...mapGetters('Files', [
+      'davProperties',
       'highlightedFile',
       'activeFilesCurrentPage',
       'selectedFiles',
@@ -93,19 +94,47 @@ export default {
       'totalFilesCount'
     ]),
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
-    ...mapState('Files/sidebar', { sidebarClosed: 'closed' }),
+
+    groupingSettings() {
+      return {
+        groupingBy: 'Shared date/on',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Name alphabetically': function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared date/on': function(row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        }
+      }
+    },
 
     selected: {
       get() {
         return this.selectedFiles
       },
       set(resources) {
-        this.SET_FILE_SELECTION(resources)
+        this.SELECT_RESOURCES(resources)
       }
     },
 
     isEmpty() {
       return this.activeFilesCurrentPage.length < 1
+    },
+
+    isSidebarOpen() {
+      return this.highlightedFile !== null
     },
 
     uploadProgressVisible() {
@@ -149,7 +178,7 @@ export default {
     ...mapActions('Files', ['loadIndicators', 'loadPreview', 'loadAvatars']),
     ...mapMutations('Files', [
       'LOAD_FILES',
-      'SET_FILE_SELECTION',
+      'SELECT_RESOURCES',
       'CLEAR_CURRENT_FILES_LIST',
       'UPDATE_RESOURCE'
     ]),
@@ -215,3 +244,4 @@ export default {
   }
 }
 </script>
+

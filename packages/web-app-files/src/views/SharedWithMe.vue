@@ -8,62 +8,63 @@
           {{ pendingTitle }}
           <span class="oc-text-initial">({{ pendingCount }})</span>
         </h2>
-
-        <oc-table-files
-          id="files-shared-with-me-pending-table"
-          v-model="pendingSelected"
-          :data-test-share-status="shareStatus.pending"
-          class="files-table"
-          :class="{ 'files-table-squashed': !sidebarClosed }"
-          :are-thumbnails-displayed="displayThumbnails"
-          :resources="showMorePending ? pending : pending.slice(0, 3)"
-          :target-route="targetRoute"
-          :are-resources-clickable="false"
-          :header-position="headerPosition"
-        >
-          <template #status="{ resource }">
-            <div
-              :key="resource.id + resource.status"
-              class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
-            >
-              <oc-button
-                size="small"
-                variation="success"
-                class="file-row-share-status-action"
-                @click.stop="$_acceptShare_trigger(resource)"
+        <div id="pending-highlight">
+          <oc-table-files
+            id="files-shared-with-me-pending-table"
+            v-model="pendingSelected"
+            :data-test-share-status="shareStatus.pending"
+            class="files-table"
+            :class="{ 'files-table-squashed': !sidebarClosed }"
+            :are-thumbnails-displayed="displayThumbnails"
+            :resources="showMorePending ? pending : pending.slice(0, 3)"
+            :target-route="targetRoute"
+            :are-resources-clickable="false"
+            :header-position="headerPosition"
+          >
+            <template #status="{ resource }">
+              <div
+                :key="resource.id + resource.status"
+                class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
               >
-                <oc-icon size="small" name="check" />
-                <translate>Accept</translate>
-              </oc-button>
-              <oc-button
-                size="small"
-                class="file-row-share-status-action oc-ml-s"
-                @click.stop="$_declineShare_trigger(resource)"
-              >
-                <oc-icon size="small" name="not_interested" />
-                <translate>Decline</translate>
-              </oc-button>
-            </div>
-          </template>
-          <template #contextMenu="{ resource }">
-            <context-actions :item="resource" />
-          </template>
-          <template v-if="pendingHasMore" #footer>
-            <div class="uk-width-1-1 uk-text-center oc-mt">
-              <oc-button
-                id="files-shared-with-me-pending-show-all"
-                appearance="raw"
-                gap-size="xsmall"
-                size="small"
-                :data-test-expand="(!showMorePending).toString()"
-                @click="togglePendingShowMore"
-              >
-                {{ pendingToggleMoreLabel }}
-                <oc-icon :name="'chevron_' + (showMorePending ? 'up' : 'down')" />
-              </oc-button>
-            </div>
-          </template>
-        </oc-table-files>
+                <oc-button
+                  size="small"
+                  variation="success"
+                  class="file-row-share-status-action"
+                  @click.stop="$_acceptShare_trigger(resource)"
+                >
+                  <oc-icon size="small" name="check" />
+                  <translate>Accept</translate>
+                </oc-button>
+                <oc-button
+                  size="small"
+                  class="file-row-share-status-action oc-ml-s"
+                  @click.stop="$_declineShare_trigger(resource)"
+                >
+                  <oc-icon size="small" name="not_interested" />
+                  <translate>Decline</translate>
+                </oc-button>
+              </div>
+            </template>
+            <template #contextMenu="{ resource }">
+              <context-actions :item="resource" />
+            </template>
+            <template v-if="pendingHasMore" #footer>
+              <div class="uk-width-1-1 uk-text-center oc-mt">
+                <oc-button
+                  id="files-shared-with-me-pending-show-all"
+                  appearance="raw"
+                  gap-size="xsmall"
+                  size="small"
+                  :data-test-expand="(!showMorePending).toString()"
+                  @click="togglePendingShowMore"
+                >
+                  {{ pendingToggleMoreLabel }}
+                  <oc-icon :name="'chevron_' + (showMorePending ? 'up' : 'down')" />
+                </oc-button>
+              </div>
+            </template>
+          </oc-table-files>
+        </div>
       </div>
 
       <!-- Accepted or declined shares -->
@@ -102,6 +103,7 @@
         :resources="shares"
         :target-route="targetRoute"
         :header-position="headerPosition"
+        :grouping-settings="groupingSettings"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >
@@ -202,7 +204,33 @@ export default {
       }
       return shareStatus.accepted
     },
-
+    groupingSettings() {
+      return {
+        groupingBy: 'Shared date/on',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Share owner': function(row) {
+            return row.owner[0].displayName
+          },
+          'Name alphabetically': function(row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared date/on': function(row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        }
+      }
+    },
     // pending shares
     pendingSelected: {
       get() {
@@ -386,3 +414,9 @@ export default {
   }
 }
 </script>
+
+<style>
+#pending-highlight {
+  background-color: var(--oc-color-background-highlight);
+}
+</style>

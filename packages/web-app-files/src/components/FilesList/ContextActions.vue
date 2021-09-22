@@ -45,8 +45,10 @@
 import { mapGetters } from 'vuex'
 
 import FileActions from '../../mixins/fileActions'
+import AcceptShare from '../../mixins/actions/acceptShare'
 import Copy from '../../mixins/actions/copy'
 import CreatePublicLink from '../../mixins/actions/createPublicLink'
+import DeclineShare from '../../mixins/actions/declineShare'
 import Delete from '../../mixins/actions/delete'
 import Download from '../../mixins/actions/download'
 import Favorite from '../../mixins/actions/favorite'
@@ -62,8 +64,10 @@ export default {
   name: 'ContextActions',
   mixins: [
     FileActions,
+    AcceptShare,
     Copy,
     CreatePublicLink,
+    DeclineShare,
     Delete,
     Download,
     Favorite,
@@ -164,6 +168,8 @@ export default {
         ...this.$_move_items,
         ...this.$_copy_items,
         ...this.$_restore_items,
+        ...this.$_acceptShare_items,
+        ...this.$_declineShare_items,
         ...this.$_delete_items,
         ...this.$_showActions_items
       ].filter(item => item.isEnabled(this.filterParams))

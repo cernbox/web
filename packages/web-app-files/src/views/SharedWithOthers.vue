@@ -21,12 +21,11 @@
         class="files-table"
         :class="{ 'files-table-squashed': isSidebarOpen }"
         :are-thumbnails-displayed="displayThumbnails"
-        :resources="activeFiles"
+        :resources="activeFilesCurrentPage"
         :target-route="targetRoute"
         :highlighted="highlightedFile ? highlightedFile.id : null"
         :header-position="headerPosition"
         :grouping-settings="groupingSettings"
-        @showDetails="$_mountSideBar_showDetails"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >
@@ -36,7 +35,7 @@
         <template #footer>
           <pagination />
           <list-info
-            v-if="activeFiles.length > 0"
+            v-if="activeFilesCurrentPage.length > 0"
             class="uk-width-1-1 oc-my-s"
             :files="totalFilesCount.files"
             :folders="totalFilesCount.folders"
@@ -89,7 +88,7 @@ export default {
     ...mapGetters('Files', [
       'davProperties',
       'highlightedFile',
-      'activeFiles',
+      'activeFilesCurrentPage',
       'selectedFiles',
       'inProgress',
       'totalFilesCount'
@@ -131,8 +130,7 @@ export default {
     },
 
     isEmpty() {
-      console.log(this.activeFiles)
-      return this.activeFiles.length < 1
+      return this.activeFilesCurrentPage.length < 1
     },
 
     isSidebarOpen() {
@@ -246,3 +244,4 @@ export default {
   }
 }
 </script>
+

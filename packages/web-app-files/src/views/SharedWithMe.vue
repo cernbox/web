@@ -8,62 +8,63 @@
           {{ pendingTitle }}
           <span class="oc-text-initial">({{ pendingCount }})</span>
         </h2>
-
-        <oc-table-files
-          id="files-shared-with-me-pending-table"
-          v-model="pendingSelected"
-          :data-test-share-status="shareStatus.pending"
-          class="files-table"
-          :class="{ 'files-table-squashed': !sidebarClosed }"
-          :are-thumbnails-displayed="displayThumbnails"
-          :resources="showMorePending ? pending : pending.slice(0, 3)"
-          :target-route="targetRoute"
-          :are-resources-clickable="false"
-          :header-position="headerPosition"
-        >
-          <template #status="{ resource }">
-            <div
-              :key="resource.id + resource.status"
-              class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
-            >
-              <oc-button
-                size="small"
-                variation="success"
-                class="file-row-share-status-action"
-                @click.stop="$_acceptShare_trigger(resource)"
+        <div id="pending-highlight">
+          <oc-table-files
+            id="files-shared-with-me-pending-table"
+            v-model="pendingSelected"
+            :data-test-share-status="shareStatus.pending"
+            class="files-table"
+            :class="{ 'files-table-squashed': !sidebarClosed }"
+            :are-thumbnails-displayed="displayThumbnails"
+            :resources="showMorePending ? pending : pending.slice(0, 3)"
+            :target-route="targetRoute"
+            :are-resources-clickable="false"
+            :header-position="headerPosition"
+          >
+            <template #status="{ resource }">
+              <div
+                :key="resource.id + resource.status"
+                class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
               >
-                <oc-icon size="small" name="check" />
-                <translate>Accept</translate>
-              </oc-button>
-              <oc-button
-                size="small"
-                class="file-row-share-status-action oc-ml-s"
-                @click.stop="$_declineShare_trigger(resource)"
-              >
-                <oc-icon size="small" name="not_interested" />
-                <translate>Decline</translate>
-              </oc-button>
-            </div>
-          </template>
-          <template #contextMenu="{ resource }">
-            <context-actions :item="resource" />
-          </template>
-          <template v-if="pendingHasMore" #footer>
-            <div class="uk-width-1-1 uk-text-center oc-mt">
-              <oc-button
-                id="files-shared-with-me-pending-show-all"
-                appearance="raw"
-                gap-size="xsmall"
-                size="small"
-                :data-test-expand="(!showMorePending).toString()"
-                @click="togglePendingShowMore"
-              >
-                {{ pendingToggleMoreLabel }}
-                <oc-icon :name="'chevron_' + (showMorePending ? 'up' : 'down')" />
-              </oc-button>
-            </div>
-          </template>
-        </oc-table-files>
+                <oc-button
+                  size="small"
+                  variation="success"
+                  class="file-row-share-status-action"
+                  @click.stop="$_acceptShare_trigger(resource)"
+                >
+                  <oc-icon size="small" name="check" />
+                  <translate>Accept</translate>
+                </oc-button>
+                <oc-button
+                  size="small"
+                  class="file-row-share-status-action oc-ml-s"
+                  @click.stop="$_declineShare_trigger(resource)"
+                >
+                  <oc-icon size="small" name="not_interested" />
+                  <translate>Decline</translate>
+                </oc-button>
+              </div>
+            </template>
+            <template #contextMenu="{ resource }">
+              <context-actions :item="resource" />
+            </template>
+            <template v-if="pendingHasMore" #footer>
+              <div class="uk-width-1-1 uk-text-center oc-mt">
+                <oc-button
+                  id="files-shared-with-me-pending-show-all"
+                  appearance="raw"
+                  gap-size="xsmall"
+                  size="small"
+                  :data-test-expand="(!showMorePending).toString()"
+                  @click="togglePendingShowMore"
+                >
+                  {{ pendingToggleMoreLabel }}
+                  <oc-icon :name="'chevron_' + (showMorePending ? 'up' : 'down')" />
+                </oc-button>
+              </div>
+            </template>
+          </oc-table-files>
+        </div>
       </div>
 
       <!-- Accepted or declined shares -->
@@ -388,3 +389,9 @@ export default {
   }
 }
 </script>
+
+<style>
+#pending-highlight {
+  background-color: var(--oc-color-background-highlight);
+}
+</style>

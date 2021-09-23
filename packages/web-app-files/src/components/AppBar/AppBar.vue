@@ -94,6 +94,19 @@
                     </oc-button>
                   </div>
                 </li>
+                <li v-for="mimetype in mimetypes" :key="mimetype">
+                  <div>
+                    <oc-button
+                      appearance="raw"
+                      justify-content="left"
+                      :class="['new-file-btn-' + mimetype.extension, 'uk-width-1-1']"
+                      @click="showCreateResourceModalCopy(mimetype.extension)"
+                    >
+                      <oc-icon :name="mimetype.icon" />
+                      <span>{{ 'New ' + mimetype.name + '...' }}</span>
+                    </oc-button>
+                  </div>
+                </li>
               </ul>
             </oc-drop>
           </template>
@@ -139,7 +152,27 @@ export default {
   data: () => ({
     newFileAction: null,
     path: '',
-    fileFolderCreationLoading: false
+    fileFolderCreationLoading: false,
+    mimetypes: {
+      'application/msword': {
+        name: 'Word document',
+        extension: 'docx',
+        icon: 'x-office-document',
+        app_providers: [
+          {
+            address: 'localhost:19000',
+            name: 'Collabora',
+            icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
+          },
+          {
+            address: 'localhost:18000',
+            name: 'MS Office 365',
+            icon:
+              'https://upload.wikimedia.org/wikipedia/commons/5/5f/Microsoft_Office_logo_%282019%E2%80%93present%29.svg'
+          }
+        ]
+      }
+    }
   }),
   computed: {
     ...mapGetters(['getToken', 'configuration', 'newFileHandlers', 'quota', 'user']),
@@ -348,6 +381,29 @@ export default {
       this.createModal(modal)
     },
 
+    showCreateResourceModalCopy(ext) {
+      const defaultName = this.$gettext('New file') + '.' + ext
+      const checkInputValue = value => {
+        this.setModalInputErrorMessage(this.checkNewFileName(value))
+      }
+
+      const modal = {
+        variation: 'passive',
+        title: this.$gettext('Create a new file'),
+        cancelText: this.$gettext('Cancel'),
+        confirmText: this.$gettext('Create'),
+        hasInput: true,
+        inputValue: defaultName,
+        inputLabel: this.$gettext('File name'),
+        inputError: this.checkNewFileName(defaultName),
+        onCancel: this.hideModal,
+        onConfirm: this.createNewFile,
+        onInput: checkInputValue
+      }
+
+      this.createModal(modal)
+    },
+
     async addNewFolder(folderName) {
       if (folderName === '') {
         return
@@ -486,6 +542,32 @@ export default {
       this.fileFolderCreationLoading = false
     },
 
+    createNewFile(fileName) {
+      let concat
+      if (this.$router.currentRoute.path.slice(-1) === '/') concat = ''
+      else concat = '/'
+      const url =
+        '/app/new?filename=' + this.$router.currentRoute.path + concat + fileName + '&template=bla'
+      console.log(encodeURI(url))
+
+      const headers = new Headers()
+      headers.append('Authorization', 'Bearer ' + this.getToken)
+      headers.append('X-Requested-With', 'XMLHttpRequest')
+
+      fetch(encodeURI(url), {
+        method: 'POST',
+        headers
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log('resource created', data.file_id)
+        })
+        .catch(err => {
+          console.log(err)
+        })
+
+      this.hideModal()
+    },
     checkNewFileName(fileName) {
       if (fileName === '') {
         return this.$gettext('File name cannot be empty')

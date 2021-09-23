@@ -542,9 +542,7 @@ export default {
       this.fileFolderCreationLoading = false
     },
 
-    async createNewFile(fileName) {
-      console.log('got file name', fileName)
-      console.log(this.$router.currentRoute.path)
+    createNewFile(fileName) {
       let concat
       if (this.$router.currentRoute.path.slice(-1) === '/') concat = ''
       else concat = '/'
@@ -555,9 +553,21 @@ export default {
       const headers = new Headers()
       headers.append('Authorization', 'Bearer ' + this.getToken)
       headers.append('X-Requested-With', 'XMLHttpRequest')
-      fetch(encodeURI(url))
-    },
 
+      fetch(encodeURI(url), {
+        method: 'POST',
+        headers
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log('resource created', data.file_id)
+        })
+        .catch(err => {
+          console.log(err)
+        })
+
+      this.hideModal()
+    },
     checkNewFileName(fileName) {
       if (fileName === '') {
         return this.$gettext('File name cannot be empty')

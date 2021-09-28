@@ -136,25 +136,39 @@ export default {
     },
 
     $_fileActions_triggerDefaultAction(resource) {
-      console.log('resource', resource) &&
-        this.$_fileActions_loadApps(resource).then(res => {
-          if (resource.extension !== 'pdf' && resource.extension !== 'drawio' && res && res[0]) {
-            this.$_fileActions_openLink(res[0], resource)
-          } else {
-            let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
+      this.$_fileActions_loadApps(resource).then(res => {
+        console.log(resource.extension)
+        if (resource.extension !== 'pdf' && resource.extension !== 'drawio' && res && res[0]) {
+          this.$_fileActions_openLink(res[0], resource)
+        } else {
+          let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
 
-            actions = actions.filter(action => {
-              return (
-                action.isEnabled({
-                  resource: resource,
-                  parent: this.currentFolder
-                }) && action.canBeDefault
-              )
-            })
-            actions[0].handler(resource, actions[0].handlerData)
-          }
-        })
+          actions = actions.filter(action => {
+            return (
+              action.isEnabled({
+                resource: resource,
+                parent: this.currentFolder
+              }) && action.canBeDefault
+            )
+          })
+          actions[0].handler(resource, actions[0].handlerData)
+        }
+      })
     },
+
+    /* $_fileActions_triggerDefaultAction(resource) {
+      let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
+
+      actions = actions.filter(action => {
+        return (
+          action.isEnabled({
+            resource: resource,
+            parent: this.currentFolder
+          }) && action.canBeDefault
+        )
+      })
+      actions[0].handler(resource, actions[0].handlerData)
+    }, */
 
     async $_fileActions_loadApps(resource) {
       const data = JSON.parse(localStorage.mimetypes)

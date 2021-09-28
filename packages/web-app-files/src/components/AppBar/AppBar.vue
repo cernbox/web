@@ -417,6 +417,7 @@ export default {
         let resource
         if (this.isPersonalRoute) {
           await this.$client.files.createFolder(path)
+          console.log('res path', path)
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else {
           await this.$client.publicFiles.createFolder(path, null, this.publicLinkPassword)
@@ -426,6 +427,7 @@ export default {
             DavProperties.Default
           )
         }
+
         resource = buildResource(resource)
 
         this.UPSERT_RESOURCE(resource)
@@ -542,31 +544,62 @@ export default {
       this.fileFolderCreationLoading = false
     },
 
-    createNewFile(fileName) {
-      let concat
-      if (this.$router.currentRoute.path.slice(-1) === '/') concat = ''
-      else concat = '/'
-      const url =
-        '/app/new?filename=' + this.$router.currentRoute.path + concat + fileName + '&template=bla'
-      console.log(encodeURI(url))
+    async createNewFile(fileName) {
+      try {
+        const path = pathUtil.join(this.currentPath, fileName)
+        const url = '/app/new?filename=' + path
+        console.log(encodeURI(url), path)
 
-      const headers = new Headers()
-      headers.append('Authorization', 'Bearer ' + this.getToken)
-      headers.append('X-Requested-With', 'XMLHttpRequest')
+        const headers = new Headers()
+        headers.append('Authorization', 'Bearer ' + this.getToken)
+        headers.append('X-Requested-With', 'XMLHttpRequest')
 
-      fetch(encodeURI(url), {
-        method: 'POST',
-        headers
-      })
-        .then(response => response.json())
-        .then(data => {
-          console.log('resource created', data.file_id)
+        const response = await fetch(encodeURI(url), {
+          method: 'POST',
+          headers
         })
-        .catch(err => {
-          console.log(err)
-        })
+        const file = await response.json()
+        // const file_id = file.file_id
 
-      this.hideModal()
+        let resource
+
+        if (this.isPersonalRoute) {
+          await this.$client.files.putFileContents(path, '')
+          resource = await this.$client.files.fileInfo(path, DavProperties.Default)
+        }
+
+        if (this.newFileAction) {
+          const fileId = resource.fileInfo[DavProperty.FileId]
+
+          this.$_fileActions_openEditor(this.newFileAction, path, fileId, EDITOR_MODE_CREATE)
+          this.hideModal()
+
+          return
+        }
+
+        resource = buildResource(resource)
+
+        this.UPSERT_RESOURCE(resource)
+        this.hideModal()
+
+        if (this.isPersonalRoute) {
+          this.loadIndicators({
+            client: this.$client,
+            currentFolder: this.currentFolder.path
+          })
+        }
+
+        setTimeout(() => {
+          this.setFileSelection([resource])
+          this.scrollToResource(resource)
+        })
+      } catch (error) {
+        this.showMessage({
+          title: this.$gettext('Creating file failed…'),
+          desc: error,
+          status: 'danger'
+        })
+      }
     },
     checkNewFileName(fileName) {
       if (fileName === '') {

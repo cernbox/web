@@ -136,39 +136,33 @@ export default {
     },
 
     $_fileActions_triggerDefaultAction(resource) {
-      this.$_fileActions_loadApps(resource).then(res => {
-        console.log(resource.extension)
-        if (resource.extension !== 'pdf' && resource.extension !== 'drawio' && res && res[0]) {
-          this.$_fileActions_openLink(res[0], resource)
-        } else {
-          let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
+      if (
+        resource.extension === 'pdf' ||
+        resource.extension === 'drawio' ||
+        resource.extension === 'root' ||
+        resource.extension === 'png' ||
+        resource.extension === 'jpg' ||
+        resource.extension === 'gif'
+      ) {
+        let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
 
-          actions = actions.filter(action => {
-            return (
-              action.isEnabled({
-                resource: resource,
-                parent: this.currentFolder
-              }) && action.canBeDefault
-            )
-          })
-          actions[0].handler(resource, actions[0].handlerData)
-        }
-      })
+        actions = actions.filter(action => {
+          return (
+            action.isEnabled({
+              resource: resource,
+              parent: this.currentFolder
+            }) && action.canBeDefault
+          )
+        })
+        actions[0].handler(resource, actions[0].handlerData)
+      } else {
+        this.$_fileActions_loadApps(resource).then(res => {
+          if (res) {
+            this.$_fileActions_openLink(res[0], resource)
+          }
+        })
+      }
     },
-
-    /* $_fileActions_triggerDefaultAction(resource) {
-      let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
-
-      actions = actions.filter(action => {
-        return (
-          action.isEnabled({
-            resource: resource,
-            parent: this.currentFolder
-          }) && action.canBeDefault
-        )
-      })
-      actions[0].handler(resource, actions[0].handlerData)
-    }, */
 
     async $_fileActions_loadApps(resource) {
       const data = JSON.parse(localStorage.mimetypes)
@@ -184,61 +178,16 @@ export default {
       const prop = await resp.text()
       const a = prop.match(new RegExp('<d:getcontenttype>' + '(.*)' + '</d:getcontenttype>'))
       const mimetype = a[0].split('<d:getcontenttype>')[1].split('</d:getcontenttype>')[0]
-      /* if (!data) {
-        data = {
-          'mime-types': {
-            'application/msword': {
-              app_providers: [
-                {
-                  address: 'localhost:19000',
-                  name: 'Collabora',
-                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
-                },
-                {
-                  address: 'localhost:18000',
-                  name: 'MS Office 365',
-                  icon:
-                    'https://upload.wikimedia.org/wikipedia/commons/5/5f/Microsoft_Office_logo_%282019%E2%80%93present%29.svg'
-                }
-              ]
-            },
-            'application/vnd.sun.xml.calc.template': {
-              app_providers: [
-                {
-                  address: 'localhost:19000',
-                  name: 'Collabora',
-                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
-                }
-              ]
-            },
-            'application/vnd.sun.xml.draw': {
-              app_providers: [
-                {
-                  address: 'localhost:19000',
-                  name: 'Collabora',
-                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
-                }
-              ]
-            },
-            'application/vnd.sun.xml.draw.template': {
-              app_providers: [
-                {
-                  address: 'localhost:19000',
-                  name: 'Collabora',
-                  icon: 'https://www.collaboraoffice.com/wp-content/uploads/2019/01/CP-icon.png'
-                }
-              ]
-            }
-          }
-        }
-      } */
-      if (data['mime-types'][mimetype] && data['mime-types'][mimetype].app_providers)
-        this.appList = data['mime-types'][mimetype].app_providers
+
+      const appprovider = data['mime-types'].filter(p => p.mime_type === mimetype)
+
+      if (appprovider[0] && appprovider[0].app_providers)
+        this.appList = appprovider[0].app_providers
       else {
         this.appList = []
         return null
       }
-      return data['mime-types'][mimetype].app_providers
+      return appprovider[0].app_providers
     },
 
     $_fileActions_openLink(app, resource) {

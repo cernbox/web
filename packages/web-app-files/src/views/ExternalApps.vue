@@ -80,11 +80,15 @@ export default {
       })
       .catch(err => {
         this.loading = false
-        console.log(err)
+        this.showMessage({
+          title: this.$gettext('Open with app failed…'),
+          desc: err,
+          status: 'danger'
+        })
       })
   },
   methods: {
-    ...mapActions(['showMessage'])
+    ...mapActions(['showMessage', 'showMessage'])
   }
 }
 </script>

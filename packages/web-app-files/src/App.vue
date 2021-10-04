@@ -6,7 +6,7 @@
       class="files-list-wrapper uk-width-expand"
       @dragover="$_ocApp_dragOver"
     >
-      <app-bar id="files-app-bar" />
+      <app-bar v-if="!$route.fullPath.includes('/files/list/apps/')" id="files-app-bar" />
       <progress-bar v-show="$_uploadProgressVisible" id="files-upload-progress" class="oc-p-s" />
       <router-view id="files-view" />
     </div>
@@ -72,6 +72,16 @@ export default {
     this.$root.$on('upload-end', () => {
       this.delayForScreenreader(() => this.$refs.filesListWrapper.focus())
     })
+
+    fetch('/app/list', {
+      method: 'GET'
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data['mime-types'] && data['mime-types']['application/compressed-markdown'])
+          localStorage.mimetypes = JSON.stringify(data)
+      })
+      .catch(err => console.log(err))
   },
 
   beforeDestroy() {

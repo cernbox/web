@@ -12,7 +12,8 @@
     "packages/web-app-media-viewer",
     "packages/web-app-search",
     "packages/web-pkg",
-    "packages/web-runtime"
+    "packages/web-runtime",
+    "packages/web-app-jupyter"
   ],
   "scripts": {
     "build": "rollup -c",

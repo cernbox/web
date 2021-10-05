@@ -158,6 +158,26 @@ export default {
       })
 
       const allDefaultActions = availableExternalAppActions.concat(actions)
+      let filter
+      if (
+        resource.extension === 'doc' ||
+        resource.extension === 'docx' ||
+        resource.extension === 'ppt' ||
+        resource.extension === 'pptx' ||
+        resource.extension === 'xlsx'
+      ) {
+        filter = 'Microsoft Office'
+      } else if (resource.extension === 'md') {
+        filter = 'CodiMD'
+      }
+
+      if (filter) {
+        const a = allDefaultActions.filter(a => a.name === filter)
+        if (a && a[0]) {
+          a[0].handler(resource, a[0].handlerData)
+          return 0
+        }
+      }
       allDefaultActions[0].handler(resource, allDefaultActions[0].handlerData)
     },
 

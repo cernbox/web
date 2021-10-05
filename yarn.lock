@@ -3191,6 +3191,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"anser@npm:^1.4.9":
+  version: 1.4.10
+  resolution: "anser@npm:1.4.10"
+  checksum: 3823c64f8930d3d97f36e56cdf646fa6351f1227e25eee70c3a17697447cae4238fc3a309bb3bc2003cf930687fa72aed71426dbcf3c0a15565e120a7fee5507
+  languageName: node
+  linkType: hard
+
 "ansi-colors@npm:3.2.3":
   version: 3.2.3
   resolution: "ansi-colors@npm:3.2.3"
@@ -8083,6 +8090,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"highlight.js@npm:^10.1.1":
+  version: 10.7.3
+  resolution: "highlight.js@npm:10.7.3"
+  checksum: defeafcd546b535d710d8efb8e650af9e3b369ef53e28c3dc7893eacfe263200bba4c5fcf43524ae66d5c0c296b1af0870523ceae3e3104d24b7abf6374a4fea
+  languageName: node
+  linkType: hard
+
 "hmac-drbg@npm:^1.0.1":
   version: 1.0.1
   resolution: "hmac-drbg@npm:1.0.1"
@@ -8452,6 +8466,28 @@ __metadata:
   version: 1.1.5
   resolution: "ip@npm:1.1.5"
   checksum: 30133981f082a060a32644f6a7746e9ba7ac9e2bc07ecc8bbdda3ee8ca9bec1190724c390e45a1ee7695e7edfd2a8f7dda2c104ec5f7ac5068c00648504c7e5a
+  languageName: node
+  linkType: hard
+
+"ipynb2html-core@npm:0.3.0":
+  version: 0.3.0
+  resolution: "ipynb2html-core@npm:0.3.0"
+  checksum: 2bce06a4bbd573acd54a954247e780b5b1072307e0beadf7c4a2b0d57b342eb177f76722edf6926068ceea18b4bb5413cbc806d1410790a1c77af38455e79cc8
+  languageName: node
+  linkType: hard
+
+"ipynb2html@npm:0.3.0":
+  version: 0.3.0
+  resolution: "ipynb2html@npm:0.3.0"
+  dependencies:
+    anser: ^1.4.9
+    highlight.js: ^10.1.1
+    ipynb2html-core: 0.3.0
+    katex: ^0.11.1
+    marked: ^1.0.0
+  peerDependencies:
+    nodom: ^2.3.0
+  checksum: 1df9e19696789850a38fe3dcdf58b3fabd9444697e29f686314f73b965d63733ddeadf229e13cda18064c8aebbf73779baae16625319d30b436bca8466b230b4
   languageName: node
   linkType: hard
 
@@ -10029,6 +10065,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jupyter@workspace:packages/web-app-jupyter":
+  version: 0.0.0-use.local
+  resolution: "jupyter@workspace:packages/web-app-jupyter"
+  dependencies:
+    ipynb2html: 0.3.0
+    vuex: ^3.6.2
+  languageName: unknown
+  linkType: soft
+
+"katex@npm:^0.11.1":
+  version: 0.11.1
+  resolution: "katex@npm:0.11.1"
+  dependencies:
+    commander: ^2.19.0
+  bin:
+    katex: cli.js
+  checksum: b26017d12bc06b085ee0b3d62825b473bc74987c2309008a13cca80b9922ed8b88f1f02b264d75f53dd604c318416bdb74a3035e761265417152f11c440e623d
+  languageName: node
+  linkType: hard
+
 "kind-of@npm:^3.0.2, kind-of@npm:^3.0.3, kind-of@npm:^3.2.0":
   version: 3.2.2
   resolution: "kind-of@npm:3.2.2"
@@ -10902,6 +10958,15 @@ __metadata:
     marked: ^3.0.0
   languageName: unknown
   linkType: soft
+
+"marked@npm:^1.0.0":
+  version: 1.2.9
+  resolution: "marked@npm:1.2.9"
+  bin:
+    marked: bin/marked
+  checksum: c5a461b8081ee8f672197bf6503c49eba3906614eefea29f3188f5dac06a7fca45a0c2d97ed5d0910a1c96696c827f062ae5cc0b37c9a0acdaafb2acb1467a2f
+  languageName: node
+  linkType: hard
 
 "marked@npm:^3.0.0":
   version: 3.0.2

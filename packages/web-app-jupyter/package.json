@@ -1,0 +1,10 @@
+{
+  "name": "jupyter",
+  "version": "0.0.0",
+  "description": "Simple notebook opener",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "ipynb2html": "0.3.0",
+    "vuex": "^3.6.2"
+  }
+}

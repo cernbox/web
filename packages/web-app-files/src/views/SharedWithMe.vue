@@ -416,7 +416,8 @@ export default {
 </script>
 
 <style>
-#pending-highlight {
+#pending-highligh,
+#pending-highlight th {
   background-color: var(--oc-color-background-highlight);
 }
 </style>

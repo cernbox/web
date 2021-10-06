@@ -203,7 +203,7 @@ export default {
     },
 
     $_fileActions_openLink(appName, resourceId) {
-      const actionableId = resourceId.replaceAll('=', '')
+      const actionableId = resourceId
       const routeData = this.$router.resolve({
         name: 'external-apps',
         params: { app: appName, file_id: actionableId }

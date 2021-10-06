@@ -113,7 +113,7 @@
           <size-info v-if="selectedFiles.length > 0" class="oc-mr-s uk-visible@l" />
           <batch-actions />
         </div>
-        <view-options v-if="!$route.fullPath.includes('/files/list/apps/')" />
+        <view-options />
       </div>
     </div>
   </div>

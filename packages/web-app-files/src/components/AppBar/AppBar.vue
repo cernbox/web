@@ -107,29 +107,16 @@
                     </oc-button>
                   </div>
                 </li>
-                <li>
+                <li v-for="(mimetype, key) in getMimeTypes()" :key="key">
                   <div>
                     <oc-button
                       appearance="raw"
                       justify-content="left"
-                      :class="['new-file-btn-', 'uk-width-1-1']"
-                      @click="showCreateResourceModalCopy('.pptx')"
+                      :class="['uk-width-1-1']"
+                      @click="showCreateResourceModalCopy('.' + mimetype.ext)"
                     >
-                      <oc-icon :name="'x-office-presentation'" />
-                      <span>{{ 'New ' + 'Office presentation...' }}</span>
-                    </oc-button>
-                  </div>
-                </li>
-                <li>
-                  <div>
-                    <oc-button
-                      appearance="raw"
-                      justify-content="left"
-                      :class="['new-file-btn-', 'uk-width-1-1']"
-                      @click="showCreateResourceModalCopy('.xlsx')"
-                    >
-                      <oc-icon :name="'x-office-spreadsheet'" />
-                      <span>{{ 'New ' + 'Office spreadsheet...' }}</span>
+                      <oc-icon :name="mimetype.icon || 'save'" />
+                      <span>{{ 'New ' + mimetype.description + '...' }}</span>
                     </oc-button>
                   </div>
                 </li>
@@ -343,6 +330,7 @@ export default {
   },
 
   methods: {
+    ...mapGetters('External', ['getMimeTypes']),
     ...mapActions('Files', [
       'updateFileProgress',
       'removeFilesFromTrashbin',

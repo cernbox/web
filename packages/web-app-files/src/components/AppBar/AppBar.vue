@@ -94,19 +94,6 @@
                     </oc-button>
                   </div>
                 </li>
-                <li>
-                  <div>
-                    <oc-button
-                      appearance="raw"
-                      justify-content="left"
-                      :class="['new-file-btn-', 'uk-width-1-1']"
-                      @click="showCreateResourceModalCopy('.docx')"
-                    >
-                      <oc-icon :name="'x-office-document'" />
-                      <span>{{ 'New ' + 'Office document...' }}</span>
-                    </oc-button>
-                  </div>
-                </li>
                 <li v-for="(mimetype, key) in getMimeTypes()" :key="key">
                   <div>
                     <oc-button
@@ -115,8 +102,8 @@
                       :class="['uk-width-1-1']"
                       @click="showCreateResourceModalCopy('.' + mimetype.ext)"
                     >
-                      <oc-icon :name="mimetype.icon || 'save'" />
-                      <span>{{ 'New ' + mimetype.description + '...' }}</span>
+                      <oc-icon :name="mimetype.icon || 'file'" />
+                      <span>{{ 'New ' + mimetype.name + '...' }}</span>
                     </oc-button>
                   </div>
                 </li>

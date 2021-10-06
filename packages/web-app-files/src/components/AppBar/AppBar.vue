@@ -102,8 +102,34 @@
                       :class="['new-file-btn-', 'uk-width-1-1']"
                       @click="showCreateResourceModalCopy('.docx')"
                     >
-                      <!-- <oc-icon :name="" />-->
-                      <span>{{ 'New ' + 'Word document...' }}</span>
+                      <oc-icon :name="'x-office-document'" />
+                      <span>{{ 'New ' + 'Office document...' }}</span>
+                    </oc-button>
+                  </div>
+                </li>
+                <li>
+                  <div>
+                    <oc-button
+                      appearance="raw"
+                      justify-content="left"
+                      :class="['new-file-btn-', 'uk-width-1-1']"
+                      @click="showCreateResourceModalCopy('.pptx')"
+                    >
+                      <oc-icon :name="'x-office-presentation'" />
+                      <span>{{ 'New ' + 'Office presentation...' }}</span>
+                    </oc-button>
+                  </div>
+                </li>
+                <li>
+                  <div>
+                    <oc-button
+                      appearance="raw"
+                      justify-content="left"
+                      :class="['new-file-btn-', 'uk-width-1-1']"
+                      @click="showCreateResourceModalCopy('.xlsx')"
+                    >
+                      <oc-icon :name="'x-office-spreadsheet'" />
+                      <span>{{ 'New ' + 'Office spreadsheet...' }}</span>
                     </oc-button>
                   </div>
                 </li>
@@ -539,14 +565,9 @@ export default {
           await this.$client.files.putFileContents(path, '')
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         }
-        if (this.newFileAction) {
-          const fileId = resource.fileInfo[DavProperty.FileId]
-          this.$_fileActions_openEditor(this.newFileAction, path, fileId, EDITOR_MODE_CREATE)
-          this.hideModal()
-          return
-        }
         resource = buildResource(resource)
         this.UPSERT_RESOURCE(resource)
+        this.$_fileActions_triggerDefaultAction(resource)
         this.hideModal()
         if (this.isPersonalRoute) {
           this.loadIndicators({

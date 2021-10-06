@@ -75,7 +75,7 @@
                       @click="showCreateResourceModal"
                     >
                       <oc-icon name="create_new_folder" />
-                      <translate>New folder…</translate>
+                      <translate>New folder</translate>
                     </oc-button>
                   </div>
                 </li>
@@ -103,7 +103,7 @@
                       @click="showCreateResourceModalCopy('.' + mimetype.ext)"
                     >
                       <oc-icon :name="mimetype.icon || 'file'" />
-                      <span>{{ 'New ' + mimetype.name + '...' }}</span>
+                      <span>{{ 'New ' + mimetype.name }}</span>
                     </oc-button>
                   </div>
                 </li>

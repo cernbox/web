@@ -75,7 +75,7 @@
                       @click="showCreateResourceModal"
                     >
                       <oc-icon name="create_new_folder" />
-                      <translate>New folder…</translate>
+                      <translate>New folder</translate>
                     </oc-button>
                   </div>
                 </li>
@@ -91,6 +91,19 @@
                     >
                       <oc-icon :name="newFileHandler.icon || 'save'" />
                       <span>{{ newFileHandler.menuTitle($gettext) }}</span>
+                    </oc-button>
+                  </div>
+                </li>
+                <li v-for="(mimetype, key) in getMimeTypes()" :key="key">
+                  <div>
+                    <oc-button
+                      appearance="raw"
+                      justify-content="left"
+                      :class="['uk-width-1-1']"
+                      @click="showCreateResourceModalCopy('.' + mimetype.ext)"
+                    >
+                      <oc-icon :name="mimetype.icon || 'file'" />
+                      <span>{{ 'New ' + mimetype.name }}</span>
                     </oc-button>
                   </div>
                 </li>
@@ -304,6 +317,7 @@ export default {
   },
 
   methods: {
+    ...mapGetters('External', ['getMimeTypes']),
     ...mapActions('Files', [
       'updateFileProgress',
       'removeFilesFromTrashbin',
@@ -345,6 +359,27 @@ export default {
         onInput: checkInputValue
       }
 
+      this.createModal(modal)
+    },
+
+    showCreateResourceModalCopy(ext) {
+      const defaultName = this.$gettext('New file') + ext
+      const checkInputValue = value => {
+        this.setModalInputErrorMessage(this.checkNewFileName(value))
+      }
+      const modal = {
+        variation: 'passive',
+        title: this.$gettext('Create a new file'),
+        cancelText: this.$gettext('Cancel'),
+        confirmText: this.$gettext('Create'),
+        hasInput: true,
+        inputValue: defaultName,
+        inputLabel: this.$gettext('File name'),
+        inputError: this.checkNewFileName(defaultName),
+        onCancel: this.hideModal,
+        onConfirm: this.createNewFile,
+        onInput: checkInputValue
+      }
       this.createModal(modal)
     },
 
@@ -484,6 +519,48 @@ export default {
       }
 
       this.fileFolderCreationLoading = false
+    },
+
+    async createNewFile(fileName) {
+      try {
+        const path = pathUtil.join(this.currentPath, fileName)
+        const url = '/app/new?filename=' + path
+        console.log(encodeURI(url), path)
+        const headers = new Headers()
+        headers.append('Authorization', 'Bearer ' + this.getToken)
+        headers.append('X-Requested-With', 'XMLHttpRequest')
+        const response = await fetch(encodeURI(url), {
+          method: 'POST',
+          headers
+        })
+        const file = await response.json()
+        // const file_id = file.file_id
+        let resource
+        if (this.isPersonalRoute) {
+          await this.$client.files.putFileContents(path, '')
+          resource = await this.$client.files.fileInfo(path, DavProperties.Default)
+        }
+        resource = buildResource(resource)
+        this.UPSERT_RESOURCE(resource)
+        this.$_fileActions_triggerDefaultAction(resource)
+        this.hideModal()
+        if (this.isPersonalRoute) {
+          this.loadIndicators({
+            client: this.$client,
+            currentFolder: this.currentFolder.path
+          })
+        }
+        setTimeout(() => {
+          this.setFileSelection([resource])
+          this.scrollToResource(resource)
+        })
+      } catch (error) {
+        this.showMessage({
+          title: this.$gettext('Creating file failed…'),
+          desc: error,
+          status: 'danger'
+        })
+      }
     },
 
     checkNewFileName(fileName) {

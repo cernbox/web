@@ -1,27 +1,27 @@
 <template>
   <main
-    class="uk-height-viewport"
+    class="full-height"
     :class="{
       'uk-flex uk-flex-center uk-flex-middle': loading || loadingError
     }"
   >
     <h1 class="oc-invisible-sr" v-text="pageTitle" />
     <loading-screen v-if="loading" />
-    <error-screen v-else-if="loadingError" />
+    <error-screen v-else-if="loadingError" :message="errorMessage" />
     <iframe
       v-if="appUrl && method === 'GET'"
       :src="appUrl"
-      class="uk-width-1-1 uk-height-viewport"
+      class="uk-width-1-1 full-height"
       :title="iFrameTitle"
     />
-    <div v-if="appUrl && method === 'POST' && formParameters">
+    <div v-if="appUrl && method === 'POST' && formParameters" class="full-height">
       <form :action="appUrl" target="app-iframe" method="post">
         <input ref="subm" type="submit" :value="formParameters" class="oc-hidden" />
         <div v-for="(item, key, index) in formParameters" :key="index">
           <input :name="key" :value="item" type="hidden" />
         </div>
       </form>
-      <iframe name="app-iframe" class="uk-width-1-1 uk-height-viewport" :title="iFrameTitle" />
+      <iframe name="app-iframe" class="uk-width-1-1 full-height" :title="iFrameTitle" />
     </div>
   </main>
 </template>
@@ -42,6 +42,7 @@ export default {
   data: () => ({
     loading: false,
     loadingError: false,
+    errorMessage: false,
     appUrl: '',
     method: '',
     formParameters: {}
@@ -110,11 +111,14 @@ export default {
     })
 
     if (response.status !== 200) {
+      const err = await response.json()
+      this.errorMessage = err.message
       this.loading = false
       this.loadingError = true
-      console.error('Error fetching app information', response.status, response.message)
+      console.error('Error fetching app information', response.status, this.errorMessage)
       return
     }
+
     const data = await response.json()
 
     if (!data.app_url || !data.method) {
@@ -135,3 +139,9 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.full-height {
+  height: 100%;
+}
+</style>

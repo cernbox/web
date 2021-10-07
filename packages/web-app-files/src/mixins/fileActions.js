@@ -168,6 +168,14 @@ export default {
       })
 
       const allDefaultActions = availableExternalAppActions.concat(actions)
+
+      // if there is an internal action rather than download, prioritize it as default
+      const internalAppActionExists = actions[0].icon !== 'file_download'
+      if (internalAppActionExists && availableExternalAppActions)
+        allDefaultActions.unshift(
+          allDefaultActions.splice(availableExternalAppActions.length, 1)[0]
+        )
+
       allDefaultActions[0].handler(resource, allDefaultActions[0].handlerData)
     },
 
@@ -175,7 +183,7 @@ export default {
     // to open a resource with a specific mimeType
     $_fileActions_loadApps(resource) {
       const { mimeType } = resource
-      if (mimeType === undefined || !this.capabilities.files.app_providers) {
+      if (mimeType === undefined || !this.capabilities?.files?.app_providers) {
         return []
       }
       const allAvailableMimeTypes = this.getMimeTypes()

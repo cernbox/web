@@ -1,0 +1,9 @@
+{
+  "name": "text-editor",
+  "version": "0.0.0",
+  "description": "CERNBox simple web text-editor",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "vuex": "^3.6.2"
+  }
+}

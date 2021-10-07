@@ -104,6 +104,7 @@
         :target-route="targetRoute"
         :header-position="headerPosition"
         :grouping-settings="groupingSettings"
+        :are-resources-clickable="viewMode === shareStatus.declined ? false : true"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
       >

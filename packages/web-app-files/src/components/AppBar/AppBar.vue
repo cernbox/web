@@ -94,13 +94,17 @@
                     </oc-button>
                   </div>
                 </li>
-                <li v-for="(mimetype, key) in getMimeTypes()" :key="key">
+                <li
+                  v-for="(mimetype, key) in getMimeTypes()"
+                  v-if="mimetype.allow_creation === true"
+                  :key="key"
+                >
                   <div>
                     <oc-button
                       appearance="raw"
                       justify-content="left"
                       :class="['uk-width-1-1']"
-                      @click="showCreateResourceModalCopy('.' + mimetype.ext)"
+                      @click="showCreateResourceModal(false, mimetype.ext, false, true)"
                     >
                       <oc-icon :name="mimetype.icon || 'file'" />
                       <span>{{ 'New ' + mimetype.name }}</span>
@@ -328,7 +332,12 @@ export default {
     ...mapMutations('Files', ['UPSERT_RESOURCE', 'SET_HIDDEN_FILES_VISIBILITY']),
     ...mapMutations(['SET_QUOTA']),
 
-    showCreateResourceModal(isFolder = true, ext = 'txt', openAction = null) {
+    showCreateResourceModal(
+      isFolder = true,
+      ext = 'txt',
+      openAction = null,
+      createNewFile = false
+    ) {
       const defaultName = isFolder
         ? this.$gettext('New folder')
         : this.$gettext('New file') + '.' + ext
@@ -355,31 +364,14 @@ export default {
           ? this.checkNewFolderName(defaultName)
           : this.checkNewFileName(defaultName),
         onCancel: this.hideModal,
-        onConfirm: isFolder ? this.addNewFolder : this.addNewFile,
+        onConfirm: isFolder
+          ? this.addNewFolder
+          : createNewFile
+          ? this.createNewFile
+          : this.addNewFile,
         onInput: checkInputValue
       }
 
-      this.createModal(modal)
-    },
-
-    showCreateResourceModalCopy(ext) {
-      const defaultName = this.$gettext('New file') + ext
-      const checkInputValue = value => {
-        this.setModalInputErrorMessage(this.checkNewFileName(value))
-      }
-      const modal = {
-        variation: 'passive',
-        title: this.$gettext('Create a new file'),
-        cancelText: this.$gettext('Cancel'),
-        confirmText: this.$gettext('Create'),
-        hasInput: true,
-        inputValue: defaultName,
-        inputLabel: this.$gettext('File name'),
-        inputError: this.checkNewFileName(defaultName),
-        onCancel: this.hideModal,
-        onConfirm: this.createNewFile,
-        onInput: checkInputValue
-      }
       this.createModal(modal)
     },
 
@@ -534,7 +526,6 @@ export default {
           headers
         })
         const file = await response.json()
-        // const file_id = file.file_id
         let resource
         if (this.isPersonalRoute) {
           await this.$client.files.putFileContents(path, '')

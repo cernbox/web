@@ -375,27 +375,6 @@ export default {
       this.createModal(modal)
     },
 
-    showCreateResourceModalCopy(ext) {
-      const defaultName = this.$gettext('New file') + ext
-      const checkInputValue = value => {
-        this.setModalInputErrorMessage(this.checkNewFileName(value))
-      }
-      const modal = {
-        variation: 'passive',
-        title: this.$gettext('Create a new file'),
-        cancelText: this.$gettext('Cancel'),
-        confirmText: this.$gettext('Create'),
-        hasInput: true,
-        inputValue: defaultName,
-        inputLabel: this.$gettext('File name'),
-        inputError: this.checkNewFileName(defaultName),
-        onCancel: this.hideModal,
-        onConfirm: this.createNewFile,
-        onInput: checkInputValue
-      }
-      this.createModal(modal)
-    },
-
     async addNewFolder(folderName) {
       if (folderName === '') {
         return

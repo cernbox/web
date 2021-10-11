@@ -7,7 +7,7 @@
   >
     <h1 class="oc-invisible-sr" v-text="pageTitle" />
     <loading-screen v-if="loading" />
-    <error-screen v-else-if="loadingError" />
+    <error-screen v-else-if="loadingError" :message="loadingErrorMessage" />
     <iframe
       v-if="appUrl && method === 'GET'"
       :src="appUrl"
@@ -42,6 +42,7 @@ export default {
   data: () => ({
     loading: false,
     loadingError: false,
+    loadingErrorMessage: false,
     appUrl: '',
     method: '',
     formParameters: {}
@@ -112,6 +113,7 @@ export default {
     if (response.status !== 200) {
       this.loading = false
       this.loadingError = true
+      this.loadingErrorMessage = await response.json().message
       console.error('Error fetching app information', response.status, response.message)
       return
     }

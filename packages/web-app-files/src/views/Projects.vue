@@ -85,7 +85,7 @@ export default {
         return this.selectedFiles
       },
       set(resources) {
-        this.SELECT_RESOURCES(resources)
+        this.SET_FILE_SELECTION(resources)
       }
     },
     isEmpty() {
@@ -137,7 +137,7 @@ export default {
     ...mapActions(['showMessage']),
     ...mapMutations('Files', [
       'LOAD_FILES',
-      'SELECT_RESOURCES',
+      'SET_FILE_SELECTION',
       'CLEAR_CURRENT_FILES_LIST',
       'UPDATE_RESOURCE'
     ]),
@@ -180,7 +180,7 @@ export default {
 
       const data = await response.json()
       console.log('projects', data)
-       const recievedResources = []
+      const recievedResources = []
       if (data && data.projects) {
         data.projects.forEach((p, i) => {
           recievedResources.push({

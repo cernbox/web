@@ -1,6 +1,6 @@
 <template>
   <main
-    class="uk-height-viewport full-height"
+    class="full-height"
     :class="{
       'uk-flex uk-flex-center uk-flex-middle': loading || loadingError
     }"

@@ -302,6 +302,10 @@ export default {
       return this.shares.filter(s => s.type === 'folder').length
     },
     shares() {
+      console.log(
+        'sahres',
+        this.activeFiles.filter(file => file.status === this.viewMode)
+      )
       return this.activeFiles.filter(file => file.status === this.viewMode)
     },
     sharesOtherViewMode() {

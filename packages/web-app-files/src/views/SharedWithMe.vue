@@ -206,7 +206,7 @@ export default {
     },
     groupingSettings() {
       return {
-        groupingBy: 'Shared date/on',
+        groupingBy: 'Shared date',
         showGroupingOptions: true,
         groupingFunctions: {
           'Share owner': function(row) {
@@ -217,7 +217,7 @@ export default {
             if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
             return row.name.charAt(0).toLowerCase()
           },
-          'Shared date/on': function(row) {
+          'Shared date': function(row) {
             const interval1 = new Date()
             interval1.setDate(interval1.getDate() - 7)
             const interval2 = new Date()
@@ -228,6 +228,10 @@ export default {
               return 'This Month'
             } else return 'Older'
           }
+        },
+        functionColMappings: {
+          'Share owner': 'owner',
+          'Shared date': 'sdate'
         }
       }
     },

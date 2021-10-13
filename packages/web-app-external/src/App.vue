@@ -14,7 +14,7 @@
       class="uk-width-1-1 full-height"
       :title="iFrameTitle"
     />
-    <div v-if="appUrl && method === 'POST' && formParameters">
+    <div v-if="appUrl && method === 'POST' && formParameters" class="full-height">
       <form :action="appUrl" target="app-iframe" method="post">
         <input ref="subm" type="submit" :value="formParameters" class="oc-hidden" />
         <div v-for="(item, key, index) in formParameters" :key="index">

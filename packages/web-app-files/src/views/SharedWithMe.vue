@@ -16,8 +16,9 @@
           class="files-table"
           :class="{ 'files-table-squashed': !sidebarClosed }"
           :are-thumbnails-displayed="displayThumbnails"
-          :resources="showMorePending ? pending : pending.slice(0, 3)"
+          :resources="pending"
           :target-route="targetRoute"
+          :grouping-settings="groupingSettingsPreview"
           :are-resources-clickable="false"
           :header-position="headerPosition"
         >
@@ -48,7 +49,7 @@
           <template #contextMenu="{ resource }">
             <context-actions :item="resource" />
           </template>
-          <template v-if="pendingHasMore" #footer>
+          <!--<template v-if="pendingHasMore" #footer>
             <div class="uk-width-1-1 uk-text-center oc-mt">
               <oc-button
                 id="files-shared-with-me-pending-show-all"
@@ -62,7 +63,7 @@
                 <oc-icon :name="'chevron_' + (showMorePending ? 'up' : 'down')" />
               </oc-button>
             </div>
-          </template>
+          </template>-->
         </oc-table-files>
       </div>
 
@@ -233,6 +234,11 @@ export default {
           'Share owner': 'owner',
           'Shared date': 'sdate'
         }
+      }
+    },
+    groupingSettingsPreview() {
+      return {
+        previewAmount: 3
       }
     },
     // pending shares

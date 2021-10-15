@@ -236,10 +236,9 @@ export default {
         }
       }
     },
-        groupingSettingsPreview() {
+    groupingSettingsPreview() {
       return {
-previewAmount: 3
-
+        previewAmount: 3
       }
     },
     // pending shares

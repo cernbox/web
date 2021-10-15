@@ -16,6 +16,10 @@ export default {
             if (isTrashbinRoute(this.$route)) {
               return false
             }
+            
+            if (isSharedWithMeRoute(this.$route) && resource.status !== 0) {
+              return false
+            }
 
             if (isSameResource(resource, this.currentFolder)) {
               return false

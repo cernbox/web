@@ -1,4 +1,5 @@
 import { isTrashbinRoute } from '../../helpers/route'
+import { isSharedWithMeRoute } from '../../helpers/route'
 import { mapState } from 'vuex'
 import { isSameResource } from '../../helpers/resource'
 

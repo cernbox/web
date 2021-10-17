@@ -44,7 +44,7 @@
 <script>
 import { mapGetters, mapMutations, mapState } from 'vuex'
 
-import { aggregateResourceShares, buildDeletedResource, buildResource } from '../helpers/resources'
+import { buildDeletedResource, buildResource } from '../helpers/resources'
 import MixinFilesListFilter from '../mixins/filesListFilter'
 import MixinFilesListPositioning from '../mixins/filesListPositioning'
 import MixinResources from '../mixins/resources'

@@ -215,6 +215,8 @@ export default {
 
       resources = await resources.json()
       resources = resources.ocs.data
+      // filter out shares via link only
+      resources = resources.filter((r) => r.share_type === 0)
 
       if (resources.length) {
         resources = aggregateResourceShares(

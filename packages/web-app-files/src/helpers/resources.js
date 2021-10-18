@@ -180,7 +180,7 @@ export function buildSharedResource(share, incomingShares = false, allowSharePer
     isFolder,
     sdate: share.stime * 1000,
     indicators: [],
-    mimeType: share.state === 0? share.mimetype: ""
+    mimeType: share.state === 0 ? share.mimetype : ''
   }
 
   if (incomingShares) {
@@ -204,6 +204,7 @@ export function buildSharedResource(share, incomingShares = false, allowSharePer
     resource.canShare = () => checkPermission(share.permissions, 'share')
     resource.canRename = () => checkPermission(share.permissions, 'update')
     resource.canBeDeleted = () => checkPermission(share.permissions, 'delete')
+    resource.canDeny = () => checkPermission(share.permissions, 'deny')
   } else {
     resource.sharedWith = share.sharedWith
     resource.shareOwner = share.uid_owner
@@ -214,6 +215,7 @@ export function buildSharedResource(share, incomingShares = false, allowSharePer
     resource.canShare = () => true
     resource.canRename = () => true
     resource.canBeDeleted = () => true
+    resource.canDeny = () => false
   }
 
   resource.extension = isFolder ? '' : _getFileExtension(resource.name)

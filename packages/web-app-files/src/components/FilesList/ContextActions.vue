@@ -16,7 +16,7 @@
         </oc-button>
       </li>
     </ul>
-    <hr v-if="showExternalApps" />
+    <hr v-if="showExternalApps && this.menuItemsApps.length == 0" />
     <template v-for="(section, i) in menuSections">
       <ul
         :id="`oc-files-context-actions-${section.name}`"
@@ -109,6 +109,12 @@ export default {
 
     menuSections() {
       const sections = []
+      if (this.menuItemsApps.length) {
+        sections.push({
+          name: 'apps',
+          items: this.menuItemsApps
+        })
+      }
       if (this.menuItemsContext.length) {
         sections.push({
           name: 'context',
@@ -137,7 +143,7 @@ export default {
       }
     },
 
-    menuItemsContext() {
+    menuItemsApps() {
       const menuItems = []
 
       // `open` and `open with`
@@ -152,6 +158,13 @@ export default {
       if (openActions.length > 1) {
         // TODO: sub nav item with all remaining open actions
       }
+
+      return menuItems
+    },
+
+
+    menuItemsContext() {
+      const menuItems = []
 
       menuItems.push(
         ...[

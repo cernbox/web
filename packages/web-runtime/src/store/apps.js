@@ -96,7 +96,8 @@ const mutations = {
     const app = {
       name: appInfo.name || appInfo.id,
       id: appInfo.id,
-      icon: appInfo.icon || 'check_box_outline_blank'
+      icon: appInfo.icon || 'check_box_outline_blank',
+      iconImg: appInfo.iconImg
     }
     state.meta[app.id] = app
   },

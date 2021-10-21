@@ -86,6 +86,7 @@ export default {
           },
           showInRightClickMenu: editor.showInRightClickMenu,
           canBeDefault: editor.canBeDefault,
+          iconImg: this.apps.meta[editor.app].iconImg,
           componentType: 'oc-button',
           class: `oc-files-actions-${kebabCase(
             this.apps.meta[editor.app].name

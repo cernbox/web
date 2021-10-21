@@ -18,7 +18,12 @@
         :class="['oc-text-bold', action.class]"
         @click.stop="action.handler(highlightedFile, action.handlerData)"
       >
-        <oc-icon :name="action.icon" size="medium" />
+        <template v-if="action.iconImg">
+          <img :src="action.iconImg" :alt="`Icon for ${action.label}`" class="oc-icon oc-icon-m"/>
+        </template>
+        <template v-else>
+          <oc-icon :name="action.icon" size="medium" />
+        </template>
         <span class="oc-files-actions-sidebar-action-label">{{
           action.label(highlightedFile)
         }}</span>

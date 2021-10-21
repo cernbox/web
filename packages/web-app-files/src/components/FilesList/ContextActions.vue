@@ -19,7 +19,7 @@
     <hr v-if="showExternalApps" />
     <template v-for="(section, i) in menuSections">
       <ul
-        id="`oc-files-context-actions-${section.name}`"
+        :id="`oc-files-context-actions-${section.name}`"
         :key="`section-${section.name}-list`"
         class="uk-list oc-mt-s oc-files-context-actions"
       >

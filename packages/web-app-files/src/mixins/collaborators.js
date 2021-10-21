@@ -66,7 +66,8 @@ export default {
         isFolder: isFolder,
         allowSharePerm: !this.isOcis
       })
-      collaboratorRoles.push(this.advancedRole)
+      // deactivate for CERNBox
+      // collaboratorRoles.push(this.advancedRole)
 
       return collaboratorRoles
     },

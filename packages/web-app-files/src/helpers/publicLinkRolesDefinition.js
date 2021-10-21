@@ -21,12 +21,13 @@ export default ({ isFolder = false, $gettext = returnOriginal }) => {
   ]
   if (isFolder) {
     roles.push(
-      {
+      // disable contributor role for CERNBox
+      /* {
         name: 'contributor',
         label: $gettext('Contributor'),
         description: $gettext('Recipients can view, download and upload contents.'),
         permissions: 5
-      },
+      }, */
       {
         name: 'editor',
         label: $gettext('Editor'),

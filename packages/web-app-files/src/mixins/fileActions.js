@@ -84,13 +84,19 @@ export default {
 
             return resource.extension === editor.extension
           },
-          canBeDefault: true,
+          showInRightClickMenu: editor.showInRightClickMenu,
+          canBeDefault: editor.canBeDefault,
           componentType: 'oc-button',
           class: `oc-files-actions-${kebabCase(
             this.apps.meta[editor.app].name
           ).toLowerCase()}-trigger`
         }
-      })
+      }).sort((first, second) => {
+        if (second.canBeDefault !== first.canBeDefault && second.canBeDefault){
+          return 1
+        }
+        return 0
+       })
     }
   },
 

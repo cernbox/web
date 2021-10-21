@@ -158,6 +158,11 @@ export default {
       if (openActions.length > 1) {
         // TODO: sub nav item with all remaining open actions
       }
+      openActions.forEach((action, index) => {
+        if (index !== 0 && action.showInRightClickMenu) {
+          menuItems.push(action)
+        }
+      })
 
       return menuItems
     },

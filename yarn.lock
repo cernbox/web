@@ -11953,6 +11953,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"open-in-swan@workspace:packages/web-app-open-in-swan":
+  version: 0.0.0-use.local
+  resolution: "open-in-swan@workspace:packages/web-app-open-in-swan"
+  languageName: unknown
+  linkType: soft
+
 "open@npm:^6.4.0":
   version: 6.4.0
   resolution: "open@npm:6.4.0"

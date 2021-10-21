@@ -13,7 +13,8 @@
     "packages/web-app-search",
     "packages/web-pkg",
     "packages/web-runtime",
-    "packages/web-app-jupyter"
+    "packages/web-app-jupyter",
+    "packages/web-app-open-in-swan"
   ],
   "scripts": {
     "build": "rollup -c",

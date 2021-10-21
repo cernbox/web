@@ -67,7 +67,8 @@ export default {
         allowSharePerm: !this.isOcis,
         allowDenyPerm: this.highlightedFile.canDeny()
       })
-      collaboratorRoles.push(this.advancedRole)
+      // deactivate for CERNBox
+      // collaboratorRoles.push(this.advancedRole)
 
       return collaboratorRoles
     },

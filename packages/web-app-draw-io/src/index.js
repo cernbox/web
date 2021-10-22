@@ -4,18 +4,21 @@ import App from './App.vue'
 const routes = [
   {
     name: 'edit',
-    path: '/edit/:filePath',
+    path: '/edit/:filePath*',
     components: {
       fullscreen: App
     },
-    meta: { hideHeadbar: true }
+    meta: { 
+      hideHeadbar: true,
+      patchCleanPath: true
+    }
   }
 ]
 
 const appInfo = {
   name: 'Draw.io',
   id: 'draw-io',
-  icon: 'grid_on',
+  icon: 'drawio_app',
   extensions: [
     {
       extension: 'drawio',

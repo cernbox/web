@@ -7,7 +7,8 @@
         @click="$_fileActions_openLink(app.name, highlightedFile.fileId)"
       >
         <!-- why img and not oc-icon again? -->
-        <img :src="app.icon" :alt="`Icon for ${app.name} app`" class="oc-icon oc-icon-m" />
+        <oc-icon :name="app.icon || 'file'" size="medium" />
+        <!-- <img :src="app.icon" :alt="`Icon for ${app.name} app`" class="oc-icon oc-icon-m" />-->
         <span class="oc-files-actions-sidebar-action-label">{{ 'Open in ' + app.name }}</span>
       </oc-button>
     </li>
@@ -19,7 +20,7 @@
         @click.stop="action.handler(highlightedFile, action.handlerData)"
       >
         <template v-if="action.iconImg">
-          <img :src="action.iconImg" :alt="`Icon for ${action.label}`" class="oc-icon oc-icon-m"/>
+          <img :src="action.iconImg" :alt="`Icon for ${action.label}`" class="oc-icon oc-icon-m" />
         </template>
         <template v-else>
           <oc-icon :name="action.icon" size="medium" />

@@ -11,12 +11,13 @@
           class="oc-text-bold"
           @click="$_fileActions_openLink(app.name, item.fileId)"
         >
-          <img :src="app.icon" :alt="`Icon for ${app.name} app`" class="oc-icon oc-icon-m" />
+          <!--<img :src="app.icon" :alt="`Icon for ${app.name} app`" class="oc-icon oc-icon-m" />-->
+          <oc-icon :name="app.icon || 'file'" size="medium" />
           <span class="oc-files-context-action-label">{{ 'Open in ' + app.name }}</span>
         </oc-button>
       </li>
     </ul>
-    <hr v-if="showExternalApps && this.menuItemsApps.length == 0" />
+    <hr v-if="showExternalApps && menuItemsApps.length == 0" />
     <template v-for="(section, i) in menuSections">
       <ul
         :id="`oc-files-context-actions-${section.name}`"
@@ -35,7 +36,11 @@
             v-on="getComponentListeners(action, item)"
           >
             <template v-if="action.iconImg">
-              <img :src="action.iconImg" :alt="`Icon for ${action.label}`" class="oc-icon oc-icon-m"/>
+              <img
+                :src="action.iconImg"
+                :alt="`Icon for ${action.label}`"
+                class="oc-icon oc-icon-m"
+              />
             </template>
             <template v-else>
               <oc-icon :name="action.icon" size="medium" />
@@ -171,7 +176,6 @@ export default {
 
       return menuItems
     },
-
 
     menuItemsContext() {
       const menuItems = []

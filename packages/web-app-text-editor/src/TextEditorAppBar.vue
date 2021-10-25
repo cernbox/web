@@ -64,7 +64,7 @@ export default {
 
       if (this.isPublicLink) {
         this.$router.push({
-          path: '/files/public/list/' + plToken + folderPath
+          path: '/files/public/list/' + this.plToken + folderPath
         })
       } else {
         this.$router.push({

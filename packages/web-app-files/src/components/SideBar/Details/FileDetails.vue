@@ -103,6 +103,20 @@
             />
           </td>
         </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">EOS Path:</th>
+          <td>
+            <span class="oc-files-file-link-url uk-text-truncate">{{ file.path }}</span>
+            <copy-to-clipboard-button
+              class="oc-files-public-link-copy-url oc-ml-xs"
+              :value="file.path"
+              label="Copy EOS path"
+              success-msg-title="Link copy"
+              success-msg-text="The EOS path has been copied to your clipboard."
+            />
+          </td>
+        </tr>
       </table>
     </div>
     <p v-else data-testid="noContentText" v-text="noContentText" />
@@ -121,8 +135,11 @@ import upperFirst from 'lodash-es/upperFirst'
 import path from 'path'
 import { DateTime } from 'luxon'
 
+import CopyToClipboardButton from '../Links/CopyToClipboardButton.vue'
+
 export default {
   name: 'FileDetails',
+  components: { CopyToClipboardButton },
   mixins: [Mixins, MixinResources, MixinRoutes],
   title: ($gettext) => {
     return $gettext('Details')

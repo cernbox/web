@@ -212,6 +212,9 @@ export default {
         return []
       }
 
+      // CERNBox: if advanced query, retrieve name
+      query = query.split(':')[1] || query
+
       return recipients.filter(
         (recipient) =>
           recipient.value.shareType === shareTypes.remote ||

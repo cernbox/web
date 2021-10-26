@@ -44,6 +44,12 @@ export default {
       const grid = new THREE.GridHelper(50, 30)
       this.scene.add(grid)
     },
+    addAxes: function() {
+      const axes = new THREE.AxesHelper();
+      axes.material.depthTest = false;
+      axes.renderOrder = 1;
+      this.scene.add(axes);
+    },
     animate: function() {
       this.renderer.render(this.scene, this.camera)
     }
@@ -54,8 +60,10 @@ export default {
     console.log("vasco 1")
     this.addGrid()
     console.log("vasco 2")
-    this.animate()
+    this.addAxes()
     console.log("vasco 3")
+    this.animate()
+    console.log("vasco 4")
   }
 }
 </script>

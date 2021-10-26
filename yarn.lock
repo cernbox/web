@@ -1923,6 +1923,11 @@
   dependencies:
     "@types/jest" "*"
 
+"@types/three@^0.131.0":
+  version "0.131.1"
+  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.131.1.tgz#2ee511383c8620f6ce301582214122319e6aca34"
+  integrity sha512-unnjsolcm7R90e4XK9qMq4JYEzly0XQNa0pG8RAOMZeVzj3FLIFPymAYUx4Osz0gY9jFZz8omIQplqiieEE7gw==
+
 "@types/ua-parser-js@^0.7.36":
   version "0.7.36"
   resolved "https://registry.npmjs.org/@types/ua-parser-js/-/ua-parser-js-0.7.36.tgz"
@@ -11153,6 +11158,11 @@ thenify-all@^1.0.0:
   dependencies:
     any-promise "^1.0.0"
 
+three-mesh-bvh@^0.3.7:
+  version "0.3.7"
+  resolved "https://registry.yarnpkg.com/three-mesh-bvh/-/three-mesh-bvh-0.3.7.tgz#39a05d2d53f66b5df486d08622801a1850734934"
+  integrity sha512-veRJRj0mY2rBj9yRZVg/E98wd6e7AzqzTq/+6ispY6m50gYuGitUNih2dRQzbkMcwRECLURvuudb9BFW3/swAw==
+
 three@^0.133.1:
   version "0.133.1"
   resolved "https://registry.npmjs.org/three/-/three-0.133.1.tgz"
@@ -11869,6 +11879,11 @@ vuex-router-sync@^5.0.0:
   resolved "https://registry.npmjs.org/vuex-router-sync/-/vuex-router-sync-5.0.0.tgz"
   integrity sha512-Mry2sO4kiAG64714X1CFpTA/shUH1DmkZ26DFDtwoM/yyx6OtMrc+MxrU+7vvbNLO9LSpgwkiJ8W+rlmRtsM+w==
 
+vuex@3.1.3:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/vuex/-/vuex-3.1.3.tgz#f2ad73e3fb73691698b38c93f66e58e267947180"
+  integrity sha512-k8vZqNMSNMgKelVZAPYw5MNb2xWSmVgCKtYKAptvm9YtZiOXnRXFWu//Y9zQNORTrm3dNj1n/WaZZI26tIX6Mw==
+
 vuex@3.6.2, vuex@^3.6.2:
   version "3.6.2"
   resolved "https://registry.npmjs.org/vuex/-/vuex-3.6.2.tgz"
@@ -11901,6 +11916,20 @@ wcwidth@^1.0.1:
   integrity sha1-8LDc+RW8X/FSivrbLA4XtTLaL+g=
   dependencies:
     defaults "^1.0.3"
+
+web-ifc-three@^0.0.68:
+  version "0.0.68"
+  resolved "https://registry.yarnpkg.com/web-ifc-three/-/web-ifc-three-0.0.68.tgz#e21ae111d85cede64865b2ba0da30b540be140b0"
+  integrity sha512-2nMYDWoIV6h/5+bOmHr72YcV9wt6AqrMiCW9t98OTDibyXjUjeIAwoE+msOxoPv4iSDpOpqxTdQCE29Mad9hhA==
+  dependencies:
+    "@types/three" "^0.131.0"
+    three-mesh-bvh "^0.3.7"
+    web-ifc "^0.0.25"
+
+web-ifc@^0.0.25:
+  version "0.0.25"
+  resolved "https://registry.yarnpkg.com/web-ifc/-/web-ifc-0.0.25.tgz#386b7ce9b7eb6e0ed2998ff72b234d6a71c2de53"
+  integrity sha512-FutpMKz8UtTkSjRD20sfebVOj+vrAKn9vLumaL6MkcjVjsSHhpnelHM7OvUAcZFeNwV69yTme9YAwOuPVZ2n+Q==
 
 webdav@^4.0.0:
   version "4.6.0"

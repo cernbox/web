@@ -13,7 +13,8 @@
     "packages/web-app-search",
     "packages/web-pkg",
     "packages/web-runtime",
-    "packages/web-app-jupyter"
+    "packages/web-app-jupyter",
+    "packages/web-app-ifc-js"
   ],
   "scripts": {
     "build": "rollup -c",
@@ -129,8 +130,5 @@
   },
   "engines": {
     "node": ">=14 <=16"
-  },
-  "dependencies": {
-    "three": "^0.133.1"
   }
 }

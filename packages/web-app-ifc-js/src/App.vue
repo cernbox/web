@@ -1,10 +1,10 @@
 <template>
-<div id="container"></div>
+<canvas id="threeCanvas"></canvas>
 </template>
 
 <script>
-//import  * as THREE from 'https://cdn.skypack.dev/pin/three@v0.133.1-a8rkd0QTHl2tMZXZJAEw/mode=imports/optimized/three.js'
 import * as THREE from "three"
+import { IFCLoader } from "web-ifc-three/IFCLoader"
 
 export default {
   name: 'IFCEditor',
@@ -17,34 +17,49 @@ export default {
   },
   methods: {
     init: function() {
-      let container = document.getElementById('container');
+      const threeCanvas = document.getElementById('threeCanvas');
+      
       this.scene = new THREE.Scene()
-      this.camera = new THREE.PerspectiveCamera(75,
-        container.clientWidth / container.clientHeight, 0.1, 1000)
-      this.renderer = new THREE.WebGLRenderer({antialias: true})
-      this.renderer.setSize(container.clientWidth, container.clientHeight)
-      container.appendChild(this.renderer.domElement);
-    },
-    addCube: function() {
-      let geometry = new THREE.BoxGeometry(1, 1, 1);
-      let material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-      let cube = new THREE.Mesh(geometry, material);
-      this.scene.add(cube);
+      const lightColor = 0xffffff
 
-      this.camera.position.z = 5;
+      const ambientLight = new THREE.AmbientLight(lightColor, 0.5)
+      this.scene.add(ambientLight)
+
+      const directionalLight = new THREE.DirectionalLight(lightColor, 1)
+      directionalLight.position.set(0, 10, 0)
+      directionalLight.target.position.set(-5, 0, 0)
+      this.scene.add(directionalLight)
+      this.scene.add(directionalLight.target)
+
+      this.camera = new THREE.PerspectiveCamera(75, threeCanvas.clientWidth/threeCanvas.clientHeight)
+      this.camera.position.z = 15;
+      this.camera.position.y = 13;
+      this.camera.position.x = 8;
+      
+      this.renderer = new THREE.WebGLRenderer({canvas: threeCanvas, alpha: true})
+      this.renderer.setSize(threeCanvas.clientWidth, threeCanvas.clientHeight)
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    },
+    addGrid: function() {
+      const grid = new THREE.GridHelper(50, 30)
+      this.scene.add(grid)
     },
     animate: function() {
       this.renderer.render(this.scene, this.camera)
     }
   },
   mounted() {
+    console.log("vasco", IFCLoader)
     this.init()
-    this.addCube()
+    console.log("vasco 1")
+    this.addGrid()
+    console.log("vasco 2")
     this.animate()
+    console.log("vasco 3")
   }
 }
 </script>
 
 <style>
-  #container {width: 100%; height: 100%}
+  #threeCanvas {width: 100%; height: 100%}
 </style>

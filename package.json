@@ -126,6 +126,7 @@
     "vue-jest": "^3.0.7",
     "vue-template-compiler": "^2.6.12",
     "vuex-mock-store": "0.0.8",
+    "web-ifc-three": "^0.0.68",
     "xml-js": "^1.6.11"
   },
   "engines": {

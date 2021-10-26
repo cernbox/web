@@ -77,7 +77,8 @@ const plugins = [
         src: `./config/${production ? 'config.dist.json' : 'config.json'}`,
         dest: 'dist'
       },
-      { src: 'node_modules/requirejs/require.js', dest: 'dist/js' }
+      { src: 'node_modules/requirejs/require.js', dest: 'dist/js' },
+      { src: 'node_modules/web-ifc/web-ifc.wasm', dest: 'dist'}
     ]
   }),
   html({

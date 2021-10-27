@@ -14,7 +14,8 @@ export default {
       camera: null,
       scene: null,
       renderer: null,
-      controls: null
+      controls: null,
+      ifcLoader: null
     }
   },
   methods: {
@@ -62,28 +63,18 @@ export default {
       requestAnimationFrame(this.animate)
     },
     addIFCModel: function() {
-      const ifcLoader = new IFCLoader()
-
-      console.log("vasco 7")
-      ifcLoader.ifcManager.setWasmPath("./")
+      this.ifcLoader = new IFCLoader()
+      this.ifcLoader.ifcManager.setWasmPath("../../../../../../../")
       const url = this.$client.files.getFileUrl(this.$route.params.filePath)
-      console.log("vasco 8")
-      ifcLoader.load(url, (ifcModel) => this.scene.add(ifcModel.mesh))
-      console.log("vasco 9", url)
+      this.ifcLoader.load(url, (ifcModel) => this.scene.add(ifcModel.mesh))
     }
   },
   mounted() {
-    console.log("vasco", IFCLoader)
     this.init()
-    console.log("vasco 1")
     this.addGrid()
-    console.log("vasco 2")
     this.addAxes()
-    console.log("vasco 3")
     this.animate()
-    console.log("vasco 4")
     this.addIFCModel()
-    console.log("vasco 5")
   }
 }
 </script>

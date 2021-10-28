@@ -82,7 +82,7 @@ const plugins = [
     ]
   }),
   html({
-    title: 'ownCloud',
+    title: 'Loading...',
     attributes: {
       html: { lang: 'en' },
       link: [],

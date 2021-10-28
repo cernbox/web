@@ -2,7 +2,11 @@
   <div id="text-editor-app-bar" class="uk-container oc-app-bar uk-width-1-1">
     <oc-grid flex gutter="small">
       <div class="uk-width-auto">
-        <oc-button id="text-editor-controls-save" :disabled="!isTouched || isReadOnly" @click="saveContent">
+        <oc-button
+          id="text-editor-controls-save"
+          :disabled="!isTouched || isReadOnly"
+          @click="saveContent"
+        >
           <oc-icon name="save" />
         </oc-button>
         <oc-spinner v-if="isLoading" :aria-label="$gettext('Loading editor content')" />
@@ -24,7 +28,14 @@ import { mapGetters, mapActions } from 'vuex'
 export default {
   computed: {
     ...mapGetters(['activeFile']),
-    ...mapGetters('Text Editor', ['isTouched', 'isLoading', 'isReadOnly', 'currentFile', 'isPublicLink', 'plToken'])
+    ...mapGetters('Text Editor', [
+      'isTouched',
+      'isLoading',
+      'isReadOnly',
+      'currentFile',
+      'isPublicLink',
+      'plToken'
+    ])
   },
   methods: {
     ...mapActions('Text Editor', ['saveFile', 'handleSKey', 'resetState']),
@@ -57,10 +68,7 @@ export default {
     },
     finishClosingApp() {
       this.hideModal()
-      const folderPath = this.currentFile.substring(
-        0,
-        this.currentFile.lastIndexOf('/')
-      )
+      const folderPath = this.currentFile.substring(0, this.currentFile.lastIndexOf('/'))
 
       if (this.isPublicLink) {
         this.$router.push({

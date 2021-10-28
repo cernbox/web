@@ -8,7 +8,10 @@ const appInfo = {
     {
       extension: 'ipynb',
       handler: (info) => {
-        window.open("https://cern.ch/swanserver/cgi-bin/go?projurl=file:/" + info.filePath, "_blank");
+        window.open(
+          'https://cern.ch/swanserver/cgi-bin/go?projurl=file:/' + info.filePath,
+          '_blank'
+        )
       },
       showInRightClickMenu: true,
       canBeDefault: false,

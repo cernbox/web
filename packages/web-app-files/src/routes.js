@@ -18,15 +18,17 @@ function $gettext(msg) {
   return msg
 }
 
+const l = false
+
 export default [
   {
     path: '/',
-    redirect: { name: 'files-personal' }
+    redirect: {name: 'files-personal'}
   },
   {
     name: 'list',
     path: '/list',
-    redirect: { name: 'files-personal' },
+    redirect: {name: 'files-personal'},
     components: {
       app: App
     },
@@ -39,16 +41,6 @@ export default [
           hasBulkActions: true,
           title: $gettext('All files'),
           patchCleanPath: true
-        }
-      },
-      {
-        name: 'lightweight',
-        path: 'home',
-        component: Lightweight,
-        meta: {
-          hideFilelistActions: true,
-          hasBulkActions: false,
-          title: $gettext('Home')
         }
       },
       {
@@ -138,17 +130,31 @@ export default [
     ]
   },
   {
-    name: 'home',
-    path: '/home',
+    name: 'lightweight',
+    path: '/lightweight',
+    redirect: {name: 'files-home'},
     components: {
-      fullscreen: Lightweight
+      app: App
     },
     meta: {
-      auth: false,
-      hideHeadbar: false,
-      title: $gettext('Lightweight account home')
-    }
+      auth: true
+    },
+    children: [
+      {
+        name: 'home',
+        path: 'home',
+        component: Lightweight,
+        meta: {
+          auth: true,
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Lightweight account'),
+          patchCleanPath: true
+        }
+      }
+    ]
   },
+
   {
     name: 'public-link',
     path: '/public-link/:token',

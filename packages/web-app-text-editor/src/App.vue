@@ -19,8 +19,8 @@
           :value="currentContent"
           class="uk-height-1-1"
           :rows="20"
-          @input="onType"
           :disabled="isReadOnly"
+          @input="onType"
         />
       </div>
     </div>
@@ -49,7 +49,7 @@ export default {
     }
     // TODO on route change run exit
     // FIXME this is always edit or create... need to find file permissions
-    // if (this.$route.params.mode === 'edit' || 
+    // if (this.$route.params.mode === 'edit' ||
     //   this.$route.params.mode === 'create') {
     //   // This file can be edited
     this.setWriteMode()
@@ -62,7 +62,13 @@ export default {
     this.$refs.bar_comp.registerKeyboardShortcuts()
   },
   methods: {
-    ...mapActions('Text Editor', ['updateText', 'loadFile', 'setWriteMode', 'clearLastError', 'handleSKey']),
+    ...mapActions('Text Editor', [
+      'updateText',
+      'loadFile',
+      'setWriteMode',
+      'clearLastError',
+      'handleSKey'
+    ]),
     onType(e) {
       this.updateText(e)
     }

@@ -97,7 +97,12 @@ const actions = {
         }
 
         const capabilities = await client.getCapabilities()
+        //////
+        capabilities.lightweight= true
+        //////
         context.commit('SET_CAPABILITIES', capabilities)
+
+
 
         const userGroups = await client.users.getUserGroups(login.id)
         const user = await client.users.getUser(login.id)

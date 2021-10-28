@@ -64,40 +64,42 @@ export default {
     },
 
     $_fileActions_editorActions() {
-      return this.apps.fileEditors.map((editor) => {
-        return {
-          label: () => {
-            const translated = this.$gettext('Open in %{app}')
-            return this.$gettextInterpolate(
-              translated,
-              { app: this.apps.meta[editor.app].name },
-              true
-            )
-          },
-          icon: this.apps.meta[editor.app].icon,
-          handler: (item) =>
-            this.$_fileActions_openEditor(editor, item.path, item.id, EDITOR_MODE_EDIT),
-          isEnabled: ({ resource }) => {
-            if (editor.routes?.length > 0 && !checkRoute(editor.routes, this.$route.name)) {
-              return false
-            }
+      return this.apps.fileEditors
+        .map((editor) => {
+          return {
+            label: () => {
+              const translated = this.$gettext('Open in %{app}')
+              return this.$gettextInterpolate(
+                translated,
+                { app: this.apps.meta[editor.app].name },
+                true
+              )
+            },
+            icon: this.apps.meta[editor.app].icon,
+            handler: (item) =>
+              this.$_fileActions_openEditor(editor, item.path, item.id, EDITOR_MODE_EDIT),
+            isEnabled: ({ resource }) => {
+              if (editor.routes?.length > 0 && !checkRoute(editor.routes, this.$route.name)) {
+                return false
+              }
 
-            return resource.extension === editor.extension
-          },
-          showInRightClickMenu: editor.showInRightClickMenu,
-          canBeDefault: editor.canBeDefault,
-          iconImg: this.apps.meta[editor.app].iconImg,
-          componentType: 'oc-button',
-          class: `oc-files-actions-${kebabCase(
-            this.apps.meta[editor.app].name
-          ).toLowerCase()}-trigger`
-        }
-      }).sort((first, second) => {
-        if (second.canBeDefault !== first.canBeDefault && second.canBeDefault){
-          return 1
-        }
-        return 0
-       })
+              return resource.extension === editor.extension
+            },
+            showInRightClickMenu: editor.showInRightClickMenu,
+            canBeDefault: editor.canBeDefault,
+            iconImg: this.apps.meta[editor.app].iconImg,
+            componentType: 'oc-button',
+            class: `oc-files-actions-${kebabCase(
+              this.apps.meta[editor.app].name
+            ).toLowerCase()}-trigger`
+          }
+        })
+        .sort((first, second) => {
+          if (second.canBeDefault !== first.canBeDefault && second.canBeDefault) {
+            return 1
+          }
+          return 0
+        })
     }
   },
 

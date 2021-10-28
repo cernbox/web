@@ -8,7 +8,7 @@ const routes = [
     components: {
       fullscreen: App
     },
-    meta: { 
+    meta: {
       hideHeadbar: true,
       patchCleanPath: true
     }

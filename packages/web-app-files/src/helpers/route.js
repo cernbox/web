@@ -12,6 +12,10 @@ export function isPersonalRoute(route) {
   return route.name === 'files-personal'
 }
 
+export function isLightweightRoute(route) {
+  return route.name === 'files-home'
+}
+
 export function isFavoritesRoute(route) {
   return route.name === 'files-favorites'
 }

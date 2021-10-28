@@ -2,6 +2,7 @@ import {
   isAnySharedWithRoute,
   isFavoritesRoute,
   isPersonalRoute,
+  isLightweightRoute,
   isPublicFilesRoute,
   isPublicPage,
   isSharedWithMeRoute,
@@ -13,6 +14,9 @@ export default {
   computed: {
     isPersonalRoute() {
       return isPersonalRoute(this.$route)
+    },
+    isLightweightRoute() {
+      return isLightweightRoute(this.$route)
     },
     isFavoritesRoute() {
       return isFavoritesRoute(this.$route)

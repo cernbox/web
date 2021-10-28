@@ -1,5 +1,4 @@
-import { isTrashbinRoute } from '../../helpers/route'
-import { isSharedWithMeRoute } from '../../helpers/route'
+import { isTrashbinRoute, isSharedWithMeRoute } from '../../helpers/route'
 import { mapState } from 'vuex'
 import { isSameResource } from '../../helpers/resource'
 
@@ -17,7 +16,7 @@ export default {
             if (isTrashbinRoute(this.$route)) {
               return false
             }
-            
+
             if (isSharedWithMeRoute(this.$route) && resource.status !== 0) {
               return false
             }

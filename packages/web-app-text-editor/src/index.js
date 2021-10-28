@@ -59,9 +59,7 @@ const appInfo = {
           return $gettext('New plain text file…')
         }
       },
-      routes: [
-        'files-public-list'
-      ]
+      routes: ['files-public-list']
     }
   ]
 }

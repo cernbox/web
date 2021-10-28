@@ -17,36 +17,35 @@ const state = {
 const getContents = (state, client) => {
   if (state.isPublicLink) {
     return new Promise((resolve) => {
-      client.publicFiles.download(state.plToken, state.currentFile)
-        .then(async res => {
-          res.statusCode = res.status
-          resolve({
-            response: res,
-            body: await res.text(),
-            headers: {
-              ETag: res.headers.get('etag'),
-              'OC-FileId': res.headers.get('oc-fileid')
-            }
-          })
+      client.publicFiles.download(state.plToken, state.currentFile).then(async (res) => {
+        res.statusCode = res.status
+        resolve({
+          response: res,
+          body: await res.text(),
+          headers: {
+            ETag: res.headers.get('etag'),
+            'OC-FileId': res.headers.get('oc-fileid')
+          }
         })
+      })
     })
   } else {
-    return client.files
-      .getFileContents(state.currentFile, { resolveWithResponseObject: true, noCache: true })
+    return client.files.getFileContents(state.currentFile, {
+      resolveWithResponseObject: true,
+      noCache: true
+    })
   }
 }
 
 const putContents = (state, client) => {
   if (state.isPublicLink) {
-    return client.publicFiles
-      .putFileContents(state.plToken, state.currentFile, null, state.text, {
-        previousEntityTag: state.currentETag
-      })
+    return client.publicFiles.putFileContents(state.plToken, state.currentFile, null, state.text, {
+      previousEntityTag: state.currentETag
+    })
   } else {
-    return client.files
-      .putFileContents(state.currentFile, state.text, {
-        previousEntityTag: state.currentETag
-      })
+    return client.files.putFileContents(state.currentFile, state.text, {
+      previousEntityTag: state.currentETag
+    })
   }
 }
 
@@ -63,7 +62,7 @@ const actions = {
 
     let filePath
     if (payload.public) {
-      let path = payload.filePath.split('/')
+      const path = payload.filePath.split('/')
       path.shift() // remove empty first elem
       const token = path.shift()
       commit('PL_TOKEN', token)

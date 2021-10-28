@@ -33,6 +33,10 @@
         "autosave": false,
         "theme": "minimal"
       }
+    },
+    {
+      "id": "ifc-js",
+      "path": "web-app-ifc-js"
     }
   ]
 }

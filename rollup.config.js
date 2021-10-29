@@ -24,6 +24,13 @@ import ts from 'rollup-plugin-ts'
 const production = !process.env.ROLLUP_WATCH
 const sourcemap = process.env.SOURCE_MAP === 'true'
 
+const config = {
+  requirejs: {}
+}
+if (process.env.REQUIRE_TIMEOUT) {
+  config.requirejs.waitSeconds = parseInt(process.env.REQUIRE_TIMEOUT)
+}
+
 const plugins = [
   del({
     runOnce: true,
@@ -136,7 +143,8 @@ const plugins = [
               roots: {
                 css: 'css',
                 js: 'js'
-              }
+              },
+              config: config
             }
           },
           {},

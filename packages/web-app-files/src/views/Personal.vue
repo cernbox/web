@@ -390,3 +390,10 @@ export default {
   }
 }
 </script>
+
+<style>
+.uk-breadcrumb > :nth-child(n + 2):not(.uk-first-column)::before,
+.oc-breadcrumb-list > :nth-child(n + 2):not(.uk-first-column)::before {
+  margin: 0 12px 0 12px;
+}
+</style>

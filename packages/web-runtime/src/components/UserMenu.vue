@@ -29,7 +29,7 @@
       padding-size="small"
     >
       <ul class="uk-list">
-        <li class="uk-text-nowrap">
+        <!--<li class="uk-text-nowrap">
           <oc-button
             id="oc-topbar-account-manage"
             type="router-link"
@@ -41,7 +41,7 @@
             <oc-icon name="portrait" />
             <translate>Profile</translate>
           </oc-button>
-        </li>
+        </li>-->
         <li v-for="(n, nid) in menuItems" :key="`user-menu-${nid}`">
           <oc-button
             v-if="n.url"

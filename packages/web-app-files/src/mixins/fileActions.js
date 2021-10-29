@@ -75,6 +75,7 @@ export default {
             )
           },
           icon: this.apps.meta[editor.app].icon,
+          img: this.apps.meta[editor.app].img,
           handler: (item) =>
             this.$_fileActions_openEditor(editor, item.path, item.id, EDITOR_MODE_EDIT),
           isEnabled: ({ resource }) => {
@@ -84,13 +85,19 @@ export default {
 
             return resource.extension === editor.extension
           },
-          canBeDefault: true,
+          canBeDefault: editor.canBeDefault,
           componentType: 'oc-button',
           class: `oc-files-actions-${kebabCase(
             this.apps.meta[editor.app].name
           ).toLowerCase()}-trigger`
         }
-      })
+      }).sort((first, second) => {
+        // We make the default action based on the order, so put the ones who can be default on top
+        if (second.canBeDefault !== first.canBeDefault && second.canBeDefault){
+          return 1
+        }
+        return 0
+       })
     }
   },
 
@@ -183,7 +190,8 @@ export default {
       return availableMimeTypes.app_providers.map((app) => {
         const label = this.$gettext('Open in %{ appName }')
         return {
-          img: app.icon,
+          icon: app.icon,
+          img: app.img,
           componentType: 'oc-button',
           class: `oc-files-actions-${app.name}-trigger`,
           isEnabled: () => true,

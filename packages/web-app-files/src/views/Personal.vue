@@ -27,6 +27,7 @@
         :target-route="targetRoute"
         :header-position="headerPosition"
         :drag-drop="true"
+        :view="'personal-files'"
         @fileDropped="fileDropped"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
@@ -393,3 +394,10 @@ export default {
   }
 }
 </script>
+
+<style>
+.uk-breadcrumb > :nth-child(n + 2):not(.uk-first-column)::before,
+.oc-breadcrumb-list > :nth-child(n + 2):not(.uk-first-column)::before {
+  margin: 0 12px 0 12px;
+}
+</style>

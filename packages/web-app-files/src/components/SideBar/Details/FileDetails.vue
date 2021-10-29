@@ -117,6 +117,20 @@
             />
           </td>
         </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">Direct link:</th>
+          <td>
+            <span class="oc-files-file-link-url uk-text-truncate">{{ directLink }}</span>
+            <copy-to-clipboard-button
+              class="oc-files-public-link-copy-url oc-ml-xs"
+              :value="directLink"
+              label="Copy direct link"
+              success-msg-title="Link copy"
+              success-msg-text="The link has been copied to your clipboard."
+            />
+          </td>
+        </tr>
         <tr v-if="hasSharees">
           <th scope="col" class="oc-pr-s" v-text="sharedWithLabel" />
           <td>
@@ -288,6 +302,9 @@ export default {
     },
     ownerAdditionalInfo() {
       return this.file.owner?.[0].additionalInfo
+    },
+    directLink() {
+      return `${this.configuration.server}/#/files/list/all${this.file.path}`
     },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'

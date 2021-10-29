@@ -27,6 +27,7 @@
         :target-route="targetRoute"
         :header-position="headerPosition"
         :drag-drop="true"
+        :view="'personal-files'"
         @fileDropped="fileDropped"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"

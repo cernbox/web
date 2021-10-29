@@ -394,6 +394,14 @@ export default {
 <style>
 .uk-breadcrumb > :nth-child(n + 2):not(.uk-first-column)::before,
 .oc-breadcrumb-list > :nth-child(n + 2):not(.uk-first-column)::before {
-  margin: 0 12px 0 12px;
+  margin: 0 12px 0 12px !important;
+}
+
+.oc-button-m {
+  padding: 0.4rem 0.65rem !important;
+}
+
+.oc-resource-basename {
+  font-weight: 500 !important;
 }
 </style>

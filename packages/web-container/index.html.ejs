@@ -33,7 +33,8 @@
   <script>
     requirejs.config({
       baseUrl: <%- JSON.stringify(data.roots.js) %>,
-      paths: <%- JSON.stringify(data.bundle.js) %>
+      paths: <%- JSON.stringify(data.bundle.js) %>,
+      waitSeconds: 20
     })
 
     requirejs(['web-runtime'], function (runtime) {

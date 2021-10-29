@@ -2,12 +2,15 @@ import App from './App.vue'
 
 const routes = [
   {
-    name: 'edit',
-    path: '/edit/:filePath',
+    name: 'view',
+    path: '/:filePath*',
     components: {
       fullscreen: App
     },
-    meta: { hideHeadbar: true }
+    meta: {
+      hideHeadbar: true,
+      patchCleanPath: true
+    }
   }
 ]
 
@@ -19,12 +22,12 @@ const appInfo = {
     {
       extension: 'ifc',
       newTab: true,
-      routeName: 'ifc-js-edit',
-      newFileMenu: {
-        menuTitle($gettext) {
-          return $gettext('New IFC document…')
-        }
-      },
+      routeName: 'ifc-js-view',
+      //newFileMenu: {
+      //  menuTitle($gettext) {
+      //    return $gettext('New IFC document…')
+      //  }
+      //},
       routes: [
         'files-personal',
         'files-favorites',

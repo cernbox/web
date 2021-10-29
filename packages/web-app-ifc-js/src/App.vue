@@ -8,7 +8,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { IFCLoader } from "web-ifc-three/IFCLoader"
 
 export default {
-  name: 'IFCEditor',
+  name: 'IFCViewer',
   data() {
     return {
       camera: null,
@@ -65,7 +65,15 @@ export default {
     addIFCModel: function() {
       this.ifcLoader = new IFCLoader()
       this.ifcLoader.ifcManager.setWasmPath("../../../../../../../")
-      const url = this.$client.files.getFileUrl(this.$route.params.filePath)
+      const header = {
+        Authorization: 'Bearer ' + this.getToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+      this.ifcLoader.setRequestHeader(header)
+      const filePath = `/${
+        this.$route.params.filePath.split('/').filter(Boolean).join('/')
+      }`
+      const url = this.$client.files.getFileUrl(filePath)
       this.ifcLoader.load(url, (ifcModel) => this.scene.add(ifcModel.mesh))
     }
   },

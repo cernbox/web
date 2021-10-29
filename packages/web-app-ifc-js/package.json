@@ -4,8 +4,8 @@
   "description": "ownClowd web IFC.js integration",
   "license": "AGPL-3.0",
   "devDependencies": {
+    "three": "^0.133.1",
     "vuex": "3.1.3",
-    "web-ifc-three": "^0.0.68",
-    "three": "^0.133.1"
+    "web-ifc-three": "^0.0.68"
   }
 }

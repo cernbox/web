@@ -46,11 +46,13 @@ const mutations = {
     const editor = {
       app,
       icon: extension.icon,
+      img: extension.img,
       newTab: extension.newTab || false,
       routeName: extension.routeName,
       routes: extension.routes || [],
       extension: extension.extension,
-      handler: extension.handler
+      handler: extension.handler,
+      canBeDefault: 'canBeDefault' in extension? extension.canBeDefault : true
     }
 
     state.fileEditors.push(editor)

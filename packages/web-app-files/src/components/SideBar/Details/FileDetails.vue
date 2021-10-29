@@ -103,6 +103,38 @@
             />
           </td>
         </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">EOS Path:</th>
+          <td>
+            <div class="uk-text-truncate" style="display: inline-block; max-width: 250px;">
+              <span class="oc-files-file-link-url" v-oc-tooltip="file.path">{{ file.path }}</span>
+            </div>
+            <copy-to-clipboard-button
+              class="oc-files-public-link-copy-url oc-ml-xs"
+              :value="file.path"
+              label="Copy EOS path"
+              success-msg-title="Link copy"
+              success-msg-text="The EOS path has been copied to your clipboard."
+            />
+          </td>
+        </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">Direct link:</th>
+          <td>
+            <div class="uk-text-truncate" style="display: inline-block; max-width: 250px;">
+              <span class="oc-files-file-link-url" v-oc-tooltip="directLink">{{ directLink }}</span>
+            </div>
+            <copy-to-clipboard-button
+              class="oc-files-public-link-copy-url oc-ml-xs"
+              :value="directLink"
+              label="Copy direct link"
+              success-msg-title="Link copy"
+              success-msg-text="The link has been copied to your clipboard."
+            />
+          </td>
+        </tr>
         <tr v-if="hasSharees">
           <th scope="col" class="oc-pr-s" v-text="sharedWithLabel" />
           <td>
@@ -141,8 +173,11 @@ import upperFirst from 'lodash-es/upperFirst'
 import path from 'path'
 import { DateTime } from 'luxon'
 
+import CopyToClipboardButton from '../Links/CopyToClipboardButton.vue'
+
 export default {
   name: 'FileDetails',
+  components: { CopyToClipboardButton },
   mixins: [Mixins, MixinResources, MixinRoutes],
   title: ($gettext) => {
     return $gettext('Details')
@@ -271,6 +306,9 @@ export default {
     },
     ownerAdditionalInfo() {
       return this.file.owner?.[0].additionalInfo
+    },
+    directLink() {
+      return `${this.configuration.server}/#/files/list/all${this.file.path}`
     },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'

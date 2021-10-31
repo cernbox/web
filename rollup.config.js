@@ -23,6 +23,8 @@ import ts from 'rollup-plugin-ts'
 
 const production = !process.env.ROLLUP_WATCH
 
+const compilationTimestamp = new Date().getTime()
+
 const plugins = [
   del({
     runOnce: true,
@@ -32,6 +34,7 @@ const plugins = [
   postcss({
     extract: path.join('css', 'web.css'),
     minimize: production,
+    sourceMap: true,
     config: false
   }),
   vue({
@@ -113,6 +116,7 @@ const plugins = [
               makeHtmlAttributes: html.makeHtmlAttributes
             },
             data: {
+              compilationTimestamp: compilationTimestamp,
               attributes,
               meta,
               publicPath,

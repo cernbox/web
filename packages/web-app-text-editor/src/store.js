@@ -1,3 +1,7 @@
+
+import { DavProperties } from 'web-pkg/src/constants'
+import { buildResource } from '../../web-app-files/src/helpers/resources'
+
 const namespaced = true
 
 const state = {
@@ -50,6 +54,16 @@ const putContents = (state, client) => {
   }
 }
 
+const fileInfo = (state, client) => {
+  if (state.isPublicLink) {
+    return client.publicFiles
+      .getFileInfo(state.plToken + state.currentFile, null, DavProperties.Default)
+  } else {
+    return client.files
+      .fileInfo(state.currentFile, DavProperties.Default)
+  }
+}
+
 const actions = {
   updateText({ commit }, text) {
     commit('TOUCHED', true)
@@ -75,6 +89,19 @@ const actions = {
 
     commit('LOADING', true)
     commit('CURRENT_FILE', filePath)
+
+    fileInfo(state, client)
+      .then((resp) => {
+        const resource = buildResource(resp)
+        if (resource.permissions.indexOf("W")) {
+          commit('WRITE_MODE')
+        }
+      })
+      .catch((error) => {
+        commit('ERROR', error.message || error)
+        commit('LOADING', false)
+      })
+
     getContents(state, client)
       .then((resp) => {
         commit('CURRENT_ETAG', resp.headers.ETag)
@@ -107,9 +134,6 @@ const actions = {
     commit('CURRENT_ETAG', null)
     commit('UPDATE_TEXT', null)
     commit('CURRENT_FILE', '')
-  },
-  setWriteMode({ commit }) {
-    commit('WRITE_MODE')
   }
 }
 

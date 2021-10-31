@@ -47,13 +47,6 @@ export default {
       })
       return
     }
-    // TODO on route change run exit
-    // FIXME this is always edit or create... need to find file permissions
-    // if (this.$route.params.mode === 'edit' || 
-    //   this.$route.params.mode === 'create') {
-    //   // This file can be edited
-    this.setWriteMode()
-    // }
     this.loadFile({
       filePath: filePath,
       client: this.$client,
@@ -62,7 +55,7 @@ export default {
     this.$refs.bar_comp.registerKeyboardShortcuts()
   },
   methods: {
-    ...mapActions('Text Editor', ['updateText', 'loadFile', 'setWriteMode', 'clearLastError', 'handleSKey']),
+    ...mapActions('Text Editor', ['updateText', 'loadFile', 'clearLastError', 'handleSKey']),
     onType(e) {
       this.updateText(e)
     }

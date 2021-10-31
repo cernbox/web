@@ -22,13 +22,18 @@ import globals from 'rollup-plugin-node-globals'
 import ts from 'rollup-plugin-ts'
 
 const production = !process.env.ROLLUP_WATCH
+const compilationTimestamp = new Date().getTime()
 const sourcemap = process.env.SOURCE_MAP === 'true'
 
 const config = {
-  requirejs: {}
+  requirejs: {},
+  cdn: false
 }
 if (process.env.REQUIRE_TIMEOUT) {
   config.requirejs.waitSeconds = parseInt(process.env.REQUIRE_TIMEOUT)
+}
+if (process.env.CDN === 'true') {
+  config.cdn = true
 }
 
 const plugins = [
@@ -144,7 +149,8 @@ const plugins = [
                 css: 'css',
                 js: 'js'
               },
-              config: config
+              config: config,
+              compilationTimestamp: compilationTimestamp
             }
           },
           {},

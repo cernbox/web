@@ -11,27 +11,32 @@
   <% }); %>
   <script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
   <script>if (typeof requirejs === 'undefined') { document.write('<script src="js/require.js?<%= data.compilationTimestamp %>">\x3C/script>') }</script>
-  <noscript>
-    <style>
-      #enable-js-banner {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        padding: 0.5rem;
-        background-color: #467391;
-      }
-      #banner-content {
-        color: white;
-      }
-    </style>
-  </noscript>
+  <style>
+    .splash-banner {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      padding: 0.5rem;
+      height: 100%;
+    }
+    #splash-loading{
+      height: 100%;
+    }
+    .splash-loading-hide {
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <div id="splash-loading" class="splash-banner splash-loading splash-loading-hide"><h3>Loading... Please wait.</h3></div>
   <div id="owncloud"></div>
   <noscript>
-    <div id="enable-js-banner"><h3 id="banner-content">Please enable JavaScript</h3></div>
+    <div class="splash-banner"><h3>Please enable JavaScript</h3></div>
   </noscript>
   <script>
+    document.getElementById('splash-loading').classList.remove('splash-loading-hide');
+
     requirejs.config({
       baseUrl: <%- JSON.stringify(data.roots.js) %>,
       paths: <%- JSON.stringify(data.bundle.js) %>,
@@ -39,6 +44,7 @@
     })
 
     requirejs(['web-runtime'], function (runtime) {
+      document.getElementById('splash-loading').classList.add('splash-loading-hide');
       runtime.bootstrap('config.json').then(runtime.renderSuccess).catch(runtime.renderFailure)
     })
   </script>

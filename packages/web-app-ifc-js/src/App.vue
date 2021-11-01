@@ -1,9 +1,25 @@
 <template>
-<canvas id="threeCanvas"></canvas>
+  <main>
+    <oc-spinner
+      v-if="loading"
+      :aria-label="$gettext('Loading media')"
+      class="uk-position-center"
+      size="xlarge"
+    />
+    <canvas id="threeCanvas"></canvas>
+  </main>
 </template>
 
 <script>
-import * as THREE from "three"
+import {
+  AmbientLight,
+  AxesHelper,
+  DirectionalLight,
+  GridHelper,
+  PerspectiveCamera,
+  Scene,
+  WebGLRenderer,
+} from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { IFCLoader } from "web-ifc-three/IFCLoader"
 
@@ -11,35 +27,35 @@ export default {
   name: 'IFCViewer',
   data() {
     return {
+      loading: true,
       camera: null,
       scene: null,
       renderer: null,
-      controls: null,
-      ifcLoader: null
+      controls: null
     }
   },
   methods: {
     init: function() {
       const threeCanvas = document.getElementById('threeCanvas')
       
-      this.scene = new THREE.Scene()
+      this.scene = new Scene()
       const lightColor = 0xffffff
 
-      const ambientLight = new THREE.AmbientLight(lightColor, 0.5)
+      const ambientLight = new AmbientLight(lightColor, 0.5)
       this.scene.add(ambientLight)
 
-      const directionalLight = new THREE.DirectionalLight(lightColor, 1)
+      const directionalLight = new DirectionalLight(lightColor, 1)
       directionalLight.position.set(0, 10, 0)
       directionalLight.target.position.set(-5, 0, 0)
       this.scene.add(directionalLight)
       this.scene.add(directionalLight.target)
 
-      this.camera = new THREE.PerspectiveCamera(75, threeCanvas.clientWidth/threeCanvas.clientHeight)
+      this.camera = new PerspectiveCamera(75, threeCanvas.clientWidth/threeCanvas.clientHeight)
       this.camera.position.z = 15
       this.camera.position.y = 13
       this.camera.position.x = 8
       
-      this.renderer = new THREE.WebGLRenderer({canvas: threeCanvas, alpha: true})
+      this.renderer = new WebGLRenderer({canvas: threeCanvas, alpha: true})
       this.renderer.setSize(threeCanvas.clientWidth, threeCanvas.clientHeight)
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
@@ -48,11 +64,11 @@ export default {
       this.controls.target.set(-2, 0, 0)
     },
     addGrid: function() {
-      const grid = new THREE.GridHelper(50, 30)
+      const grid = new GridHelper(50, 30)
       this.scene.add(grid)
     },
     addAxes: function() {
-      const axes = new THREE.AxesHelper()
+      const axes = new AxesHelper()
       axes.material.depthTest = false
       axes.renderOrder = 1
       this.scene.add(axes)
@@ -63,26 +79,33 @@ export default {
       requestAnimationFrame(this.animate)
     },
     addIFCModel: function() {
-      this.ifcLoader = new IFCLoader()
-      this.ifcLoader.ifcManager.setWasmPath("../../../../../../../")
+      const ifcLoader = new IFCLoader()
+      ifcLoader.ifcManager.setWasmPath("../../../../../../../")
       const header = {
         Authorization: 'Bearer ' + this.getToken,
         'X-Requested-With': 'XMLHttpRequest'
       }
-      this.ifcLoader.setRequestHeader(header)
+      ifcLoader.setRequestHeader(header)
       const filePath = `/${
         this.$route.params.filePath.split('/').filter(Boolean).join('/')
       }`
       const url = this.$client.files.getFileUrl(filePath)
-      this.ifcLoader.load(url, (ifcModel) => this.scene.add(ifcModel.mesh))
+      ifcLoader.load(url, (ifcModel) => {
+        ifcModel.mesh.onAfterRender = (renderer, scene, camera, geometry, material, group) => {
+          if (this.loading == true) {
+            this.loading = false
+          }
+        }
+        this.scene.add(ifcModel.mesh)
+      })
     }
   },
   mounted() {
     this.init()
     this.addGrid()
     this.addAxes()
-    this.animate()
     this.addIFCModel()
+    this.animate()
   }
 }
 </script>

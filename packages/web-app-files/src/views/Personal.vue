@@ -417,4 +417,8 @@ export default {
 .oc-tbody-tr:hover .oc-table-files-actions .uk-flex {
   visibility: visible;
 }
+
+tbody tr td:not(:first-child) {
+  color: var(--oc-color-text-muted);
+}
 </style>

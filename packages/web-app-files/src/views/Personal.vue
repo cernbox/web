@@ -401,11 +401,20 @@ export default {
   margin: 0 12px 0 12px !important;
 }
 
-.oc-button-m {
-  padding: 0.4rem 0.65rem !important;
-}
-
 .oc-resource-basename {
   font-weight: 500 !important;
+}
+
+.oc-table-files-actions .uk-flex {
+  visibility: hidden;
+}
+
+.tippy-box li:hover,
+.oc-tbody-tr:hover {
+  background-color: var(--oc-color-background-highlight);
+}
+
+.oc-tbody-tr:hover .oc-table-files-actions .uk-flex {
+  visibility: visible;
 }
 </style>

@@ -69,6 +69,8 @@ export default {
               }
             })
             return
+          } else {
+            url = url + '?access_token=' + this.getToken
           }
 
           this.triggerDownload(url, file.name)

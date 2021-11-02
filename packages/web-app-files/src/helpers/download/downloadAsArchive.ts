@@ -31,7 +31,9 @@ export const triggerDownloadAsArchive = async (
     if (archiverService.urlSigningEnabled) {
       window.location = await clientService.owncloudSdk.signUrl(archiverUrl)
     } else {
-      // Get token and append as '?access_token='
+      var authHeader = clientService.owncloudSdk.getAuthorization()
+      // Trim 'Bearer '
+      window.location.href = archiverUrl + '?access_token=' + authHeader
     }
   }
 }

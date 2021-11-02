@@ -110,7 +110,8 @@ export default {
     // initialize services
     archiverService.initialize(
       runtimeStore.getters.configuration.server,
-      get(runtimeStore, 'getters.capabilities.files.archivers', [])
+      get(runtimeStore, 'getters.capabilities.files.archivers', []),
+      get(runtimeStore, 'getters.capabilities.core.support-url-signing', true)
     )
   }
 }

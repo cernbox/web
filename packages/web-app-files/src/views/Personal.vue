@@ -27,6 +27,7 @@
         :target-route="targetRoute"
         :header-position="headerPosition"
         :drag-drop="true"
+        :view="'personal-files'"
         @fileDropped="fileDropped"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
@@ -393,3 +394,45 @@ export default {
   }
 }
 </script>
+
+<style>
+.uk-breadcrumb > :nth-child(n + 2):not(.uk-first-column)::before,
+.oc-breadcrumb-list > :nth-child(n + 2):not(.uk-first-column)::before {
+  margin: 0 12px 0 12px !important;
+}
+
+.oc-resource-basename {
+  font-weight: 500 !important;
+}
+
+.oc-table-files-actions .uk-flex {
+  visibility: hidden;
+}
+
+.tippy-box li:hover,
+.oc-tbody-tr:not(.oc-table-highlighted):hover {
+  background-color: var(--oc-color-background-muted);
+}
+
+.oc-tbody-tr:hover .oc-table-files-actions .uk-flex {
+  visibility: visible;
+}
+
+tbody tr td:not(:first-child) {
+  color: var(--oc-color-text-muted);
+}
+
+.uk-card {
+  padding: 0 !important;
+}
+
+.uk-card li {
+  padding: 0px 20px 0px 20px !important;
+}
+.uk-card li:first-of-type {
+  margin-top: 20px !important;
+}
+.uk-card li:last-of-type {
+  margin-bottom: 20px !important;
+}
+</style>

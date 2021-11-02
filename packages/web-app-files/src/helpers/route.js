@@ -36,6 +36,10 @@ export function isPublicFilesRoute(route) {
   return route.name === 'files-public-list'
 }
 
+export function isProjectsRoute(route) {
+  return route.name === 'files-projects'
+}
+
 export function isPublicPage(route) {
   if (route.meta) {
     return route.meta.auth === false

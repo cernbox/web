@@ -32,7 +32,7 @@ export const triggerDownloadAsArchive = async (
       window.location = await clientService.owncloudSdk.signUrl(archiverUrl)
     } else {
       var authHeader = clientService.owncloudSdk.getAuthorization()
-      // Trim 'Bearer '
+      authHeader = authHeader.slice('Bearer '.length)
       window.location.href = archiverUrl + '?access_token=' + authHeader
     }
   }

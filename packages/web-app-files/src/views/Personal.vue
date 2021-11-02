@@ -410,8 +410,8 @@ export default {
 }
 
 .tippy-box li:hover,
-.oc-tbody-tr:hover {
-  background-color: var(--oc-color-background-highlight);
+.oc-tbody-tr:not(.oc-table-highlighted):hover {
+  background-color: var(--oc-color-background-muted);
 }
 
 .oc-tbody-tr:hover .oc-table-files-actions .uk-flex {
@@ -420,5 +420,19 @@ export default {
 
 tbody tr td:not(:first-child) {
   color: var(--oc-color-text-muted);
+}
+
+.uk-card {
+  padding: 0 !important;
+}
+
+.uk-card li {
+  padding: 0px 20px 0px 20px !important;
+}
+.uk-card li:first-of-type {
+  margin-top: 20px !important;
+}
+.uk-card li:last-of-type {
+  margin-bottom: 20px !important;
 }
 </style>

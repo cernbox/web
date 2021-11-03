@@ -132,9 +132,9 @@ export default {
         })
 
         // Load quota
-        const user = yield ref.$client.users.getUser(ref.user.id)
+        ref.$client.users.getUser(ref.user.id)
+          .then((user) => ref.SET_QUOTA(user.quota))
 
-        ref.SET_QUOTA(user.quota)
       } catch (error) {
         ref.SET_CURRENT_FOLDER(null)
         console.error(error)

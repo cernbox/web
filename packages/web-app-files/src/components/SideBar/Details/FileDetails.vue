@@ -419,10 +419,7 @@ export default {
       })
 
       return allShares
-    },
-    $_isCollaboratorShare(collaborator) {
-      return userShareTypes.includes(collaborator.shareType)
-    },
+    }
   },
   watch: {
     file() {
@@ -479,6 +476,9 @@ export default {
         path: this.file.path,
         $gettext: this.$gettext
       })
+    },
+    $_isCollaboratorShare(collaborator) {
+      return userShareTypes.includes(collaborator.shareType)
     },
     getParentSharePath(childPath, shares) {
       let currentPath = childPath

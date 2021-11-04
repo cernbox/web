@@ -168,6 +168,8 @@ const actions = {
     const token = vueAuthInstance.getToken()
     if (token) {
       await init(this._vm.$client, token)
+    } else {
+      throw new Error("No user token");
     }
   },
   login(context, payload = { provider: 'oauth2' }) {

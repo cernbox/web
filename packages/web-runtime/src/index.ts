@@ -33,7 +33,13 @@ export const bootstrap = async (configurationPath: string): Promise<void> => {
   })
   await promiseOcSDK
   await promiseClient
-  await announceStore({ vue: Vue, store, runtimeConfiguration }) // REQUIRES $client and oidc
+  try {
+    await announceStore({ vue: Vue, store, runtimeConfiguration }) // REQUIRES $client and oidc
+  } catch (e) {
+    // Bail early (without wayting for other pending processes)
+    // to allow faster redirection to idp
+    return 
+  }
   await promiseTheme
   await promiseApplications
   announceTranslations({ vue: Vue, supportedLanguages, translations })

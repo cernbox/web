@@ -132,9 +132,7 @@ export default {
         })
 
         // Load quota
-        ref.$client.users.getUser(ref.user.id)
-          .then((user) => ref.SET_QUOTA(user.quota))
-
+        ref.$client.users.getUser(ref.user.id).then((user) => ref.SET_QUOTA(user.quota))
       } catch (error) {
         ref.SET_CURRENT_FOLDER(null)
         console.error(error)
@@ -400,39 +398,42 @@ export default {
 .oc-breadcrumb-list > :nth-child(n + 2):not(.uk-first-column)::before {
   margin: 0 12px 0 12px !important;
 }
-
 .oc-resource-basename {
   font-weight: 500 !important;
 }
-
 .oc-table-files-actions .uk-flex {
   visibility: hidden;
 }
-
 .tippy-box li:hover,
 .oc-tbody-tr:not(.oc-table-highlighted):hover {
   background-color: var(--oc-color-background-muted);
 }
-
 .oc-tbody-tr:hover .oc-table-files-actions .uk-flex {
   visibility: visible;
 }
-
 tbody tr td:not(:first-child) {
   color: var(--oc-color-text-muted);
 }
-
-.uk-card {
+#new-file-menu-drop .uk-card,
+.tippy-box .uk-card {
   padding: 0 !important;
 }
-
-.uk-card li {
-  padding: 0px 20px 0px 20px !important;
+.uk-list > :nth-child(n + 2) {
+  margin-top: 0px !important;
 }
-.uk-card li:first-of-type {
+#new-file-menu-drop .uk-card li {
+  padding: 10px 20px 0px 20px !important;
+}
+#new-file-menu-drop .uk-card li:first-of-type {
+  margin-top: 10px !important;
+}
+#new-file-menu-drop .uk-card li:last-of-type {
+  margin-bottom: 10px !important;
+}
+.tippy-box .uk-card li {
+  padding: 5px 20px 5px 20px !important;
+}
+#oc-files-context-menu ul:first-of-type {
   margin-top: 20px !important;
-}
-.uk-card li:last-of-type {
-  margin-bottom: 20px !important;
 }
 </style>

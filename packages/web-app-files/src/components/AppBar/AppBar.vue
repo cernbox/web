@@ -114,7 +114,7 @@
               </ul>
             </oc-drop>
           </template>
-          <template v-if="isProjectsRoute">
+          <template v-if="isProjectsRoute && areDefaultActionsVisible">
             <oc-button
               id="new-project-menu-btn"
               key="new-project-menu-btn-enabled"

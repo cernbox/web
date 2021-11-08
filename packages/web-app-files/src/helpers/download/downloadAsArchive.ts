@@ -40,9 +40,14 @@ export const triggerDownloadAsArchive = async (
   ].filter(Boolean)
   const archiverUrl = archiverService.url + '?' + queryParams.join('&')
 
-  window.location = options.publicToken
-    ? (archiverUrl as any)
-    : await clientService.owncloudSdk.signUrl(archiverUrl)
+  if (options.publicToken) {
+    window.location = archiverUrl as any
+  } else if (archiverService.urlSigningEnabled) {
+    window.location = await clientService.owncloudSdk.signUrl(archiverUrl)
+  } else {
+    window.location.href =
+      archiverUrl + '&access_token=' + (window.Vue as any).$store.state.user.token
+  }
 }
 
 export const isDownloadAsArchiveAvailable = (

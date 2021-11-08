@@ -78,6 +78,69 @@
             />
           </td>
         </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">EOS Path:</th>
+          <td>
+            <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
+              <div class="oc-flex oc-flex-middle">
+                <p class="oc-my-rm" v-text="file.path" />
+              </div>
+              <!-- <copy-to-clipboard-button
+                class="oc-files-public-link-copy-url oc-ml-xs"
+                :value="file.path"
+                label="Copy EOS path"
+                success-msg-title="Link copy"
+                success-msg-text="The EOS path has been copied to your clipboard."
+              /> -->
+              <oc-button
+                oc-tooltip="Copy EOS path"
+                appearance="raw"
+                aria-label="Copy EOS path"
+                class="oc-files-private-link-copy-url"
+                :variation="copied ? 'success' : 'passive'"
+                @click="copyEosPathToClipboard"
+              >
+                <span text="EOS Path" />
+                <oc-icon
+                  v-if="copied"
+                  key="oc-copy-to-clipboard-copied"
+                  name="checkbox-circle"
+                  class="_clipboard-success-animation"
+                />
+                <oc-icon v-else key="oc-copy-to-clipboard-copy" name="clipboard" />
+              </oc-button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">Direct link:</th>
+          <td>
+            <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
+              <div class="oc-flex oc-flex-middle">
+                <p class="oc-my-rm" v-text="directLink" />
+              </div>
+              <oc-button
+                oc-tooltip="Copy direct link"
+                appearance="raw"
+                aria-label="Copy direct link"
+                class="oc-files-private-link-copy-url"
+                :variation="copiedDirect ? 'success' : 'passive'"
+                @click="copyDirectLinkToClipboard"
+              >
+                <span text="EOS Path" />
+                <oc-icon
+                  v-if="copiedEos"
+                  key="oc-copy-to-clipboard-copied"
+                  name="checkbox-circle"
+                  class="_clipboard-success-animation"
+                />
+                <oc-icon v-else key="oc-copy-to-clipboard-copy" name="clipboard" />
+              </oc-button>
+            </div>
+          </td>
+        </tr>
       </table>
     </div>
     <p v-else data-testid="noContentText" v-text="noContentText" />
@@ -96,6 +159,8 @@ import { createLocationSpaces, isAuthenticatedRoute, isLocationSpacesActive } fr
 import { ShareTypes } from '../../../helpers/share'
 import { useRoute, useRouter } from 'web-pkg/src/composables'
 import { getIndicators } from '../../../helpers/statusIndicators'
+import copyToClipboard from 'copy-to-clipboard' // CERN
+import { encodePath } from 'web-pkg/src/utils' // CERN
 
 export default defineComponent({
   name: 'FileDetails',
@@ -131,10 +196,18 @@ export default defineComponent({
     sharedByDisplayName: '',
     sharedTime: 0,
     sharedItem: null,
-    shareIndicators: []
+    shareIndicators: [],
+    copiedDirect: false,
+    copiedEos: false,
+    timeout: null
   }),
   computed: {
-    ...mapGetters('Files', ['versions', 'sharesTree', 'sharesTreeLoading']),
+    ...mapGetters('Files', [
+      'versions',
+      'sharesTree',
+      'sharesTreeLoading',
+      'currentFileOutgoingCollaborators'
+    ]),
     ...mapGetters(['user', 'getToken', 'configuration']),
 
     file() {
@@ -217,6 +290,9 @@ export default defineComponent({
     },
     ownerAdditionalInfo() {
       return this.file.owner?.[0].additionalInfo
+    },
+    directLink() {
+      return `${this.configuration.server}files/spaces/personal/home${encodePath(this.file.path)}`
     },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'
@@ -349,6 +425,31 @@ export default defineComponent({
       }
       await Promise.all(calls.map((p) => p.catch((e) => e)))
       this.loading = false
+    },
+    copyEosPathToClipboard() {
+      copyToClipboard(this.file.path)
+      this.copiedEos = true
+      this.clipboardSuccessHandler()
+      this.showMessage({
+        title: this.$gettext('EOS path copied'),
+        desc: this.$gettext('The EOS path has been copied to your clipboard.')
+      })
+    },
+    copyDirectLinkToClipboard() {
+      copyToClipboard(this.directLink)
+      this.copiedDirect = true
+      this.clipboardSuccessHandler()
+      this.showMessage({
+        title: this.$gettext('Direct link copied'),
+        desc: this.$gettext('The direct link has been copied to your clipboard.')
+      })
+    },
+    clipboardSuccessHandler() {
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => {
+        this.copiedDirect = false
+        this.copiedEos = false
+      }, 550)
     }
   }
 })

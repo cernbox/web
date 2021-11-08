@@ -15,10 +15,16 @@ interface ArchiverCapability {
 
 export class ArchiverService {
   serverUrl: string
+  urlSigningEnabled: boolean
   capability?: ArchiverCapability
 
-  public initialize(serverUrl: string, archiverCapabilities: ArchiverCapability[] = []): void {
+  public initialize(
+    serverUrl: string,
+    archiverCapabilities: ArchiverCapability[] = [],
+    urlSigningEnabled = true
+  ): void {
     this.serverUrl = serverUrl
+    this.urlSigningEnabled = urlSigningEnabled
     const archivers = archiverCapabilities
       .filter((a) => a.enabled)
       .sort((a1, a2) => rcompare(a1.version, a2.version))

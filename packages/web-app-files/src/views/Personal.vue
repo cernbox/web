@@ -434,23 +434,34 @@ tbody tr td:not(:first-child) {
 #new-file-menu-drop .uk-card,
 .tippy-box .uk-card {
   padding: 0 !important;
+  border-radius: 5px;
 }
 .uk-list > :nth-child(n + 2) {
   margin-top: 0px !important;
 }
 #new-file-menu-drop .uk-card li {
-  padding: 10px 20px 0px 20px !important;
+  padding: 0px 5px !important;
 }
 #new-file-menu-drop .uk-card li:first-of-type {
-  margin-top: 10px !important;
+  margin-top: 5px !important;
 }
 #new-file-menu-drop .uk-card li:last-of-type {
-  margin-bottom: 10px !important;
+  margin-bottom: 5px !important;
 }
 .tippy-box .uk-card li {
-  padding: 5px 20px 5px 20px !important;
+  padding: 5px 10px !important;
+  border-radius: 5px;
+  margin: 0 5px;
 }
-#oc-files-context-menu ul:first-of-type {
-  margin-top: 20px !important;
+#oc-files-context-menu ul {
+  margin: 5px 0 !important;
+}
+#oc-files-context-menu hr {
+  margin: 0 !important;
+}
+.files-app-bar-actions .oc-button-m {
+  padding: 0 0.75rem !important;
+  min-height: 35px !important;
+  font-size: 0.9rem !important;
 }
 </style>

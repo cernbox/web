@@ -97,12 +97,10 @@ const actions = {
         }
 
         const capabilities = await client.getCapabilities()
-        //////
-        capabilities.lightweight= true
-        //////
+        /// ///
+        capabilities.lightweight = true
+        /// ///
         context.commit('SET_CAPABILITIES', capabilities)
-
-
 
         const userGroups = await client.users.getUserGroups(login.id)
         const user = await client.users.getUser(login.id)
@@ -114,7 +112,11 @@ const actions = {
           email: !Object.keys(login.email).length ? '' : login.email,
           token,
           isAuthenticated: true,
-          groups: userGroups
+          groups: userGroups,
+          usertype:
+            user.id === 'einstein' && user.email === 'elizaveta.ragozina@cern.ch'
+              ? 'lightweight'
+              : user.usertype
         })
 
         // Display quota in the sidebar
@@ -207,6 +209,7 @@ const mutations = {
     state.isAuthenticated = user.isAuthenticated
     state.token = user.token
     state.groups = user.groups
+    state.usertype = user.usertype
   },
   SET_CAPABILITIES(state, data) {
     state.capabilities = data.capabilities

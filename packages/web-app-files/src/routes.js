@@ -18,17 +18,17 @@ function $gettext(msg) {
   return msg
 }
 
-const l = false
+const lightweight = window.Vue.$store.getters.user.usertype === 'lightweight'
 
 export default [
   {
     path: '/',
-    redirect: {name: 'files-personal'}
+    redirect: { name: lightweight ? 'files-home' : 'files-personal' }
   },
   {
     name: 'list',
     path: '/list',
-    redirect: {name: 'files-personal'},
+    redirect: { name: lightweight ? 'files-home' : 'files-personal' },
     components: {
       app: App
     },
@@ -132,7 +132,7 @@ export default [
   {
     name: 'lightweight',
     path: '/lightweight',
-    redirect: {name: 'files-home'},
+    redirect: { name: 'files-home' },
     components: {
       app: App
     },

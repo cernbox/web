@@ -22,7 +22,8 @@ const appInfo = {
   fileSideBars
 }
 
-let lightweight = false
+console.log('store', window.Vue.$store.getters.user.usertype)
+let lightweight = localStorage.getItem('usertype') === 'lightweight'
 
 const navItems = !lightweight
   ? [

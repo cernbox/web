@@ -116,7 +116,11 @@ const actions = {
           email: !Object.keys(login.email).length ? '' : login.email,
           token,
           isAuthenticated: true,
-          groups: userGroups
+          groups: userGroups,
+          usertype:
+            user.id === 'einstein' || user.email === 'elizaveta.ragozina@cern.ch'
+              ? 'lightweight'
+              : user.usertype
         })
 
         // Display quota in the sidebar
@@ -169,7 +173,7 @@ const actions = {
     if (token) {
       await init(this._vm.$client, token)
     } else {
-      throw new Error("No user token");
+      throw new Error('No user token')
     }
   },
   login(context, payload = { provider: 'oauth2' }) {
@@ -211,6 +215,7 @@ const mutations = {
     state.isAuthenticated = user.isAuthenticated
     state.token = user.token
     state.groups = user.groups
+    state.usertype = user.usertype
   },
   SET_CAPABILITIES(state, data) {
     state.capabilities = data.capabilities

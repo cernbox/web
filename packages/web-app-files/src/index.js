@@ -21,6 +21,8 @@ const appInfo = {
   extensions: [],
   fileSideBars
 }
+
+const lightweight = window.Vue.$store.getters.user.usertype === 'lightweight'
 const navItems = [
   {
     name: $gettext('All files'),

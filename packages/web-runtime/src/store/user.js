@@ -97,9 +97,6 @@ const actions = {
         }
 
         const capabilities = await client.getCapabilities()
-        /// ///
-        capabilities.lightweight = true
-        /// ///
         context.commit('SET_CAPABILITIES', capabilities)
 
         const userGroups = await client.users.getUserGroups(login.id)
@@ -114,7 +111,7 @@ const actions = {
           isAuthenticated: true,
           groups: userGroups,
           usertype:
-            user.id === 'einstein' && user.email === 'elizaveta.ragozina@cern.ch'
+            user.id === 'einstein' || user.email === 'elizaveta.ragozina@cern.ch'
               ? 'lightweight'
               : user.usertype
         })

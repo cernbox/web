@@ -25,64 +25,43 @@
           data-testid="files-collaborators-no-reshare-permissions-message"
           v-text="noResharePermsMessage"
         />
-        <div v-if="hasSharees" class="avatars-wrapper">
-          <h4 class="shared-with-label" v-text="sharedWithLabel" />
-          <oc-button
-            v-oc-tooltip="sharedWithTooltip"
-            data-testid="collaborators-show-people"
-            appearance="raw"
-            :aria-label="sharedWithTooltip"
-            @click="onClickSharedWith"
-          >
-            <oc-avatars
-              v-if="!showShareesList"
-              :items="collaboratorsAvatar"
-              :stacked="true"
-              :is-tooltip-displayed="false"
-              class="sharee-avatars"
-            />
-            <oc-icon v-else name="chevron_up" />
-          </oc-button>
-        </div>
-        <template v-if="showShareesList || collaboratorsAvatar.length === 0">
-          <template v-if="$_ownerAsCollaborator">
-            <p id="original-sharing-user" v-translate class="oc-invisible-sr">File owner</p>
-            <show-collaborator
-              :collaborator="$_ownerAsCollaborator"
-              aria-describedby="original-sharing-user"
-            />
-            <hr />
-            <show-collaborator :collaborator="$_currentUserAsCollaborator" />
-          </template>
-          <template v-else>
-            <p id="collaborator-as-fileowner" v-translate class="oc-invisible-sr">
-              You are the file owner
-            </p>
-            <show-collaborator
-              :collaborator="$_currentUserAsCollaborator"
-              aria-describedby="collaborator-as-fileowner"
-            />
-          </template>
-          <hr v-if="collaborators.length > 0" class="oc-mt-s oc-mb-s" />
-          <transition-group
-            id="files-collaborators-list"
-            class="uk-list uk-list-divider uk-overflow-hidden oc-m-rm"
-            :enter-active-class="$_transitionGroupEnter"
-            :leave-active-class="$_transitionGroupLeave"
-            name="custom-classes-transition"
-            tag="ul"
-            :aria-label="$gettext('Share receivers')"
-          >
-            <li v-for="collaborator in collaborators" :key="collaborator.key">
-              <show-collaborator
-                :collaborator="collaborator"
-                :modifiable="!collaborator.indirect"
-                @onDelete="$_ocCollaborators_deleteShare"
-                @onEdit="$_ocCollaborators_editShare"
-              />
-            </li>
-          </transition-group>
+        <template v-if="$_ownerAsCollaborator">
+          <p id="original-sharing-user" v-translate class="oc-invisible-sr">File owner</p>
+          <show-collaborator
+            :collaborator="$_ownerAsCollaborator"
+            aria-describedby="original-sharing-user"
+          />
+          <hr />
+          <show-collaborator :collaborator="$_currentUserAsCollaborator" />
         </template>
+        <template v-else>
+          <p id="collaborator-as-fileowner" v-translate class="oc-invisible-sr">
+            You are the file owner
+          </p>
+          <show-collaborator
+            :collaborator="$_currentUserAsCollaborator"
+            aria-describedby="collaborator-as-fileowner"
+          />
+        </template>
+        <hr v-if="collaborators.length > 0" class="oc-mt-s oc-mb-s" />
+        <transition-group
+          id="files-collaborators-list"
+          class="uk-list uk-list-divider uk-overflow-hidden oc-m-rm"
+          :enter-active-class="$_transitionGroupEnter"
+          :leave-active-class="$_transitionGroupLeave"
+          name="custom-classes-transition"
+          tag="ul"
+          :aria-label="$gettext('Share receivers')"
+        >
+          <li v-for="collaborator in collaborators" :key="collaborator.key">
+            <show-collaborator
+              :collaborator="collaborator"
+              :modifiable="!collaborator.indirect"
+              @onDelete="$_ocCollaborators_deleteShare"
+              @onEdit="$_ocCollaborators_editShare"
+            />
+          </li>
+        </transition-group>
       </template>
     </div>
 
@@ -140,8 +119,7 @@ export default {
       VIEW_SHOW,
       VIEW_EDIT,
       VIEW_NEW,
-      currentView: VIEW_SHOW,
-      showShareesList: false
+      currentView: VIEW_SHOW
     }
   },
   computed: {
@@ -162,20 +140,6 @@ export default {
       return this.transitionGroupActive
         ? 'uk-animation-slide-right-medium uk-animation-reverse'
         : ''
-    },
-
-    sharedWithLabel() {
-      return this.$gettext('Shared with')
-    },
-
-    hasSharees() {
-      return this.collaboratorsAvatar.length > 0
-    },
-
-    sharedWithTooltip() {
-      return this.showShareesList
-        ? this.$gettext('Collapse list of invited people')
-        : this.$gettext('Show all invited people')
     },
 
     sharesLoading() {
@@ -208,14 +172,6 @@ export default {
         shareType: shareTypes.user,
         role
       }
-    },
-    collaboratorsAvatar() {
-      return this.collaborators.map((c) => {
-        return {
-          ...c.collaborator,
-          shareType: c.shareType
-        }
-      })
     },
 
     $_ownerAsCollaborator() {
@@ -349,7 +305,6 @@ export default {
         if (oldItem !== newItem && this.currentView === VIEW_SHOW) {
           this.transitionGroupActive = false
           this.$_reloadShares()
-          this.showShareesList = false
         }
       },
       immediate: true
@@ -365,9 +320,6 @@ export default {
       'loadIncomingShares',
       'incomingSharesClearState'
     ]),
-    onClickSharedWith() {
-      this.showShareesList = !this.showShareesList
-    },
     $_isCollaboratorShare(collaborator) {
       return userShareTypes.includes(collaborator.shareType)
     },

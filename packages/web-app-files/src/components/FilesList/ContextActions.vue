@@ -1,23 +1,5 @@
 <template>
   <div id="oc-files-context-menu">
-    <ul
-      v-if="showExternalApps"
-      id="oc-files-context-default-actions"
-      class="uk-list oc-my-xs oc-files-context-actions"
-    >
-      <li v-for="(app, index) in appList" :key="`app-${index}`">
-        <oc-button
-          appearance="raw"
-          class="oc-text-bold"
-          @click="$_fileActions_openLink(app.name, item.fileId)"
-        >
-          <!--<img :src="app.icon" :alt="`Icon for ${app.name} app`" class="oc-icon oc-icon-m" />-->
-          <oc-icon :name="app.icon || 'file'" size="medium" />
-          <span class="oc-files-context-action-label">{{ 'Open in ' + app.name }}</span>
-        </oc-button>
-      </li>
-    </ul>
-    <hr v-if="showExternalApps && menuItemsApps.length == 0" />
     <template v-for="(section, i) in menuSections">
       <ul
         :id="`oc-files-context-actions-${section.name}`"
@@ -35,16 +17,8 @@
             :class="['oc-text-bold', action.class]"
             v-on="getComponentListeners(action, item)"
           >
-            <template v-if="action.iconImg">
-              <img
-                :src="action.iconImg"
-                :alt="`Icon for ${action.label}`"
-                class="oc-icon oc-icon-m"
-              />
-            </template>
-            <template v-else>
-              <oc-icon :name="action.icon" size="medium" />
-            </template>
+            <oc-icon v-if="action.icon && !action.img" :name="action.icon" size="medium" />
+            <oc-img v-if="action.img" :src="action.img" alt="" class="oc-icon oc-icon-m" />
             <span class="oc-files-context-action-label">{{ action.label(item) }}</span>
             <span
               v-if="action.opensInNewWindow"
@@ -106,16 +80,9 @@ export default {
       required: true
     }
   },
-  data: () => ({
-    appList: []
-  }),
 
   computed: {
     ...mapGetters('Files', ['currentFolder']),
-
-    showExternalApps() {
-      return this.item.extension && this.appList?.length > 0
-    },
 
     menuSections() {
       const sections = []
@@ -153,47 +120,25 @@ export default {
       }
     },
 
-    menuItemsApps() {
-      const menuItems = []
-
-      // `open` and `open with`
-      const openActions = [
-        ...this.$_navigate_items,
-        ...this.$_fetch_items,
-        ...this.$_fileActions_editorActions
-      ].filter((item) => item.isEnabled(this.filterParams))
-      if (openActions.length > 0) {
-        menuItems.push(openActions[0])
-      }
-      if (openActions.length > 1) {
-        // TODO: sub nav item with all remaining open actions
-      }
-      openActions.forEach((action, index) => {
-        if (index !== 0 && action.showInRightClickMenu) {
-          menuItems.push(action)
-        }
-      })
-
-      return menuItems
-    },
-
     menuItemsContext() {
-      const menuItems = []
+      const fileHandlers = [
+        ...this.$_fileActions_editorActions,
+        ...this.$_fileActions_loadExternalAppActions(this.filterParams.resource),
+        ...this.$_navigate_items,
+        ...this.$_fetch_items
+      ]
 
-      menuItems.push(
-        ...[
-          ...this.$_downloadFile_items,
-          ...this.$_downloadFolder_items,
-          ...this.$_createPublicLink_items,
-          ...this.$_showShares_items,
-          ...this.$_favorite_items.map((action) => {
-            action.keepOpen = true
-            return action
-          })
-        ].filter((item) => item.isEnabled(this.filterParams))
-      )
-
-      return menuItems
+      return [
+        ...fileHandlers,
+        ...this.$_downloadFile_items,
+        ...this.$_downloadFolder_items,
+        ...this.$_createPublicLink_items,
+        ...this.$_showShares_items,
+        ...this.$_favorite_items.map((action) => {
+          action.keepOpen = true
+          return action
+        })
+      ].filter((item) => item.isEnabled(this.filterParams))
     },
 
     menuItemsActions() {
@@ -213,13 +158,7 @@ export default {
       return [...this.$_showDetails_items].filter((item) => item.isEnabled(this.filterParams))
     }
   },
-  mounted() {
-    this.loadApps()
-  },
   methods: {
-    loadApps() {
-      this.appList = this.$_fileActions_loadApps(this.item)
-    },
     getComponentProps(action, resource) {
       if (action.componentType === 'router-link' && action.route) {
         return {

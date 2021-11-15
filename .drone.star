@@ -734,27 +734,14 @@ def main(ctx):
     return pipelines
 
 def beforePipelines(ctx):
-    base = \
-        checkForRecentBuilds(ctx) + \
-        checkStarlark() + \
-        documentation(ctx) + \
-        changelog(ctx)
-
-    lint = \
-        yarnCache(ctx) + \
-        pipelinesDependsOn(yarnlint(ctx), yarnCache(ctx))
-
-    test_cache = \
-        cacheOcisPipeline(ctx) + \
-        pipelinesDependsOn(buildCacheWeb(ctx), yarnCache(ctx))
-
-    title = ctx.build.title.lower()
-    if "docs-only" in title:
-        return base
-    elif "unit-tests-only" in title:
-        return base + lint
-    else:
-        return base + lint + test_cache
+    return checkForRecentBuilds(ctx) + \
+           checkStarlark() + \
+           documentation(ctx) + \
+           changelog(ctx) + \
+           yarnCache(ctx) + \
+           cacheOcisPipeline(ctx) + \
+           pipelinesDependsOn(buildCacheWeb(ctx), yarnCache(ctx)) + \
+           pipelinesDependsOn(yarnlint(ctx), yarnCache(ctx))
 
 def stagePipelines(ctx):
     title = ctx.build.title.lower()
@@ -779,7 +766,8 @@ def yarnCache(ctx):
         "kind": "pipeline",
         "type": "docker",
         "name": "cache-yarn",
-        "steps": installYarn() +
+        "steps": skipIfUnchanged(ctx, "cache") +
+                 installYarn() + yarnInstallTests() +
                  rebuildBuildArtifactCache(ctx, ".yarn", ".yarn"),
         "trigger": {
             "ref": [
@@ -808,7 +796,8 @@ def yarnlint(ctx):
             "base": dir["base"],
             "path": config["app"],
         },
-        "steps": restoreBuildArtifactCache(ctx, ".yarn", ".yarn") +
+        "steps": skipIfUnchanged(ctx, "lint") +
+                 restoreBuildArtifactCache(ctx, ".yarn", ".yarn") +
                  installYarn() +
                  lint(),
         "trigger": {
@@ -991,7 +980,8 @@ def buildCacheWeb(ctx):
         "kind": "pipeline",
         "type": "docker",
         "name": "cache-web",
-        "steps": restoreBuildArtifactCache(ctx, ".yarn", ".yarn") +
+        "steps": skipIfUnchanged(ctx, "cache") +
+                 restoreBuildArtifactCache(ctx, ".yarn", ".yarn") +
                  installYarn() +
                  [{
                      "name": "build-web",
@@ -1175,10 +1165,10 @@ def acceptance(ctx):
                         steps += skipIfUnchanged(ctx, "acceptance-tests")
 
                         steps += restoreBuildArtifactCache(ctx, ".yarn", ".yarn")
-                        steps += installYarn()
+                        steps += yarnInstallTests()
 
                         if (params["oc10IntegrationAppIncluded"]):
-                            steps += buildWebApp()
+                            steps += installYarn() + buildWebApp()
                         else:
                             steps += restoreBuildArtifactCache(ctx, "web-dist", "dist")
                             steps += setupServerConfigureWeb(params["logLevel"])
@@ -1233,7 +1223,7 @@ def acceptance(ctx):
                         steps += copyFilesForUpload()
 
                         # run the acceptance tests
-                        steps += runWebuiAcceptanceTests(suite, alternateSuiteName, params["filterTags"], params["extraEnvironment"], browser, params["visualTesting"], params["screenShots"])
+                        steps += runWebuiAcceptanceTests(ctx, suite, alternateSuiteName, params["filterTags"], params["extraEnvironment"], browser, params["visualTesting"], params["screenShots"])
 
                         # capture the screenshots from visual regression testing (only runs on failure)
                         if (params["visualTesting"]):
@@ -1606,6 +1596,16 @@ def installYarn():
         "image": OC_CI_NODEJS,
         "commands": [
             "yarn install --immutable",
+        ],
+    }]
+
+def yarnInstallTests():
+    return [{
+        "name": "yarn-install-tests",
+        "image": OC_CI_NODEJS,
+        "pull": "always",
+        "commands": [
+            "cd tests/acceptance && yarn install --immutable",
         ],
     }]
 
@@ -2115,7 +2115,7 @@ def copyFilesForUpload():
         ],
     }]
 
-def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironment, browser, visualTesting, screenShots):
+def runWebuiAcceptanceTests(ctx, suite, alternateSuiteName, filterTags, extraEnvironment, browser, visualTesting, screenShots):
     environment = {}
     if (filterTags != ""):
         environment["TEST_TAGS"] = filterTags
@@ -2124,7 +2124,7 @@ def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironm
         if type(suite) == "list":
             paths = ""
             for path in suite:
-                paths = paths + "tests/acceptance/features/" + path + " "
+                paths = paths + "features/" + path + " "
             environment["TEST_PATHS"] = paths
         elif (suite != "all"):
             environment["TEST_CONTEXT"] = suite
@@ -2140,6 +2140,8 @@ def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironm
             "from_secret": "sauce_access_key",
         }
 
+    if ctx.build.event == "cron":
+        environment["RERUN_FAILED_WEBUI_SCENARIOS"] = "false"
     if (visualTesting):
         environment["VISUAL_TEST"] = "true"
     if (screenShots):
@@ -2156,7 +2158,7 @@ def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironm
         "image": OC_CI_NODEJS,
         "environment": environment,
         "commands": [
-            "cd %s && ./tests/acceptance/run.sh" % dir["web"],
+            "cd %s/tests/acceptance && ./run.sh" % dir["web"],
         ],
         "volumes": [{
             "name": "gopath",
@@ -2176,9 +2178,14 @@ def cacheOcisPipeline(ctx):
             "base": dir["base"],
             "path": config["app"],
         },
-        "steps": buildOCISCache() +
+        "steps": skipIfUnchanged(ctx, "cache") +
+                 buildOCISCache() +
                  cacheOcis() +
                  listRemoteCache(),
+        "volumes": [{
+            "name": "gopath",
+            "temp": {},
+        }],
         "trigger": {
             "ref": [
                 "refs/heads/master",
@@ -2210,13 +2217,37 @@ def getOcis():
     }]
 
 def buildOCISCache():
-    return [{
-        "name": "build-ocis",
-        "image": OC_CI_GOLANG,
-        "commands": [
-            "./tests/drone/build-ocis.sh",
-        ],
-    }]
+    return [
+        {
+            "name": "generate-ocis",
+            "image": OC_CI_NODEJS,
+            "environment": {
+                "GOPATH": "/go",
+            },
+            "commands": [
+                "./tests/drone/build-ocis.sh nodejs",
+            ],
+            "volumes": [
+                {
+                    "name": "gopath",
+                    "path": "/go",
+                },
+            ],
+        },
+        {
+            "name": "build-ocis",
+            "image": OC_CI_GOLANG,
+            "commands": [
+                "./tests/drone/build-ocis.sh golang",
+            ],
+            "volumes": [
+                {
+                    "name": "gopath",
+                    "path": "/go",
+                },
+            ],
+        },
+    ]
 
 def cacheOcis():
     return [{
@@ -2673,6 +2704,12 @@ def skipIfUnchanged(ctx, type):
         "^tests/smoke/.*",
         "README.md",
     ]
+
+    if type == "cache" or type == "lint":
+        skip_step["settings"] = {
+            "ALLOW_SKIP_CHANGED": base_skip_steps,
+        }
+        return [skip_step]
 
     if type == "acceptance-tests":
         acceptance_skip_steps = [

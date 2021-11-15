@@ -18,7 +18,7 @@ export function getFileIcon(extension) {
     return icon
   }
 
-  return 'file'
+  return 'file_fill'
 }
 
 function _getFileExtension(name) {

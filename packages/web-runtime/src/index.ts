@@ -21,18 +21,28 @@ import {
 
 export const bootstrap = async (configurationPath: string): Promise<void> => {
   const runtimeConfiguration = await requestConfiguration(configurationPath)
-  announceOwncloudSDK({ vue: Vue, runtimeConfiguration })
-  await announceClient(runtimeConfiguration)
-  await announceStore({ vue: Vue, store, runtimeConfiguration })
-  await announceApplications({
+  const promiseOcSDK = announceOwncloudSDK({ vue: Vue, runtimeConfiguration }) // vue.$client
+  const promiseClient = announceClient(runtimeConfiguration) // oidc client
+  const promiseTheme = announceTheme({ store, vue: Vue, designSystem, runtimeConfiguration })
+  const promiseApplications = announceApplications({
     runtimeConfiguration,
     store,
     supportedLanguages,
     router,
     translations
   })
+  await promiseOcSDK
+  await promiseClient
+  try {
+    await announceStore({ vue: Vue, store, runtimeConfiguration }) // REQUIRES $client and oidc
+  } catch (e) {
+    // Bail early (without wayting for other pending processes)
+    // to allow faster redirection to idp
+    return 
+  }
+  await promiseTheme
+  await promiseApplications
   announceTranslations({ vue: Vue, supportedLanguages, translations })
-  await announceTheme({ store, vue: Vue, designSystem, runtimeConfiguration })
   announceDefaults({ store, router })
 }
 

@@ -58,7 +58,7 @@ export default {
                 return
               }
             } catch (e) {
-              console.log(e)
+              console.error(e)
             }
             this.showMessage({
               title: this.$gettext('Download failed'),
@@ -69,6 +69,8 @@ export default {
               }
             })
             return
+          } else {
+            url = url + '?access_token=' + this.getToken
           }
 
           this.triggerDownload(url, file.name)

@@ -96,11 +96,18 @@ const actions = {
           return
         }
 
-        const capabilities = await client.getCapabilities()
-        context.commit('SET_CAPABILITIES', capabilities)
+        // Get the cached capabilities, since we already got them when calling login()
+        const promiseCapabilities = client.getCapabilities(false)
+        const promiseUserGroups = client.users.getUserGroups(login.id)
+        const promiseUser = client.users.getUser(login.id)
+        const promiseSettings = context.dispatch('loadSettingsValues')
 
-        const userGroups = await client.users.getUserGroups(login.id)
-        const user = await client.users.getUser(login.id)
+        // Await after to paralelize calls
+        const capabilities = await promiseCapabilities
+        const userGroups = await promiseUserGroups
+        const user = await promiseUser
+
+        context.commit('SET_CAPABILITIES', capabilities)
 
         context.commit('SET_USER', {
           id: login.id,
@@ -124,7 +131,7 @@ const actions = {
           context.commit('SET_SIDEBAR_FOOTER_CONTENT_COMPONENT', null, { root: true })
         }
 
-        await context.dispatch('loadSettingsValues')
+        await promiseSettings
         context.commit('SET_USER_READY', true)
 
         if (payload.autoRedirect) {
@@ -165,6 +172,8 @@ const actions = {
     const token = vueAuthInstance.getToken()
     if (token) {
       await init(this._vm.$client, token)
+    } else {
+      throw new Error("No user token");
     }
   },
   login(context, payload = { provider: 'oauth2' }) {

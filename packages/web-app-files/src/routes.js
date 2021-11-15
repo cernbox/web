@@ -44,8 +44,8 @@ export default [
         }
       },
       {
-        name: 'project',
-        path: 'projects/:page?',
+        name: 'projects',
+        path: 'projects',
         component: Projects,
         meta: {
           hideFilelistActions: true,

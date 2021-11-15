@@ -107,7 +107,9 @@
           <!-- TODO FIX ME -->
           <th scope="col" class="oc-pr-s">EOS Path:</th>
           <td>
-            <span class="oc-files-file-link-url uk-text-truncate">{{ file.path }}</span>
+            <div class="uk-text-truncate" style="display: inline-block; max-width: 250px;">
+              <span class="oc-files-file-link-url" v-oc-tooltip="file.path">{{ file.path }}</span>
+            </div>
             <copy-to-clipboard-button
               class="oc-files-public-link-copy-url oc-ml-xs"
               :value="file.path"
@@ -115,6 +117,41 @@
               success-msg-title="Link copy"
               success-msg-text="The EOS path has been copied to your clipboard."
             />
+          </td>
+        </tr>
+        <tr>
+          <!-- TODO FIX ME -->
+          <th scope="col" class="oc-pr-s">Direct link:</th>
+          <td>
+            <div class="uk-text-truncate" style="display: inline-block; max-width: 250px;">
+              <span class="oc-files-file-link-url" v-oc-tooltip="directLink">{{ directLink }}</span>
+            </div>
+            <copy-to-clipboard-button
+              class="oc-files-public-link-copy-url oc-ml-xs"
+              :value="directLink"
+              label="Copy direct link"
+              success-msg-title="Link copy"
+              success-msg-text="The link has been copied to your clipboard."
+            />
+          </td>
+        </tr>
+        <tr v-if="hasSharees">
+          <th scope="col" class="oc-pr-s" v-text="sharedWithLabel" />
+          <td>
+            <oc-button
+              v-oc-tooltip="sharedWithTooltip"
+              data-testid="collaborators-show-people"
+              appearance="raw"
+              :aria-label="sharedWithTooltip"
+              @click="expandPeoplesPanel"
+            >
+              <oc-avatars
+                :items="collaboratorsAvatar"
+                :stacked="true"
+                :is-tooltip-displayed="false"
+                class="sharee-avatars"
+              />
+            </oc-button>
           </td>
         </tr>
       </table>
@@ -127,6 +164,7 @@ import Mixins from '../../../mixins'
 import MixinResources from '../../../mixins/resources'
 import MixinRoutes from '../../../mixins/routes'
 import { shareTypes, userShareTypes } from '../../../helpers/shareTypes'
+import { getParentPaths } from '../../../helpers/path'
 import { mapActions, mapGetters } from 'vuex'
 import { ImageDimension } from '../../../constants'
 import { loadPreview } from '../../../helpers/resource'
@@ -156,7 +194,7 @@ export default {
     sharedItem: null
   }),
   computed: {
-    ...mapGetters('Files', ['versions', 'sharesTree', 'sharesTreeLoading']),
+    ...mapGetters('Files', ['versions', 'sharesTree', 'sharesTreeLoading', 'currentFileOutgoingCollaborators',]),
     ...mapGetters(['user', 'getToken', 'configuration']),
 
     file() {
@@ -269,6 +307,9 @@ export default {
     ownerAdditionalInfo() {
       return this.file.owner?.[0].additionalInfo
     },
+    directLink() {
+      return `${this.configuration.server}/#/files/list/all${this.file.path}`
+    },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'
     },
@@ -286,6 +327,12 @@ export default {
     },
     seeVersionsLabel() {
       return this.$gettext('See all versions')
+    },
+    sharedWithLabel() {
+      return this.$gettext('Shared with:')
+    },
+    sharedWithTooltip() {
+      return this.$gettext('Show all invited people')
     },
     capitalizedTimestamp() {
       let displayDate = ''
@@ -322,6 +369,56 @@ export default {
         this.file.owner?.[0].username === this.user.id ||
         this.file.shareOwner === this.user.id
       )
+    },
+    hasSharees() {
+      return this.collaboratorsAvatar.length > 0
+    },
+    collaboratorsAvatar() {
+      return this.collaborators.map((c) => {
+        return {
+          ...c.collaborator,
+          shareType: c.shareType
+        }
+      })
+    },
+    collaborators() {
+      return [...this.currentFileOutgoingCollaborators, ...this.indirectOutgoingShares]
+        .filter((c) => c.displayName || c.collaborator.displayName)
+        .sort(this.collaboratorsComparator)
+        .map((collaborator) => {
+          collaborator.key = 'collaborator-' + collaborator.id
+          if (
+            collaborator.owner.name !== collaborator.fileOwner.name &&
+            collaborator.owner.name !== this.user.id
+          ) {
+            collaborator.resharers = [collaborator.owner]
+          }
+          return collaborator
+        })
+    },
+    indirectOutgoingShares() {
+      const allShares = []
+      const parentPaths = getParentPaths(this.file.path, false)
+      if (parentPaths.length === 0) {
+        return []
+      }
+
+      // remove root entry
+      parentPaths.pop()
+
+      parentPaths.forEach((parentPath) => {
+        const shares = this.sharesTree[parentPath]
+        if (shares) {
+          shares.forEach((share) => {
+            if (share.outgoing && this.$_isCollaboratorShare(share)) {
+              share.key = 'indirect-collaborator-' + share.id
+              allShares.push(share)
+            }
+          })
+        }
+      })
+
+      return allShares
     }
   },
   watch: {
@@ -379,6 +476,9 @@ export default {
         path: this.file.path,
         $gettext: this.$gettext
       })
+    },
+    $_isCollaboratorShare(collaborator) {
+      return userShareTypes.includes(collaborator.shareType)
     },
     getParentSharePath(childPath, shares) {
       let currentPath = childPath

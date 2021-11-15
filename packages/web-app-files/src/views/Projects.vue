@@ -4,9 +4,6 @@
     <template v-else>
       <!-- Projects -->
       <div>
-        <div class="oc-app-bar shares-bar">
-          <h2 key="accepted-shares-header" v-translate>Projects</h2>
-        </div>
         <no-content-message
           v-if="isEmpty"
           id="files-shared-with-me-accepted-empty"

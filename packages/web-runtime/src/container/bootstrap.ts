@@ -45,9 +45,9 @@ export const announceStore = async ({
   vue: VueConstructor
   runtimeConfiguration: RuntimeConfiguration
   store: Store<any>
-}): Promise<void> => {
-  await store.dispatch('loadConfig', runtimeConfiguration)
-  await store.dispatch('initAuth')
+}): Promise<any> => {
+  const promiseConfig = store.dispatch('loadConfig', runtimeConfiguration)
+  const promiseAuth = store.dispatch('initAuth')
 
   /**
    * TODO: Find a different way to access store from within JS files
@@ -60,6 +60,7 @@ export const announceStore = async ({
    * the apis for retrieving it.
    */
   set(vue, '$store', store)
+  return Promise.all([promiseConfig, promiseAuth])
 }
 
 /**
@@ -77,9 +78,11 @@ export const announceClient = async (runtimeConfiguration: RuntimeConfiguration)
     return
   }
 
-  const { client_id: clientId, client_secret: clientSecret } = await registerClient(openIdConnect)
-  openIdConnect.client_id = clientId
-  openIdConnect.client_secret = clientSecret
+  return registerClient(openIdConnect)
+    .then(({ client_id: clientId, client_secret: clientSecret }) => {
+      openIdConnect.client_id = clientId
+      openIdConnect.client_secret = clientSecret
+    })
 }
 
 /**
@@ -106,40 +109,40 @@ export const announceApplications = async ({
   router: VueRouter
   translations: unknown
   supportedLanguages: { [key: string]: string }
-}): Promise<void> => {
+}): Promise<any> => {
   const { apps: internalApplications = [], external_apps: externalApplications = [] } =
     runtimeConfiguration
 
-  const applicationPaths = [
-    ...internalApplications.map((application) => `web-app-${application}`),
-    ...externalApplications.map((application) => application.path)
-  ].filter(Boolean)
+  const internalApplicationPaths = internalApplications
+    .map((application) => `web-app-${application}`)
+    .filter(Boolean)
+  const externalApplicationPaths = externalApplications
+    .map((application) => application.path)
+    .filter(Boolean)
 
-  const applicationResults = await Promise.allSettled(
-    applicationPaths.map((applicationPath) =>
-      buildApplication({
-        applicationPath,
-        store,
-        supportedLanguages,
-        router,
-        translations
-      })
-    )
-  )
+  const registerApp = (applicationPath) =>
+    buildApplication({
+      applicationPath,
+      store,
+      supportedLanguages,
+      router,
+      translations
+    })
+    .then((application) => {
+      application.initialize()
+        .then(() => {
+          application.ready()
+        })
+    })
+    .catch((reason) => {
+      console.error(reason)
+    })
+  
+  const promiseInternalApps = internalApplicationPaths.map(registerApp)
+  // Don't wait for external apps, eventually they get loaded
+  externalApplicationPaths.map(registerApp)
 
-  const applications = applicationResults.reduce<NextApplication[]>((acc, applicationResult) => {
-    // we don't want to fail hard with the full system when one specific application can't get loaded. only log the error.
-    if (applicationResult.status !== 'fulfilled') {
-      console.error(applicationResult.reason)
-    } else {
-      acc.push(applicationResult.value)
-    }
-
-    return acc
-  }, [])
-
-  await Promise.all(applications.map((application) => application.initialize()))
-  await Promise.all(applications.map((application) => application.ready()))
+  return Promise.allSettled(promiseInternalApps)
 }
 
 /**
@@ -162,12 +165,13 @@ export const announceTheme = async ({
   designSystem: any
   runtimeConfiguration?: RuntimeConfiguration
 }): Promise<void> => {
-  const { theme } = await loadTheme(runtimeConfiguration?.theme)
-  await store.dispatch('loadTheme', { theme: theme.default })
-
-  vue.use(designSystem, {
-    tokens: store.getters.theme.designTokens
-  })
+  return loadTheme(runtimeConfiguration?.theme)
+    .then(async ({ theme }) => {
+      await store.dispatch('loadTheme', { theme: theme.default })
+      vue.use(designSystem, {
+        tokens: store.getters.theme.designTokens
+      })
+    })
 }
 
 /**

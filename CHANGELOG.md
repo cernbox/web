@@ -3,7 +3,58 @@ Changelog for ownCloud Web [unreleased] (UNRELEASED)
 The following sections list the changes in ownCloud web unreleased relevant to
 ownCloud admins and users.
 
-[unreleased]: https://github.com/owncloud/web/compare/v4.3.0...master
+[unreleased]: https://github.com/owncloud/web/compare/v4.4.0...master
+
+Summary
+-------
+
+* Bugfix - Fix location picker breadcrumb url encoding: [#5940](https://github.com/owncloud/web/pull/5940)
+* Bugfix - Context menu rendering: [#5952](https://github.com/owncloud/web/pull/5952)
+* Enhancement - Default action order: [#5952](https://github.com/owncloud/web/pull/5952)
+* Enhancement - Reduced sidebar width: [#5981](https://github.com/owncloud/web/issues/5981)
+
+Details
+-------
+
+* Bugfix - Fix location picker breadcrumb url encoding: [#5940](https://github.com/owncloud/web/pull/5940)
+
+   The breadcrumb urls in location-picker were encoded. We've fixed this by removing the
+   encoding.
+
+   https://github.com/owncloud/web/issues/5938
+   https://github.com/owncloud/web/pull/5940
+   https://github.com/owncloud/web/pull/5715
+
+* Bugfix - Context menu rendering: [#5952](https://github.com/owncloud/web/pull/5952)
+
+   We fixed that the context menu was being created for each and every file row of the current page
+   (it was just not made visible). Now it only gets created when it gets activated by the user for a
+   file row.
+
+   https://github.com/owncloud/web/pull/5952
+
+* Enhancement - Default action order: [#5952](https://github.com/owncloud/web/pull/5952)
+
+   We've changed the order of actions which are being considered as default action. The order is
+   now 1) installed editors, 2) external apps from the app provider, 3) system default actions.
+   Previously the external apps took precedence.
+
+   https://github.com/owncloud/web/pull/5952
+
+* Enhancement - Reduced sidebar width: [#5981](https://github.com/owncloud/web/issues/5981)
+
+   We reduced the sidebar width to give the files list more horizontal room, especially on medium
+   sized screens.
+
+   https://github.com/owncloud/web/issues/5981
+   https://github.com/owncloud/web/pull/5983
+
+Changelog for ownCloud Web [4.4.0] (2021-10-26)
+=======================================
+The following sections list the changes in ownCloud web 4.4.0 relevant to
+ownCloud admins and users.
+
+[4.4.0]: https://github.com/owncloud/web/compare/v4.3.0...v4.4.0
 
 Summary
 -------

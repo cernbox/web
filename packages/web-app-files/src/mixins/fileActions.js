@@ -64,42 +64,40 @@ export default {
     },
 
     $_fileActions_editorActions() {
-      return this.apps.fileEditors
-        .map((editor) => {
-          return {
-            label: () => {
-              const translated = this.$gettext('Open in %{app}')
-              return this.$gettextInterpolate(
-                translated,
-                { app: this.apps.meta[editor.app].name },
-                true
-              )
-            },
-            icon: this.apps.meta[editor.app].icon,
-            handler: (item) =>
-              this.$_fileActions_openEditor(editor, item.path, item.id, EDITOR_MODE_EDIT),
-            isEnabled: ({ resource }) => {
-              if (editor.routes?.length > 0 && !checkRoute(editor.routes, this.$route.name)) {
-                return false
-              }
+      return this.apps.fileEditors.map((editor) => {
+        return {
+          label: () => {
+            const translated = this.$gettext('Open in %{app}')
+            return this.$gettextInterpolate(
+              translated,
+              { app: this.apps.meta[editor.app].name },
+              true
+            )
+          },
+          icon: this.apps.meta[editor.app].icon,
+          img: this.apps.meta[editor.app].img,
+          handler: (item) =>
+            this.$_fileActions_openEditor(editor, item.path, item.id, EDITOR_MODE_EDIT),
+          isEnabled: ({ resource }) => {
+            if (editor.routes?.length > 0 && !checkRoute(editor.routes, this.$route.name)) {
+              return false
+            }
 
-              return resource.extension === editor.extension
-            },
-            showInRightClickMenu: editor.showInRightClickMenu,
-            canBeDefault: editor.canBeDefault,
-            iconImg: this.apps.meta[editor.app].iconImg,
-            componentType: 'oc-button',
-            class: `oc-files-actions-${kebabCase(
-              this.apps.meta[editor.app].name
-            ).toLowerCase()}-trigger`
-          }
-        })
-        .sort((first, second) => {
-          if (second.canBeDefault !== first.canBeDefault && second.canBeDefault) {
-            return 1
-          }
-          return 0
-        })
+            return resource.extension === editor.extension
+          },
+          canBeDefault: editor.canBeDefault,
+          componentType: 'oc-button',
+          class: `oc-files-actions-${kebabCase(
+            this.apps.meta[editor.app].name
+          ).toLowerCase()}-trigger`
+        }
+      }).sort((first, second) => {
+        // We make the default action based on the order, so put the ones who can be default on top
+        if (second.canBeDefault !== first.canBeDefault && second.canBeDefault){
+          return 1
+        }
+        return 0
+       })
     }
   },
 
@@ -152,54 +150,56 @@ export default {
     // returns the _first_ action from actions array which we now construct from
     // available mime-types coming from the app-provider and existing actions
     $_fileActions_triggerDefaultAction(resource) {
-      const availableExternalAppActions = this.$_fileActions_loadApps(resource)
+      const actions = this.$_fileActions_getAllAvailableActions(resource).filter(
+        (action) => action.canBeDefault
+      )
+      actions[0].handler(resource, actions[0].handlerData)
+    },
 
-      for (const action of availableExternalAppActions) {
-        action.handler = () => this.$_fileActions_openLink(action.name, resource.fileId)
-      }
-
-      let actions = this.$_fileActions_editorActions.concat(this.$_fileActions_systemActions)
-
-      actions = actions.filter((action) => {
-        return (
-          action.isEnabled({
-            resource: resource,
-            parent: this.currentFolder
-          }) && action.canBeDefault
-        )
+    $_fileActions_getAllAvailableActions(resource) {
+      return [
+        ...this.$_fileActions_editorActions,
+        ...this.$_fileActions_loadExternalAppActions(resource),
+        ...this.$_fileActions_systemActions
+      ].filter((action) => {
+        return action.isEnabled({
+          resource,
+          parent: this.currentFolder
+        })
       })
-
-      const allDefaultActions = availableExternalAppActions.concat(actions)
-
-      // if there is an internal action rather than download, prioritize it as default
-      const internalAppActionExists = actions[0].icon !== 'file_download'
-      if (internalAppActionExists && availableExternalAppActions)
-        allDefaultActions.unshift(
-          allDefaultActions.splice(availableExternalAppActions.length, 1)[0]
-        )
-
-      allDefaultActions[0].handler(resource, allDefaultActions[0].handlerData)
     },
 
     // returns an array of available external Apps
     // to open a resource with a specific mimeType
-    $_fileActions_loadApps(resource) {
+    $_fileActions_loadExternalAppActions(resource) {
       const { mimeType } = resource
       if (mimeType === undefined || !this.capabilities?.files?.app_providers) {
         return []
       }
-      const allAvailableMimeTypes = this.getMimeTypes()
 
+      const allAvailableMimeTypes = this.getMimeTypes()
       if (!allAvailableMimeTypes?.length) {
         return []
-      } else {
-        const availableMimeTypes = allAvailableMimeTypes.find((t) => t.mime_type === mimeType)
-        if (availableMimeTypes) {
-          return availableMimeTypes.app_providers
-        } else {
-          return []
-        }
       }
+
+      const availableMimeTypes = allAvailableMimeTypes.find((t) => t.mime_type === mimeType)
+      if (!availableMimeTypes) {
+        return []
+      }
+
+      return availableMimeTypes.app_providers.map((app) => {
+        const label = this.$gettext('Open in %{ appName }')
+        return {
+          icon: app.icon,
+          img: app.img,
+          componentType: 'oc-button',
+          class: `oc-files-actions-${app.name}-trigger`,
+          isEnabled: () => true,
+          canBeDefault: true,
+          handler: () => this.$_fileActions_openLink(app.name, resource.fileId),
+          label: () => this.$gettextInterpolate(label, { appName: app.name })
+        }
+      })
     },
 
     $_fileActions_openLink(appName, resourceId) {

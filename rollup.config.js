@@ -23,6 +23,8 @@ import ts from 'rollup-plugin-ts'
 
 const production = !process.env.ROLLUP_WATCH
 
+const compilationTimestamp = new Date().getTime()
+
 const plugins = [
   del({
     runOnce: true,
@@ -32,6 +34,7 @@ const plugins = [
   postcss({
     extract: path.join('css', 'web.css'),
     minimize: production,
+    sourceMap: true,
     config: false
   }),
   vue({
@@ -81,7 +84,7 @@ const plugins = [
     ]
   }),
   html({
-    title: 'ownCloud',
+    title: 'Loading...',
     attributes: {
       html: { lang: 'en' },
       link: [],
@@ -113,6 +116,7 @@ const plugins = [
               makeHtmlAttributes: html.makeHtmlAttributes
             },
             data: {
+              compilationTimestamp: compilationTimestamp,
               attributes,
               meta,
               publicPath,
@@ -197,6 +201,7 @@ export default {
   output: {
     dir: 'dist',
     format: 'amd',
+    sourcemap: true,
     chunkFileNames: path.join('js', '_chunks', production ? '[name]-[hash].js' : '[name].js'),
     entryFileNames: path.join('js', production ? '[name]-[hash].js' : '[name].js')
   },

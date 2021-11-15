@@ -17,15 +17,17 @@ function $gettext(msg) {
   return msg
 }
 
+const lightweight = window.Vue.$store.getters.user.usertype === 'lightweight'
+
 export default [
   {
     path: '/',
-    redirect: { name: 'files-personal' }
+    redirect: { name: lightweight ? 'files-home' : 'files-personal' }
   },
   {
     name: 'list',
     path: '/list',
-    redirect: { name: 'files-personal' },
+    redirect: { name: lightweight ? 'files-home' : 'files-personal' },
     components: {
       app: App
     },
@@ -41,8 +43,8 @@ export default [
         }
       },
       {
-        name: 'projects',
-        path: 'projects',
+        name: 'project',
+        path: 'projects/:page?',
         component: Projects,
         meta: {
           hideFilelistActions: true,
@@ -126,6 +128,32 @@ export default [
       }
     ]
   },
+  {
+    name: 'lightweight',
+    path: '/lightweight',
+    redirect: { name: 'files-home' },
+    components: {
+      app: App
+    },
+    meta: {
+      auth: true
+    },
+    children: [
+      {
+        name: 'home',
+        path: 'home',
+        component: Lightweight,
+        meta: {
+          auth: true,
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Lightweight account'),
+          patchCleanPath: true
+        }
+      }
+    ]
+  },
+
   {
     name: 'public-link',
     path: '/public-link/:token',

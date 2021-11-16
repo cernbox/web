@@ -96,7 +96,8 @@ const getters = {
       .map((ext) => ext.toLowerCase())
   },
   homeFolder: (state, rootGetters) => {
-    if (isEmpty(state.options.homeFolder)) {
+    const lightweight = window.Vue.$store.getters.user.usertype === 'lightweight'
+    if (lightweight || isEmpty(state.options.homeFolder)) {
       return '/'
     }
     const parsed = parseHomeFolder(state.options.homeFolder, rootGetters.user)

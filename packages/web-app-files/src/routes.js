@@ -11,21 +11,24 @@ import PublicLink from './views/PublicLink.vue'
 import FilesDrop from './views/FilesDrop.vue'
 import LocationPicker from './views/LocationPicker.vue'
 import PublicFiles from './views/PublicFiles.vue'
+import Lightweight from './views/Lightweight.vue'
 
 // just a dummy function to trick gettext tools
 function $gettext(msg) {
   return msg
 }
 
+const lightweight = window.Vue.$store.getters.user.usertype === 'lightweight'
+
 export default [
   {
     path: '/',
-    redirect: { name: 'files-personal' }
+    redirect: { name: lightweight ? 'files-home' : 'files-personal' }
   },
   {
     name: 'list',
     path: '/list',
-    redirect: { name: 'files-personal' },
+    redirect: { name: lightweight ? 'files-home' : 'files-personal' },
     components: {
       app: App
     },
@@ -126,6 +129,32 @@ export default [
       }
     ]
   },
+  {
+    name: 'lightweight',
+    path: '/lightweight',
+    redirect: { name: 'files-lightweight-home' },
+    components: {
+      app: App
+    },
+    meta: {
+      auth: true
+    },
+    children: [
+      {
+        name: 'lightweight-home',
+        path: 'home',
+        component: Lightweight,
+        meta: {
+          auth: true,
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Lightweight account'),
+          patchCleanPath: true
+        }
+      }
+    ]
+  },
+
   {
     name: 'public-link',
     path: '/public-link/:token',

@@ -11,6 +11,7 @@ import PublicLink from './views/PublicLink.vue'
 import FilesDrop from './views/FilesDrop.vue'
 import LocationPicker from './views/LocationPicker.vue'
 import PublicFiles from './views/PublicFiles.vue'
+import Lightweight from './views/Lightweight.vue'
 
 // just a dummy function to trick gettext tools
 function $gettext(msg) {

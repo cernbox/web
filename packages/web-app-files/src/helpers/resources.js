@@ -258,6 +258,9 @@ function _buildLink(link) {
     case '15': // read (1) + update (2) + create (4) + delete (8)
       description = $gettext('Editor')
       break
+    case '3': // read (1) + update (2) for single files links
+      description = $gettext('Editor')
+      break
   }
 
   return {

@@ -41,6 +41,15 @@ export default ({ isFolder = false, $gettext = returnOriginal }) => {
         permissions: 4
       }
     )
+  } else {
+    roles.push(
+      {
+        name: 'editor',
+        label: $gettext('Editor'),
+        description: $gettext('Recipients can view, download and edit the file.'),
+        permissions: 3
+      }
+    )
   }
   return roles
 }

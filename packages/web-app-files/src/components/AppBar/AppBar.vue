@@ -75,7 +75,7 @@
                       @click="showCreateResourceModal"
                     >
                       <oc-icon name="create_new_folder" />
-                      <translate>New folder…</translate>
+                      <translate>New folder</translate>
                     </oc-button>
                   </div>
                 </li>
@@ -94,6 +94,23 @@
                     </oc-button>
                   </div>
                 </li>
+                <template v-if="mimeTypes">
+                  <li v-for="(mimetype, key) in mimetypesAllowedForCreation" :key="key">
+                    <div>
+                      <oc-button
+                        appearance="raw"
+                        justify-content="left"
+                        :class="['uk-width-1-1']"
+                        @click="showCreateResourceModal(false, mimetype.ext, false, true)"
+                      >
+                        <oc-icon :name="mimetype.icon || 'file'" />
+                        <translate :translate-params="{ name: mimetype.name }"
+                          >New %{name}</translate
+                        >
+                      </oc-button>
+                    </div>
+                  </li>
+                </template>
               </ul>
             </oc-drop>
           </template>
@@ -124,6 +141,7 @@
 import { mapActions, mapGetters, mapState, mapMutations } from 'vuex'
 import pathUtil from 'path'
 import isEmpty from 'lodash-es/isEmpty'
+import get from 'lodash-es/get'
 
 import Mixins from '../../mixins'
 import MixinFileActions, { EDITOR_MODE_CREATE } from '../../mixins/fileActions'
@@ -156,6 +174,7 @@ export default {
     fileFolderCreationLoading: false
   }),
   computed: {
+    ...mapGetters('External', ['mimeTypes']),
     ...mapGetters(['getToken', 'configuration', 'newFileHandlers', 'quota', 'user']),
     ...mapGetters('Files', [
       'files',
@@ -167,6 +186,12 @@ export default {
     ...mapState(['route']),
     ...mapState('Files', ['areHiddenFilesShown']),
 
+    mimetypesAllowedForCreation() {
+      if (!get(this, 'mimeTypes', []).length) {
+        return []
+      }
+      return this.mimeTypes.filter((mimetype) => mimetype.allow_creation) || []
+    },
     newButtonTooltip() {
       if (!this.canUpload) {
         return this.$gettext('You have no permission to upload!')
@@ -338,8 +363,12 @@ export default {
         '_blank'
       )
     },
-
-    showCreateResourceModal(isFolder = true, ext = 'txt', openAction = null) {
+    showCreateResourceModal(
+      isFolder = true,
+      ext = 'txt',
+      openAction = null,
+      generateNewFile = false
+    ) {
       const defaultName = isFolder
         ? this.$gettext('New folder')
         : this.$gettext('New file') + '.' + ext
@@ -366,7 +395,11 @@ export default {
           ? this.checkNewFolderName(defaultName)
           : this.checkNewFileName(defaultName),
         onCancel: this.hideModal,
-        onConfirm: isFolder ? this.addNewFolder : this.addNewFile,
+        onConfirm: isFolder
+          ? this.addNewFolder
+          : generateNewFile
+          ? this.generateNewFile
+          : this.addNewFile,
         onInput: checkInputValue
       }
 
@@ -510,7 +543,46 @@ export default {
 
       this.fileFolderCreationLoading = false
     },
-
+    async generateNewFile(fileName) {
+      try {
+        const path = pathUtil.join(this.currentPath, fileName)
+        const url = '/app/new?filename=' + path
+        console.log(encodeURI(url), path)
+        const headers = new Headers()
+        headers.append('Authorization', 'Bearer ' + this.getToken)
+        headers.append('X-Requested-With', 'XMLHttpRequest')
+        const response = await fetch(encodeURI(url), {
+          method: 'POST',
+          headers
+        })
+        await response.json()
+        let resource
+        if (this.isPersonalRoute) {
+          await this.$client.files.putFileContents(path, '')
+          resource = await this.$client.files.fileInfo(path, DavProperties.Default)
+        }
+        resource = buildResource(resource)
+        this.UPSERT_RESOURCE(resource)
+        this.$_fileActions_triggerDefaultAction(resource)
+        this.hideModal()
+        if (this.isPersonalRoute) {
+          this.loadIndicators({
+            client: this.$client,
+            currentFolder: this.currentFolder.path
+          })
+        }
+        setTimeout(() => {
+          this.setFileSelection([resource])
+          this.scrollToResource(resource)
+        })
+      } catch (error) {
+        this.showMessage({
+          title: this.$gettext('Creating file failed…'),
+          desc: error,
+          status: 'danger'
+        })
+      }
+    },
     checkNewFileName(fileName) {
       if (fileName === '') {
         return this.$gettext('File name cannot be empty')

@@ -117,10 +117,7 @@ const actions = {
           token,
           isAuthenticated: true,
           groups: userGroups,
-          usertype:
-            user.id === 'einstein' || user.email === 'elizaveta.ragozina@cern.ch'
-              ? 'lightweight'
-              : user.usertype
+          usertype: user.usertype
         })
 
         // Display quota in the sidebar

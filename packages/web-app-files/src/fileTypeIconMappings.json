@@ -37,7 +37,7 @@
   "hpp": "text-code",
   "html": "text-code",
   "htm": "text-code",
-  "ifc": "file_fill",
+  "ifc": "ifc_fill",
   "ipynb": "jupyter_fill",
   "java": "text-code",
   "js": "text-code",

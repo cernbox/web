@@ -31,11 +31,15 @@ export default {
       const failedResources = []
       const restorePromises = []
       const restoreQueue = new PQueue({ concurrency: 4 })
+
+      const project = this.$route.query.project
+      const query = project ? {base_path: project} : undefined
+
       resources.forEach((resource) => {
         restorePromises.push(
           restoreQueue.add(async () => {
             try {
-              await this.$client.fileTrash.restore(resource.id, resource.path)
+              await this.$client.fileTrash.restore(resource.id, resource.path, false, query)
               restoredResources.push(resource)
             } catch (e) {
               console.error(e)

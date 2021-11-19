@@ -88,6 +88,16 @@ export default [
           hasBulkActions: true,
           title: $gettext('Deleted files')
         }
+      },
+      {
+        path: 'trash-bin-project',
+        component: Trashbin,
+        name: 'trashbin-project',
+        meta: {
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Project trashbin')
+        }
       }
     ]
   },
@@ -153,5 +163,15 @@ export default [
       app: FilesDrop
     },
     meta: { auth: false, title: $gettext('Public file upload') }
+  },
+  {
+    path: 'trash-bin-project',
+    component: Trashbin,
+    name: 'trashbin-project',
+    meta: {
+      hideFilelistActions: true,
+      hasBulkActions: false,
+      title: $gettext('Project trashbin')
+    }
   }
 ]

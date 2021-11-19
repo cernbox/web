@@ -82,7 +82,7 @@ export default {
       const path = url.searchParams.get('project')
       const param = path ? `?base_path=${path}` : ''
       const resources = param
-        ? yield ref.$client.fileTrash.list(path, '1', DavProperties.Trashbin)
+        ? yield ref.$client.fileTrash.list(param, '1', DavProperties.Trashbin)
         : yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin)
 
       ref.LOAD_FILES({

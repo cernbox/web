@@ -1,5 +1,8 @@
 <template>
   <div>
+    <h2 v-if="$route.query.project" class="oc-p-s">
+      Trashbin of project "{{ $route.query.name }}"
+    </h2>
     <list-loader v-if="loadResourcesTask.isRunning" />
     <template v-else>
       <no-content-message
@@ -74,7 +77,13 @@ export default {
     const loadResourcesTask = useTask(function* (signal, ref) {
       ref.CLEAR_CURRENT_FILES_LIST()
 
-      const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin)
+      let url = window.location.href
+      url = new URL(`https://1.com?${url.split('?')[1]}`)
+      const path = url.searchParams.get('project')
+      const param = path ? `?base_path=${path}` : ''
+      const resources = param
+        ? yield ref.$client.fileTrash.list(path, '1', DavProperties.Trashbin)
+        : yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin)
 
       ref.LOAD_FILES({
         currentFolder: buildResource(resources[0]),

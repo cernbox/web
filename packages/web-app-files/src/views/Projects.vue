@@ -29,6 +29,21 @@
           @fileClick="$_fileActions_triggerDefaultAction"
           @rowMounted="rowMounted"
         >
+          <template #status="{ resource }">
+            <div
+              :key="resource.id + resource.status"
+              class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
+            >
+              <oc-button
+                size="small"
+                class="file-row-share-status-action"
+                @click.stop="trashbin(resource)"
+              >
+                <oc-icon size="small" name="delete" />
+                <translate>Trashbin</translate>
+              </oc-button>
+            </div>
+          </template>
         </oc-table-files>
       </div>
     </template>
@@ -157,6 +172,13 @@ export default {
       visibilityObserver.observe(component.$el, { onEnter: debounced, onExit: debounced.cancel })
     },
 
+    trashbin(resource) {
+      this.$router.push({
+        path: '/files/list/trash-bin-project',
+        query: { project: resource.path, name: resource.name }
+      })
+    },
+
     async loadResources() {
       this.loading = true
       this.CLEAR_CURRENT_FILES_LIST()
@@ -210,7 +232,6 @@ export default {
       resources.forEach((r) => {
         delete r.owner
         delete r.share
-        delete r.status
         delete r.sdate
       })
 

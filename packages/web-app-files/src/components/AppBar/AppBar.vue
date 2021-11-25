@@ -556,25 +556,27 @@ export default {
           headers
         })
         await response.json()
-        let resource
-        if (this.isPersonalRoute) {
-          await this.$client.files.putFileContents(path, '')
+        if (!response.ok) {
+          const message = `An error has occured: ${response.status}`
+          throw new Error(message)
+        } else {
+          let resource
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
-        }
-        resource = buildResource(resource)
-        this.UPSERT_RESOURCE(resource)
-        this.$_fileActions_triggerDefaultAction(resource)
-        this.hideModal()
-        if (this.isPersonalRoute) {
-          this.loadIndicators({
-            client: this.$client,
-            currentFolder: this.currentFolder.path
+          resource = buildResource(resource)
+          this.UPSERT_RESOURCE(resource)
+          this.$_fileActions_triggerDefaultAction(resource)
+          this.hideModal()
+          if (this.isPersonalRoute) {
+            this.loadIndicators({
+              client: this.$client,
+              currentFolder: this.currentFolder.path
+            })
+          }
+          setTimeout(() => {
+            this.setFileSelection([resource])
+            this.scrollToResource(resource)
           })
         }
-        setTimeout(() => {
-          this.setFileSelection([resource])
-          this.scrollToResource(resource)
-        })
       } catch (error) {
         this.showMessage({
           title: this.$gettext('Creating file failed…'),

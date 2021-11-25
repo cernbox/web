@@ -561,7 +561,15 @@ export default {
           throw new Error(message)
         } else {
           let resource
-          resource = await this.$client.files.fileInfo(path, DavProperties.Default)
+          if (this.isPersonalRoute) {
+            resource = await this.$client.files.fileInfo(path, DavProperties.Default)
+          } else {
+            resource = await this.$client.publicFiles.getFileInfo(
+              path,
+              this.publicLinkPassword,
+              DavProperties.Default
+            )
+          }
           resource = buildResource(resource)
           this.UPSERT_RESOURCE(resource)
           this.$_fileActions_triggerDefaultAction(resource)

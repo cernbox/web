@@ -546,15 +546,21 @@ export default {
     async generateNewFile(fileName) {
       try {
         const path = pathUtil.join(this.currentPath, fileName)
+        console.log('path in AppBAr', path)
         const url = '/app/new?filename=' + path
-        console.log(encodeURI(url), path)
         const headers = new Headers()
-        headers.append('Authorization', 'Bearer ' + this.getToken)
-        headers.append('X-Requested-With', 'XMLHttpRequest')
+        if (this.isPersonalRoute) {
+          headers.append('Authorization', 'Bearer ' + this.getToken)
+          headers.append('X-Requested-With', 'XMLHttpRequest')
+        } else {
+          headers.Authorization =
+            'Basic ' + Buffer.from('public:' + this.publicLinkPassword).toString('base64')
+        }
         const response = await fetch(encodeURI(url), {
           method: 'POST',
           headers
         })
+
         await response.json()
         if (!response.ok) {
           const message = `An error has occured: ${response.status}`

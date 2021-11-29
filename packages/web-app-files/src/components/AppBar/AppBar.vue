@@ -535,10 +535,16 @@ export default {
       try {
         const path = pathUtil.join(this.currentPath, fileName)
         const url = '/app/new?filename=' + path
-        console.log(encodeURI(url), path)
         const headers = new Headers()
-        headers.append('Authorization', 'Bearer ' + this.getToken)
-        headers.append('X-Requested-With', 'XMLHttpRequest')
+        if (!this.isPublicFilesRoute) {
+          headers.append('Authorization', 'Bearer ' + this.getToken)
+          headers.append('X-Requested-With', 'XMLHttpRequest')
+        } else {
+          headers.append(
+            'Authorization',
+            'Basic ' + Buffer.from('public:' + this.publicLinkPassword).toString('base64')
+          )
+        }
         const response = await fetch(encodeURI(url), {
           method: 'POST',
           headers

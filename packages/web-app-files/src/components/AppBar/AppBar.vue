@@ -546,15 +546,16 @@ export default {
     async generateNewFile(fileName) {
       try {
         const path = pathUtil.join(this.currentPath, fileName)
-        console.log('path in AppBAr', path)
         const url = '/app/new?filename=' + path
         const headers = new Headers()
-        if (this.isPersonalRoute) {
+        if (!this.isPublicFilesRoute) {
           headers.append('Authorization', 'Bearer ' + this.getToken)
           headers.append('X-Requested-With', 'XMLHttpRequest')
         } else {
-          headers.Authorization =
+          headers.append(
+            'Authorization',
             'Basic ' + Buffer.from('public:' + this.publicLinkPassword).toString('base64')
+          )
         }
         const response = await fetch(encodeURI(url), {
           method: 'POST',

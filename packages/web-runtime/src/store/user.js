@@ -84,6 +84,9 @@ const actions = {
         }
       }
 
+      // This is a relatively expensive call, so let's do it as soon as possible
+      const promiseCapabilities = context.dispatch('loadCapabilities', { token })
+
       client.init(options)
       if (doLogin) {
         let login
@@ -96,8 +99,13 @@ const actions = {
           return
         }
 
-        const userGroups = await client.users.getUserGroups(login.id)
-        const user = await client.users.getUser(login.id)
+        const promiseUserGroups = client.users.getUserGroups(login.id)
+        const promiseUser = client.users.getUser(login.id)
+        const promiseSettings = context.dispatch('loadSettingsValues')
+
+        // Await after to paralelize calls
+        const userGroups = await promiseUserGroups
+        const user = await promiseUser
 
         let userEmail = ''
         if (login && login.email) {
@@ -119,7 +127,8 @@ const actions = {
         if (user.quota.definition !== 'default' && user.quota.definition !== 'none') {
           context.commit('SET_QUOTA', user.quota)
         }
-        await context.dispatch('loadSettingsValues')
+
+        await promiseSettings
         if (payload.autoRedirect) {
           router.push({ path: '/' }).catch(() => {})
         }
@@ -127,7 +136,7 @@ const actions = {
         context.commit('UPDATE_TOKEN', token)
       }
 
-      await context.dispatch('loadCapabilities', { token })
+      await promiseCapabilities
       context.commit('SET_USER_READY', true)
     }
     // if called from login, use available vue-authenticate instance; else re-init

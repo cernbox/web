@@ -2,7 +2,7 @@ import { isProjectsRoute } from '../../helpers/route'
 
 export default {
   computed: {
-    $_open_trashbin() {
+    $_project_trashbin() {
       return [
         {
           icon: 'delete',

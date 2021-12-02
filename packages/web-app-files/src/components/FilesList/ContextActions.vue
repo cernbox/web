@@ -40,6 +40,7 @@ import Restore from '../../mixins/actions/restore'
 import ShowActions from '../../mixins/actions/showActions'
 import ShowDetails from '../../mixins/actions/showDetails'
 import ShowShares from '../../mixins/actions/showShares'
+import ProjectTrashin from '../../mixins/actions/projectTrashbin'
 
 export default {
   name: 'ContextActions',
@@ -61,7 +62,8 @@ export default {
     Restore,
     ShowActions,
     ShowDetails,
-    ShowShares
+    ShowShares,
+    ProjectTrashin
   ],
 
   props: {
@@ -121,7 +123,7 @@ export default {
         ...this.$_restore_items,
         ...this.$_delete_items,
         ...this.$_showDetails_items,
-        ...this.$_open_trashbin
+        ...this.$_project_trashbin
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 
@@ -156,7 +158,7 @@ export default {
         ...this.$_declineShare_items,
         ...this.$_delete_items,
         ...this.$_showActions_items,
-        ...this.$_open_trashbin
+        ...this.$_project_trashbin
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 

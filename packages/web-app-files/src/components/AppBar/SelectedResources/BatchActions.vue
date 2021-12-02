@@ -23,6 +23,7 @@ import DownloadFile from '../../../mixins/actions/downloadFile'
 import EmptyTrashBin from '../../../mixins/actions/emptyTrashBin'
 import Move from '../../../mixins/actions/move'
 import Restore from '../../../mixins/actions/restore'
+import ProjectTrashin from '../../../mixins/actions/projectTrashbin'
 
 export default {
   name: 'BatchActions',
@@ -36,7 +37,8 @@ export default {
     DownloadFile,
     EmptyTrashBin,
     Move,
-    Restore
+    Restore,
+    ProjectTrashin
   ],
   computed: {
     ...mapGetters('Files', ['selectedFiles']),
@@ -58,7 +60,7 @@ export default {
         ...this.$_emptyTrashBin_items,
         ...this.$_delete_items,
         ...this.$_restore_items,
-        ...this.$_open_trashbin
+        ...this.$_project_trashbin
       ].filter((item) => item.isEnabled({ resources: this.selectedFiles }))
     }
   }

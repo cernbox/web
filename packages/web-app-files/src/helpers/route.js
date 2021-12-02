@@ -36,6 +36,10 @@ export function isAnySharedWithRoute(route) {
   return isSharedWithMeRoute(route) || isSharedWithOthersRoute(route)
 }
 
+export function isProjectsRoute(route) {
+  return route.name === 'files-projects'
+}
+
 export function isPublicFilesRoute(route) {
   return route.name === 'files-public-list'
 }

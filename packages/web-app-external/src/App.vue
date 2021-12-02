@@ -88,6 +88,9 @@ export default {
       return this.$route.params.file_id
     }
   },
+  mounted() {
+    document.title = this.$route.params.app
+  },
   async created() {
     await unauthenticatedUserReady(this.$router, this.$store)
 

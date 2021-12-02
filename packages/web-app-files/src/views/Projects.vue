@@ -95,7 +95,7 @@ export default {
       ref.CLEAR_CURRENT_FILES_LIST()
 
       const headers = new Headers()
-      headers.append('Authorization', 'Bearer ' + this.getToken)
+      headers.append('Authorization', 'Bearer ' + ref.getToken)
       headers.append('X-Requested-With', 'XMLHttpRequest')
       const response = yield fetch('api/v0/projects', {
         method: 'GET',

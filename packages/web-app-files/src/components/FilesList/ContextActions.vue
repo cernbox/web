@@ -120,7 +120,8 @@ export default {
         ...this.$_emptyTrashBin_items,
         ...this.$_restore_items,
         ...this.$_delete_items,
-        ...this.$_showDetails_items
+        ...this.$_showDetails_items,
+        ...this.$_open_trashbin
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 
@@ -154,7 +155,8 @@ export default {
         ...this.$_acceptShare_items,
         ...this.$_declineShare_items,
         ...this.$_delete_items,
-        ...this.$_showActions_items
+        ...this.$_showActions_items,
+        ...this.$_open_trashbin
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 

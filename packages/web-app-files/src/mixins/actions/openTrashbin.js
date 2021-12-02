@@ -13,8 +13,10 @@ export default {
               'Open trashbin'
             ),
           isEnabled: ({ resource }) => {
-            console.log('wihich route', isProjectsRoute)
             if (!isProjectsRoute(this.$route)) {
+              return false
+            }
+            if (resources.length === 0) {
               return false
             }
 

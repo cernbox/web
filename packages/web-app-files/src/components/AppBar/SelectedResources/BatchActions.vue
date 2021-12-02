@@ -57,7 +57,8 @@ export default {
         ...this.$_copy_items,
         ...this.$_emptyTrashBin_items,
         ...this.$_delete_items,
-        ...this.$_restore_items
+        ...this.$_restore_items,
+        ...this.$_open_trashbin
       ].filter((item) => item.isEnabled({ resources: this.selectedFiles }))
     }
   }

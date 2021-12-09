@@ -20,6 +20,7 @@
         id="files-trashbin-table"
         v-model="selected"
         class="files-table"
+        view="files-trashbin-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-paths-displayed="true"
         :are-thumbnails-displayed="false"

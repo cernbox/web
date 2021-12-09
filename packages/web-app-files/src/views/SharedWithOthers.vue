@@ -19,6 +19,7 @@
         id="files-shared-with-others-table"
         v-model="selected"
         class="files-table"
+        view="files-shared-with-others-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-thumbnails-displayed="displayThumbnails"
         :resources="paginatedResources"

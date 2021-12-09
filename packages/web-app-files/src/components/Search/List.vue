@@ -11,6 +11,7 @@
     <resource-table
       v-else
       class="files-table"
+      view="files-table"
       :class="{ 'files-table-squashed': false }"
       :resources="paginatedResources"
       :target-route="{ name: 'files-personal' }"

@@ -47,6 +47,7 @@
             v-else
             id="files-location-picker-table"
             class="files-table"
+            view="files-location-picker-table"
             :are-thumbnails-displayed="false"
             :resources="paginatedResources"
             :disabled="disabledResources"

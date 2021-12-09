@@ -21,6 +21,7 @@
         id="files-public-files-table"
         v-model="selected"
         class="files-table"
+        view="files-public-files-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-thumbnails-displayed="displayThumbnails"
         :resources="paginatedResources"

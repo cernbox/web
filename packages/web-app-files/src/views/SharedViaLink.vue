@@ -17,6 +17,7 @@
         id="files-shared-via-link-table"
         v-model="selected"
         class="files-table"
+        view="files-shared-via-link-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-thumbnails-displayed="displayThumbnails"
         :resources="paginatedResources"

@@ -2,6 +2,7 @@
   <oc-table
     :data="resources"
     :grouping-settings="groupingSettings"
+    :view="view"
     :fields="fields"
     :highlighted="selectedIds"
     :disabled="disabled"
@@ -174,6 +175,14 @@ export default {
      */
     groupingSettings: {
       type: Object,
+      required: false,
+    },
+    /**
+     * Web view in which the table is shown. Used to save sorting settings
+     * -**
+     */
+    view: {
+      type: String,
       required: false,
     },
     /**

@@ -12,6 +12,7 @@
         id="files-favorites-table"
         v-model="selected"
         class="files-table"
+        view="files-favorites-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-paths-displayed="true"
         :are-thumbnails-displayed="displayThumbnails"

@@ -529,4 +529,10 @@ body,
   top: var(--oc-space-medium);
   z-index: 3;
 }
+
+//CERN
+.oc-sidebar-nav-item a {
+  border-radius: 5px;
+  margin: 0 5px;
+}
 </style>

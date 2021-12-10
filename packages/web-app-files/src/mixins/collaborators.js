@@ -64,7 +64,8 @@ export default {
       const collaboratorRoles = roles({
         $gettext,
         isFolder: isFolder,
-        allowSharePerm: !this.isOcis
+        allowSharePerm: !this.isOcis,
+        allowDenyPerm: this.highlightedFile.canDeny()
       })
       // deactivate for CERNBox
       // collaboratorRoles.push(this.advancedRole)

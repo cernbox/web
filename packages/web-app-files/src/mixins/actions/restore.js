@@ -33,7 +33,7 @@ export default {
       const restoreQueue = new PQueue({ concurrency: 4 })
 
       const project = this.$route.query.project
-      const query = project ? {base_path: project} : undefined
+      const query = project ? { base_path: project } : undefined
 
       resources.forEach((resource) => {
         restorePromises.push(

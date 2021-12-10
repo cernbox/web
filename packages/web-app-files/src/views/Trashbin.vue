@@ -92,7 +92,7 @@ export default {
       ref.CLEAR_CURRENT_FILES_LIST()
 
       const project = ref.$route.query.project
-      const query = project ? {base_path: project} : undefined
+      const query = project ? { base_path: project } : undefined
       const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
 
       ref.LOAD_FILES({

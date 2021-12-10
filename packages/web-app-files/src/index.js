@@ -21,7 +21,8 @@ const appInfo = {
   extensions: [],
   fileSideBars
 }
-const navItems = [
+
+const navItemFirst = [
   {
     name: $gettext('All files'),
     iconMaterial: appInfo.icon,
@@ -29,7 +30,9 @@ const navItems = [
       name: 'files-personal',
       path: `/${appInfo.id}/list/all`
     }
-  },
+  }
+]
+const navItems = [
   {
     name: $gettext('Favorites'),
     iconMaterial: 'star',
@@ -86,11 +89,38 @@ const navItems = [
   }
 ]
 
+const navItemsLightweight = [
+  {
+    name: $gettext('Home'),
+    iconMaterial: 'library_books',
+    route: {
+      name: 'files-home',
+      path: `/${appInfo.id}/list/home`
+    }
+  },
+  {
+    name: $gettext('Shared with me'),
+    iconMaterial: 'shared-with-me',
+    route: {
+      name: 'files-shared-with-me',
+      path: `/${appInfo.id}/list/shared-with-me`
+    }
+  },
+  {
+    name: $gettext('Projects'),
+    iconMaterial: 'library_books',
+    route: {
+      name: 'files-projects',
+      path: `/${appInfo.id}/list/projects`
+    }
+  }
+]
+
 export default {
   appInfo,
   store,
   routes,
-  navItems,
+  navItems: navItemFirst,
   quickActions,
   translations,
   ready({ router, store }) {
@@ -103,6 +133,14 @@ export default {
     bus.publish('app.search.register.provider', Registry.sdkSearch)
   },
   userReady({ store }) {
+    ;(store.getters.user.usertype === 'lightweight' ? navItemsLightweight : navItems).forEach(
+      (navItem) => {
+        store.commit('ADD_NAV_ITEM', {
+          extension: 'files',
+          navItem
+        })
+      }
+    )
     archiverService.initialize(
       store.getters.configuration.server || window.location.origin,
       get(store, 'getters.capabilities.files.archivers', []),

@@ -56,6 +56,9 @@ export default {
     },
     showSidebar() {
       return !this.sidebarClosed
+    },
+    usertype() {
+      return window.Vue.$store.getters.user.usertype
     }
   },
   watch: {
@@ -72,6 +75,16 @@ export default {
     this.$root.$on('upload-end', () => {
       this.delayForScreenreader(() => this.$refs.filesListWrapper.focus())
     })
+  },
+
+  mounted() {
+    if (this.usertype === 'lightweight')
+      setTimeout(function () {
+        const navItem = document.querySelector(
+          ".oc-sidebar-nav a[href='#/files/list/all']"
+        ).parentNode
+        navItem.style.display = 'none'
+      }, 0)
   },
 
   beforeDestroy() {

@@ -197,6 +197,10 @@ export default {
     ]),
     ...mapGetters(['user', 'homeFolder', 'configuration']),
 
+    usertype() {
+      return window.Vue.$store.getters.user.usertype
+    },
+
     isEmpty() {
       return this.paginatedResources.length < 1
     },
@@ -262,6 +266,13 @@ export default {
   },
 
   mounted() {
+    if (this.usertype === 'lightweight') {
+      this.$router.push('home')
+      if (window.Vue.$Sstore.getters.user.usertype === 'lightweight')
+        console.log(
+          document.querySelector('#web-nav-sidebar .oc-sidebar-nav .oc-list li:first-child')
+        )
+    }
     const loadResourcesEventToken = bus.subscribe('app.files.list.load', (path) => {
       this.loadResourcesTask.perform(this, this.$route.params.item === path, path)
     })

@@ -11,6 +11,7 @@ import PublicLink from './views/PublicLink.vue'
 import FilesDrop from './views/FilesDrop.vue'
 import LocationPicker from './views/LocationPicker.vue'
 import PublicFiles from './views/PublicFiles.vue'
+import Lightweight from './views/Lightweight.vue'
 
 // just a dummy function to trick gettext tools
 function $gettext(msg) {
@@ -48,6 +49,18 @@ export default [
           hideFilelistActions: true,
           hasBulkActions: false,
           title: $gettext('Projects')
+        }
+      },
+      {
+        name: 'home',
+        path: 'home',
+        component: Lightweight,
+        meta: {
+          auth: true,
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Lightweight account'),
+          patchCleanPath: true
         }
       },
       {

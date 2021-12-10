@@ -27,21 +27,6 @@
           @fileClick="$_fileActions_triggerDefaultAction"
           @rowMounted="rowMounted"
         >
-          <template #status="{ resource }">
-            <div
-              :key="resource.id + resource.status"
-              class="uk-text-nowrap uk-flex uk-flex-middle uk-flex-right"
-            >
-              <oc-button
-                size="small"
-                class="file-row-share-status-action"
-                @click.stop="trashbin(resource)"
-              >
-                <oc-icon size="small" name="delete" />
-                <translate>Trashbin</translate>
-              </oc-button>
-            </div>
-          </template>
           <template #contextMenu="{ resource }">
             <context-actions v-if="isResourceInSelection(resource)" :items="selected" />
           </template>
@@ -156,6 +141,7 @@ export default {
         delete r.owner
         delete r.share
         delete r.sdate
+        delete r.status
       })
 
       ref.LOAD_FILES({ currentFolder: null, files: resources })
@@ -179,6 +165,15 @@ export default {
         return parseInt(this.$route.query['view-mode'])
       }
       return shareStatus.accepted
+    },
+
+    selected: {
+      get() {
+        return this.selectedFiles
+      },
+      set(resources) {
+        this.SET_FILE_SELECTION(resources)
+      }
     },
     groupingSettings() {
       return {

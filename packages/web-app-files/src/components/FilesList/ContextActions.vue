@@ -157,8 +157,7 @@ export default {
         ...this.$_acceptShare_items,
         ...this.$_declineShare_items,
         ...this.$_delete_items,
-        ...this.$_showActions_items,
-        ...this.$_project_trashbin
+        ...this.$_showActions_items
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 

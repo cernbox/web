@@ -13,7 +13,6 @@ export default {
               'Open trashbin'
             ),
           isEnabled: ({ resources }) => {
-
             if (resources.length !== 1) {
               return false
             }

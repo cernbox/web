@@ -1,6 +1,6 @@
 <template>
   <div>
-    <list-loader v-if="loading" />
+    <list-loader v-if="loadResourcesTask.isRunning" />
     <template v-else>
       <!-- Projects -->
       <div>

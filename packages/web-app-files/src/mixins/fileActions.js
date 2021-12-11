@@ -1,7 +1,8 @@
 import get from 'lodash-es/get'
 import { mapGetters, mapActions, mapState } from 'vuex'
 
-import { checkRoute } from '../helpers/route'
+import { checkRoute,  } from '../helpers/route'
+import MixinRoutes from './routes'
 import AcceptShare from './actions/acceptShare'
 import Copy from './actions/copy'
 import DeclineShare from './actions/declineShare'
@@ -47,7 +48,8 @@ export default {
     Move,
     Navigate,
     Rename,
-    Restore
+    Restore,
+    MixinRoutes
   ],
   computed: {
     ...mapState(['apps']),
@@ -241,7 +243,7 @@ export default {
 
     $_fileActions_openLink(appName, resourceId) {
       const routeData = this.$router.resolve({
-        name: 'external-apps',
+        name: 'external-apps' + (this.isPublicFilesRoute ? '-public' : ''),
         params: {
           file_id: resourceId,
           app: appName

@@ -17,7 +17,7 @@
       </no-content-message>
       <resource-table
         v-else
-        id="files-trashbin-table"
+        :id="$route.query.project ? 'files-project-trashbin-table' : 'files-trashbin-table'"
         v-model="selected"
         class="files-table"
         view="files-trashbin-table"

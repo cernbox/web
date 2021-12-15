@@ -1,5 +1,5 @@
 import { mapActions } from 'vuex'
-import { isTrashbinRoute } from '../../helpers/route'
+import { isTrashbinRoute, isProjectTrashbinRoute } from '../../helpers/route'
 import PQueue from 'p-queue'
 
 export default {
@@ -12,7 +12,7 @@ export default {
           label: () => this.$gettext('Restore'),
           handler: this.$_restore_trigger,
           isEnabled: ({ resources }) => {
-            if (!isTrashbinRoute(this.$route)) {
+            if (!isTrashbinRoute(this.$route) && !isProjectTrashbinRoute) {
               return false
             }
             return resources.length > 0

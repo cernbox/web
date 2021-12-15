@@ -40,6 +40,10 @@ export function isProjectsRoute(route) {
   return route.name === 'files-projects'
 }
 
+export function isProjectTrashbinRoute(route) {
+  return route.name === 'files-trashbin-project'
+}
+
 export function isPublicFilesRoute(route) {
   return route.name === 'files-public-list'
 }

@@ -585,6 +585,10 @@ export default {
     flex-flow: row wrap;
     gap: var(--oc-space-xsmall);
     justify-content: flex-end;
+
+    .tippy-box, div[data-tippy-root] {
+      box-shadow: 0 5px 15px rgb(0 0 0 / 8%);
+    }
   }
   &-select-all {
     align-items: center;

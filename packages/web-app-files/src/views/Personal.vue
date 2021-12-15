@@ -27,6 +27,7 @@
         :target-route="targetRoute"
         :header-position="fileListHeaderY"
         :drag-drop="true"
+        :view="'personal-files'"
         @fileDropped="fileDropped"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
@@ -410,3 +411,62 @@ export default {
   }
 }
 </script>
+
+<style>
+.uk-breadcrumb > :nth-child(n + 2):not(.uk-first-column)::before,
+.oc-breadcrumb-list > :nth-child(n + 2):not(.uk-first-column)::before {
+  margin: 0 12px 0 12px !important;
+}
+.oc-resource-basename {
+  font-weight: 500 !important;
+}
+.resource-table-actions .uk-flex {
+  visibility: hidden;
+}
+.tippy-box li:hover,
+.oc-tbody-tr:not(.oc-table-highlighted):hover {
+  background-color: var(--oc-color-background-muted);
+}
+.oc-tbody-tr:hover .resource-table-actions .uk-flex {
+  visibility: visible;
+}
+tbody tr td:not(:first-child) {
+  color: var(--oc-color-text-muted);
+}
+#new-file-menu-drop .uk-card,
+.tippy-box .uk-card {
+  padding: 0 !important;
+  border-radius: 5px;
+}
+.uk-list > :nth-child(n + 2) {
+  margin-top: 0px !important;
+}
+#new-file-menu-drop .uk-card li {
+  padding: 0px 5px !important;
+}
+#new-file-menu-drop .uk-card li:first-of-type {
+  margin-top: 5px !important;
+}
+#new-file-menu-drop .uk-card li:last-of-type {
+  margin-bottom: 5px !important;
+}
+.tippy-box .uk-card li {
+  padding: 5px 10px !important;
+  border-radius: 5px;
+  margin: 0 5px;
+}
+#oc-files-context-menu ul {
+  margin: 5px 0 !important;
+}
+#oc-files-context-menu hr {
+  margin: 0 !important;
+}
+.files-app-bar-actions .oc-button-m {
+  padding: 0 0.6rem !important;
+  min-height: 35px !important;
+  font-size: 0.9rem !important;
+}
+.files-app-bar-actions div div .oc-button-m {
+  padding: 0 0.4rem !important;
+}
+</style>

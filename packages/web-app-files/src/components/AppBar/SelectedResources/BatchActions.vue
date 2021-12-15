@@ -76,7 +76,6 @@ export default {
   @media only screen and (min-width: 1200px) {
     align-items: center;
     display: flex;
-    gap: var(--oc-space-small);
   }
 }
 </style>

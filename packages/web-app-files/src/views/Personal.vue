@@ -432,14 +432,14 @@ export default {
 .oc-resource-basename {
   font-weight: 500 !important;
 }
-.oc-table-files-actions .uk-flex {
+.resource-table-actions .uk-flex {
   visibility: hidden;
 }
 .tippy-box li:hover,
 .oc-tbody-tr:not(.oc-table-highlighted):hover {
   background-color: var(--oc-color-background-muted);
 }
-.oc-tbody-tr:hover .oc-table-files-actions .uk-flex {
+.oc-tbody-tr:hover .resource-table-actions .uk-flex {
   visibility: visible;
 }
 tbody tr td:not(:first-child) {

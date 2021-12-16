@@ -12,7 +12,7 @@ export default {
           label: () => this.$gettext('Restore'),
           handler: this.$_restore_trigger,
           isEnabled: ({ resources }) => {
-            if (!isTrashbinRoute(this.$route) && !isProjectTrashbinRoute) {
+            if (!isTrashbinRoute(this.$route) && !isProjectTrashbinRoute(this.$route)) {
               return false
             }
             return resources.length > 0

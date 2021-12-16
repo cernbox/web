@@ -18,6 +18,7 @@
       <resource-table
         v-else
         :id="$route.query.project ? 'files-project-trashbin-table' : 'files-trashbin-table'"
+        :key="$route.query.project ? `trashbin${$route.query.project}` : 'trashbin'"
         v-model="selected"
         class="files-table"
         view="files-trashbin-table"
@@ -131,6 +132,12 @@ export default {
     }
   },
 
+  watch: {
+    $route(to, from) {
+      this.setupTrashbin()
+    }
+  },
+
   created() {
     this.loadResourcesTask.perform(this)
   },
@@ -140,6 +147,19 @@ export default {
 
     isResourceInSelection(resource) {
       return this.selected?.includes(resource)
+    },
+
+    async setupTrashbin() {
+      this.CLEAR_CURRENT_FILES_LIST()
+
+      const project = this.$route.query.project
+      const query = project ? { base_path: project } : undefined
+      const resources = await this.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
+
+      this.LOAD_FILES({
+        currentFolder: buildResource(resources[0]),
+        files: resources.slice(1).map(buildDeletedResource)
+      })
     }
   }
 }

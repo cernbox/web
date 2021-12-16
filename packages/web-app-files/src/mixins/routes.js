@@ -4,6 +4,8 @@ import {
   isPersonalRoute,
   isPublicFilesRoute,
   isPublicPage,
+  isProjectsRoute,
+  isProjectTrashbinRoute,
   isSharedWithMeRoute,
   isSharedWithOthersRoute,
   isTrashbinRoute
@@ -31,6 +33,12 @@ export default {
     },
     isPublicFilesRoute() {
       return isPublicFilesRoute(this.$route)
+    },
+    isProjectsRoute() {
+      return isProjectsRoute(this.$route)
+    },
+    isProjectTrashbinRoute() {
+      return isProjectTrashbinRoute(this.$route)
     },
     isPublicPage() {
       return isPublicPage(this.$route)

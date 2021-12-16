@@ -1,5 +1,6 @@
 import App from './App.vue'
 import Personal from './views/Personal.vue'
+import Projects from './views/Projects.vue'
 import Favorites from './views/Favorites.vue'
 import SharedWithMe from './views/SharedWithMe.vue'
 import SharedWithOthers from './views/SharedWithOthers.vue'
@@ -37,6 +38,16 @@ export default [
           hasBulkActions: true,
           title: $gettext('All files'),
           patchCleanPath: true
+        }
+      },
+      {
+        name: 'projects',
+        path: 'projects',
+        component: Projects,
+        meta: {
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Projects')
         }
       },
       {
@@ -87,6 +98,16 @@ export default [
           hideFilelistActions: true,
           hasBulkActions: true,
           title: $gettext('Deleted files')
+        }
+      },
+      {
+        path: 'trash-bin-project',
+        component: Trashbin,
+        name: 'trashbin-project',
+        meta: {
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Project trashbin')
         }
       }
     ]
@@ -153,5 +174,15 @@ export default [
       app: FilesDrop
     },
     meta: { auth: false, title: $gettext('Public file upload') }
+  },
+  {
+    path: 'trash-bin-project',
+    component: Trashbin,
+    name: 'trashbin-project',
+    meta: {
+      hideFilelistActions: true,
+      hasBulkActions: false,
+      title: $gettext('Project trashbin')
+    }
   }
 ]

@@ -1,5 +1,5 @@
 import { mapActions } from 'vuex'
-import { isTrashbinRoute } from '../../helpers/route'
+import { isTrashbinRoute, isProjectTrashbinRoute } from '../../helpers/route'
 import PQueue from 'p-queue'
 
 export default {
@@ -12,7 +12,7 @@ export default {
           label: () => this.$gettext('Restore'),
           handler: this.$_restore_trigger,
           isEnabled: ({ resources }) => {
-            if (!isTrashbinRoute(this.$route)) {
+            if (!isTrashbinRoute(this.$route) && !isProjectTrashbinRoute(this.$route)) {
               return false
             }
             return resources.length > 0
@@ -31,11 +31,15 @@ export default {
       const failedResources = []
       const restorePromises = []
       const restoreQueue = new PQueue({ concurrency: 4 })
+
+      const project = this.$route.query.project
+      const query = project ? { base_path: project } : undefined
+
       resources.forEach((resource) => {
         restorePromises.push(
           restoreQueue.add(async () => {
             try {
-              await this.$client.fileTrash.restore(resource.id, resource.path)
+              await this.$client.fileTrash.restore(resource.id, resource.path, false, query)
               restoredResources.push(resource)
             } catch (e) {
               console.error(e)

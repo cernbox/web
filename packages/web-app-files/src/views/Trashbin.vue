@@ -1,5 +1,8 @@
 <template>
   <div>
+    <h2 v-if="$route.query.project" class="oc-p-s">
+      Trashbin of project "{{ $route.query.name }}"
+    </h2>
     <list-loader v-if="loadResourcesTask.isRunning" />
     <template v-else>
       <no-content-message
@@ -14,9 +17,11 @@
       </no-content-message>
       <resource-table
         v-else
-        id="files-trashbin-table"
+        :id="$route.query.project ? 'files-project-trashbin-table' : 'files-trashbin-table'"
+        :key="$route.query.project ? `trashbin${$route.query.project}` : 'trashbin'"
         v-model="selected"
         class="files-table"
+        view="files-trashbin-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-paths-displayed="true"
         :are-thumbnails-displayed="false"
@@ -88,7 +93,9 @@ export default {
     const loadResourcesTask = useTask(function* (signal, ref) {
       ref.CLEAR_CURRENT_FILES_LIST()
 
-      const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin)
+      const project = ref.$route.query.project
+      const query = project ? { base_path: project } : undefined
+      const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
 
       ref.LOAD_FILES({
         currentFolder: buildResource(resources[0]),
@@ -125,6 +132,12 @@ export default {
     }
   },
 
+  watch: {
+    $route(to, from) {
+      this.setupTrashbin()
+    }
+  },
+
   created() {
     this.loadResourcesTask.perform(this)
   },
@@ -134,6 +147,19 @@ export default {
 
     isResourceInSelection(resource) {
       return this.selected?.includes(resource)
+    },
+
+    async setupTrashbin() {
+      this.CLEAR_CURRENT_FILES_LIST()
+
+      const project = this.$route.query.project
+      const query = project ? { base_path: project } : undefined
+      const resources = await this.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
+
+      this.LOAD_FILES({
+        currentFolder: buildResource(resources[0]),
+        files: resources.slice(1).map(buildDeletedResource)
+      })
     }
   }
 }

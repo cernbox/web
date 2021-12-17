@@ -3,7 +3,7 @@
     <h2 v-if="$route.query.project" class="oc-p-s">
       Trashbin of project "{{ $route.query.name }}"
     </h2>
-    <list-loader v-if="loadResourcesTask.isRunning" />
+    <list-loader v-if="loadResourcesTask.isRunning || loading" />
     <template v-else>
       <no-content-message
         v-if="isEmpty"
@@ -50,7 +50,6 @@
 import { mapGetters, mapMutations, mapState } from 'vuex'
 import { computed } from '@vue/composition-api'
 import ResourceTable from '../components/FilesList/ResourceTable.vue'
-
 import { buildDeletedResource, buildResource } from '../helpers/resources'
 import MixinFilesListFilter from '../mixins/filesListFilter'
 import MixinResources from '../mixins/resources'
@@ -63,19 +62,15 @@ import {
   useDefaults
 } from '../composables'
 import { useTask } from 'vue-concurrency'
-
 import ListLoader from '../components/FilesList/ListLoader.vue'
 import NoContentMessage from '../components/FilesList/NoContentMessage.vue'
 import ListInfo from '../components/FilesList/ListInfo.vue'
 import Pagination from '../components/FilesList/Pagination.vue'
 import ContextActions from '../components/FilesList/ContextActions.vue'
 import { DavProperties } from 'web-pkg/src/constants'
-
 export default {
   components: { ResourceTable, ListLoader, NoContentMessage, ListInfo, Pagination, ContextActions },
-
   mixins: [MixinResources, MixinMountSideBar, MixinFilesListFilter],
-
   setup() {
     const store = useStore()
     const { pagination: paginationDefaults } = useDefaults()
@@ -89,21 +84,17 @@ export default {
       perPage: computed(() => parseInt(String(paginationPerPageQuery.value))),
       items: computed(() => store.getters['Files/activeFiles'])
     })
-
     const loadResourcesTask = useTask(function* (signal, ref) {
       ref.CLEAR_CURRENT_FILES_LIST()
-
       const project = ref.$route.query.project
       const query = project ? { base_path: project } : undefined
       const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
-
       ref.LOAD_FILES({
         currentFolder: buildResource(resources[0]),
         files: resources.slice(1).map(buildDeletedResource)
       })
       refreshFileListHeaderPosition()
     })
-
     return {
       fileListHeaderY,
       loadResourcesTask,
@@ -112,12 +103,15 @@ export default {
       paginationPage
     }
   },
-
+  data: function () {
+    return {
+      loading: false
+    }
+  },
   computed: {
     ...mapState('Files', ['files']),
     ...mapGetters('Files', ['highlightedFile', 'selectedFiles', 'totalFilesCount']),
     ...mapState('Files/sidebar', { sidebarClosed: 'closed' }),
-
     selected: {
       get() {
         return this.selectedFiles
@@ -126,40 +120,34 @@ export default {
         this.SET_FILE_SELECTION(resources)
       }
     },
-
     isEmpty() {
       return this.paginatedResources.length < 1
     }
   },
-
   watch: {
     $route(to, from) {
       this.setupTrashbin()
     }
   },
-
   created() {
     this.loadResourcesTask.perform(this)
   },
-
   methods: {
     ...mapMutations('Files', ['LOAD_FILES', 'SET_FILE_SELECTION', 'CLEAR_CURRENT_FILES_LIST']),
-
     isResourceInSelection(resource) {
       return this.selected?.includes(resource)
     },
-
     async setupTrashbin() {
+      this.loading = true
       this.CLEAR_CURRENT_FILES_LIST()
-
       const project = this.$route.query.project
       const query = project ? { base_path: project } : undefined
       const resources = await this.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
-
       this.LOAD_FILES({
         currentFolder: buildResource(resources[0]),
         files: resources.slice(1).map(buildDeletedResource)
       })
+      this.loading = false
     }
   }
 }

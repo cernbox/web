@@ -1,11 +1,10 @@
 <template>
-  <li>
+  <li v-on="getComponentListeners(action, items)">
     <component
       :is="action.componentType"
       v-bind="getComponentProps(action, items)"
       :class="['oc-text-bold', action.class]"
       data-testid="action-handler"
-      v-on="getComponentListeners(action, items)"
     >
       <oc-img
         v-if="action.img"

@@ -3,7 +3,7 @@ import { mapActions, mapGetters } from 'vuex'
 import { isSameResource } from '../../helpers/resource'
 import { getParentPaths } from '../../helpers/path'
 import { buildResource } from '../../helpers/resources'
-import { isLocationCommonActive } from '../../router'
+import { isLocationCommonActive, isLocationSharesActive } from '../../router'
 
 export default {
   computed: {
@@ -20,6 +20,9 @@ export default {
           handler: this.$_rename_trigger,
           isEnabled: ({ resources }) => {
             if (isLocationCommonActive(this.$router, 'files-common-trash')) {
+              return false
+            }
+            if (isLocationSharesActive(this.$router, 'files-shares-with-me')) {
               return false
             }
             if (resources.length !== 1) {

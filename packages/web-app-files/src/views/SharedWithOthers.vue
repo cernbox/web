@@ -27,6 +27,7 @@
         :header-position="fileListHeaderY"
         :sort-by="sortBy"
         :sort-dir="sortDir"
+        :grouping-settings="groupingSettings"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
         @sort="handleSort"
@@ -113,6 +114,8 @@ export default {
 
       resources = yield resources.json()
       resources = resources.ocs.data
+      // filter out shares via link only
+      resources = resources.filter((r) => r.share_type === 0)
 
       if (resources.length) {
         resources = aggregateResourceShares(
@@ -146,6 +149,34 @@ export default {
     ...mapGetters('Files', ['highlightedFile', 'selectedFiles', 'totalFilesCount']),
     ...mapGetters(['isOcis', 'configuration', 'getToken', 'user']),
     ...mapState('Files/sidebar', { sidebarClosed: 'closed' }),
+
+    groupingSettings() {
+      return {
+        groupingBy: 'Shared date',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Name alphabetically': function (row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared date': function (row) {
+            const interval1 = new Date()
+            interval1.setDate(interval1.getDate() - 7)
+            const interval2 = new Date()
+            interval2.setDate(interval2.getDate() - 30)
+            if (row.sdate > interval1.getTime()) {
+              return 'Recent'
+            } else if (row.sdate > interval2.getTime()) {
+              return 'This Month'
+            } else return 'Older'
+          }
+        },
+        functionColMappings: {
+          'Shared date': 'sdate'
+        }
+      }
+    },
 
     selected: {
       get() {

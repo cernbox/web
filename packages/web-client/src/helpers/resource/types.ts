@@ -32,6 +32,7 @@ export interface Resource {
   canRename?(): boolean
   canBeDeleted?(): boolean
   canBeRestored?(): boolean
+  canDeny?(): boolean
 
   isReceivedShare?(): boolean
   isMounted?(): boolean

@@ -2,17 +2,19 @@ import { RouteComponents } from './router'
 import { Location, RouteConfig } from 'vue-router'
 import { createLocation, $gettext, isLocationActiveDirector } from './utils'
 
-type commonTypes = 'files-common-favorites' | 'files-common-trash'
+type commonTypes = 'files-common-favorites' | 'files-common-trash' | 'files-common-home'
 
 export const createLocationCommon = (name: commonTypes, location = {}): Location =>
   createLocation(name, location)
 
 export const locationFavorites = createLocationCommon('files-common-favorites')
 export const locationTrash = createLocationCommon('files-common-trash')
+export const locationHome = createLocationCommon('files-common-home')
 
 export const isLocationCommonActive = isLocationActiveDirector<commonTypes>(
   locationFavorites,
-  locationTrash
+  locationTrash,
+  locationHome
 )
 
 export const buildRoutes = (components: RouteComponents): RouteConfig[] => [
@@ -48,6 +50,24 @@ export const buildRoutes = (components: RouteComponents): RouteConfig[] => [
           hideFilelistActions: true,
           hasBulkActions: false,
           title: $gettext('Favorite files')
+        }
+      }
+    ]
+  },
+  {
+    path: '/home',
+    components: {
+      app: components.App
+    },
+    children: [
+      {
+        name: locationHome.name,
+        path: '',
+        component: components.Home,
+        meta: {
+          hideFilelistActions: true,
+          hasBulkActions: false,
+          title: $gettext('Home')
         }
       }
     ]

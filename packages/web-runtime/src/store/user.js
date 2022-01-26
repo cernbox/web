@@ -123,7 +123,8 @@ const actions = {
           email: userEmail,
           token,
           isAuthenticated: true,
-          groups: userGroups
+          groups: userGroups,
+          usertype: user['user-type']
         })
 
         // Display quota in the sidebar
@@ -143,7 +144,7 @@ const actions = {
       }
 
       await promiseCapabilities
-      context.commit('SET_USER_READY', true)
+      context.state.id && context.commit('SET_USER_READY', true)
     }
     // if called from login, use available vue-authenticate instance; else re-init
     if (!vueAuthInstance) {
@@ -248,6 +249,7 @@ const mutations = {
     state.isAuthenticated = user.isAuthenticated
     state.token = user.token
     state.groups = user.groups
+    state.usertype = user.usertype
   },
   SET_CAPABILITIES(state, data) {
     state.capabilities = data.capabilities

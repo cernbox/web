@@ -207,6 +207,10 @@ export default {
     ]),
     ...mapGetters(['user', 'homeFolder', 'configuration']),
 
+    usertype() {
+      return window.Vue.$store.getters.user.usertype
+    },
+
     isEmpty() {
       return this.paginatedResources.length < 1
     },
@@ -268,6 +272,10 @@ export default {
   },
 
   mounted() {
+    const that = this
+    setTimeout(function () {
+      if (that.usertype === 'lightweight') that.$router.push({ name: 'files-common-home' })
+    }, 0)
     const loadResourcesEventToken = bus.subscribe('app.files.list.load', (path) => {
       this.loadResourcesTask.perform(this, this.$route.params.item === path, path)
     })

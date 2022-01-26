@@ -32,6 +32,7 @@
             v-if="isSidebarVisible"
             class="app-navigation"
             :nav-items="sidebarNavItems"
+            :links="sidebarLinks"
           />
           <router-view
             class="app-content oc-width-1-1 oc-pl-m"

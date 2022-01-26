@@ -105,6 +105,14 @@ const navItems = [
     enabled(capabilities) {
       return capabilities.dav && capabilities.dav.trashbin === '1.0'
     }
+  },
+  {
+    name: $gettext('CephFS'),
+    icon: 'folder',
+    route: {
+      path: '/files/list/all/cephfs'
+    },
+    separate: true
   }
 ]
 

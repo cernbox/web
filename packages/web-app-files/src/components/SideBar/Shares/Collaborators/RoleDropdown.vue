@@ -135,6 +135,8 @@ export default {
     inviteLabel() {
       if (this.selectedRole.hasCustomPermissions) {
         return this.$gettext('Invite with custom permissions')
+      } else if (this.selectedRole.permissions().includes(SharePermissions.deny)) {
+        return this.$gettext('Deny access')
       } else {
         return this.$gettextInterpolate(this.$gettext('Invite as %{ name }'), {
           name: this.selectedRole.inlineLabel || ''
@@ -146,11 +148,12 @@ export default {
     },
     availableRoles() {
       if (this.resourceIsSpace) {
-        return SpacePeopleShareRoles.list()
+        return SpacePeopleShareRoles.list(this.resource.canDeny())
       }
       return PeopleShareRoles.list(
         this.resource.isFolder,
-        this.capabilities?.files_sharing?.allow_custom !== false
+        this.capabilities?.files_sharing?.allow_custom !== false,
+        this.resource.canDeny()
       )
     },
     availablePermissions() {
@@ -179,9 +182,12 @@ export default {
       if (this.existingRole) {
         this.selectedRole = this.existingRole
       } else if (this.resourceIsSpace) {
-        this.selectedRole = SpacePeopleShareRoles.list()[0]
+        this.selectedRole = SpacePeopleShareRoles.list(this.resource.canDeny())[0]
       } else {
-        this.selectedRole = PeopleShareRoles.list(this.resource.isFolder)[0]
+        this.selectedRole = PeopleShareRoles.list(
+          this.resource.isFolder,
+          this.resource.canDeny()
+        )[0]
       }
 
       if (this.selectedRole.hasCustomPermissions) {

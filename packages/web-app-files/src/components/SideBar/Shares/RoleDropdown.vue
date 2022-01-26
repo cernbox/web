@@ -136,7 +136,7 @@ export default {
       return PeopleShareRoles.custom(this.resource.isFolder)
     },
     availableRoles() {
-      return PeopleShareRoles.list(this.resource.isFolder)
+      return PeopleShareRoles.list(this.resource.isFolder, this.resource.canDeny())
     },
     availablePermissions() {
       return this.customPermissionsRole.permissions(this.allowSharePermission)

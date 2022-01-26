@@ -12,7 +12,8 @@ module.exports = {
     create: 4,
     delete: 8,
     share: 16,
-    all: 31
+    all: 63,
+    deny: 32
   }),
   SHARE_STATE: Object.freeze({
     accepted: 0,

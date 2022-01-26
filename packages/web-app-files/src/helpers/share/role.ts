@@ -158,6 +158,15 @@ export const peopleRoleCustomFolder = new CustomShareRole(
     SharePermissions.share
   ]
 )
+export const peopleRoleDenyFolder = new PeopleShareRole(
+  'deny',
+  true,
+  $gettext('Deny'),
+  $gettext('deny'),
+  [
+    SharePermissions.deny
+  ]
+)
 export const linkRoleViewerFile = new LinkShareRole(
   'viewer',
   false,
@@ -204,8 +213,12 @@ export abstract class PeopleShareRoles {
     peopleRoleCustomFolder
   ]
 
-  static list(isFolder: boolean): ShareRole[] {
-    return this.all.filter((r) => r.folder === isFolder)
+  static list(isFolder: boolean, canDeny: boolean): ShareRole[] {
+    let roles = this.all.filter((r) => r.folder === isFolder)
+    if (canDeny) {
+      roles.push(peopleRoleDenyFolder)
+    }
+    return roles
   }
 
   static custom(isFolder: boolean): ShareRole {
@@ -251,7 +264,8 @@ const shareRoleDescriptions = {
   [peopleRoleEditorFolder.bitmask(false)]: $gettext('Upload, edit, delete, download and preview'),
   [peopleRoleEditorFolder.bitmask(true)]: $gettext(
     'Upload, edit, delete, download, preview and share'
-  )
+  ),
+  [peopleRoleDenyFolder.bitmask(false)]: $gettext('Deny access')
 }
 
 /**

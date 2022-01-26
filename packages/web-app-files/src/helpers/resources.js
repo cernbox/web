@@ -79,6 +79,9 @@ export function buildResource(resource) {
     },
     isReceivedShare: function () {
       return this.permissions.indexOf(DavPermission.Shared) >= 0
+    },
+    canDeny: function () {
+      return this.permissions.indexOf(DavPermission.Deny) >= 0
     }
   }
 }

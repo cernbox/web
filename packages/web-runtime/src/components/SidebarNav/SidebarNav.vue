@@ -21,7 +21,23 @@
     >
       <oc-list>
         <sidebar-nav-item
-          v-for="(link, index) in navItems"
+          v-for="(link, index) in navItemsTop"
+          :key="link.route.path"
+          :index="index"
+          :target="link.route.path"
+          :active="link.active"
+          :icon="link.icon"
+          :fill-type="link.fillType"
+          :name="link.name"
+          :collapsed="navigation.closed"
+        />
+      </oc-list>
+      <br />
+      <br />
+      <br />
+      <oc-list>
+        <sidebar-nav-item
+          v-for="(link, index) in navItemsBottom"
           :key="link.route.path"
           :index="index"
           :target="link.route.path"
@@ -50,6 +66,10 @@ export default {
     navItems: {
       type: Array,
       required: true
+    },
+    links: {
+      type: Array,
+      required: true
     }
   },
   computed: {
@@ -63,6 +83,12 @@ export default {
 
     toggleSidebarButtonIcon() {
       return this.navigation.closed ? 'arrow-drop-right' : 'arrow-drop-left'
+    },
+    navItemsTop() {
+      return this.navItems.filter((item) => item.separate === false || !item.separate)
+    },
+    navItemsBottom() {
+      return this.navItems.filter((item) => item.separate === true)
     }
   },
   methods: {

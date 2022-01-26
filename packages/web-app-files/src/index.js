@@ -105,6 +105,14 @@ const navItems = [
     enabled(capabilities) {
       return capabilities.dav && capabilities.dav.trashbin === '1.0'
     }
+  },
+  {
+    name: $gettext('CephFS'),
+    icon: 'folder',
+    route: {
+      path: '/files/list/all/cephfs'
+    },
+    separate: true
   }
 ]
 
@@ -169,6 +177,24 @@ export default {
         navItem
       })
     })
+
+    if (
+      store.getters.capabilities.group_based &&
+      store.getters.capabilities.group_based.capabilities &&
+      store.getters.capabilities.group_based.capabilities.includes('cephfs-mount')
+    )
+      store.commit('ADD_NAV_ITEM', {
+        extension: 'files',
+        navItem: {
+          name: $gettext('CephFS'),
+          icon: 'folder',
+          route: {
+            path: '/files/list/all/cephfs'
+          },
+          separate: true
+        }
+      })
+
     archiverService.initialize(
       store.getters.configuration.server || window.location.origin,
       get(store, 'getters.capabilities.files.archivers', []),

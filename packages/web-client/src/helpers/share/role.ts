@@ -163,6 +163,14 @@ export const peopleRoleEditorFolder = new PeopleShareRole(
     SharePermissions.share
   ]
 )
+export const peopleRoleDenyFolder = new PeopleShareRole(
+  'deny',
+  true,
+  $gettext('Deny'),
+  $gettext('deny'),
+  'forbid',
+  [SharePermissions.deny]
+)
 export const peopleRoleCustomFile = new CustomShareRole(
   'custom',
   false,
@@ -249,6 +257,13 @@ export const linkRoleUploaderFolder = new LinkShareRole(
   'upload',
   [SharePermissions.create]
 )
+export const spaceRoleDeny = new SpaceShareRole(
+  'deny',
+  false,
+  $gettext('Deny'),
+  $gettext('deny'),
+  'forbid',
+  [SharePermissions.deny])
 export const spaceRoleViewer = new SpaceShareRole(
   'viewer',
   false,
@@ -283,12 +298,13 @@ export const spaceRoleManager = new SpaceShareRole(
 export abstract class SpacePeopleShareRoles {
   static readonly all = [spaceRoleViewer, spaceRoleEditor, spaceRoleManager]
 
-  static list(): ShareRole[] {
-    return this.all
+  static list(canDeny = false): ShareRole[] {
+    return [...this.all, ...(canDeny ? [spaceRoleDeny] : [])]
   }
 
   static getByBitmask(bitmask: number): ShareRole {
-    return this.all.find((r) => r.bitmask(true) === bitmask)
+    return [...this.all, spaceRoleDeny] // Retrieve all possible options always, even if deny is not enabled
+      .find((r) => r.bitmask(true) === bitmask)
   }
 }
 
@@ -302,8 +318,11 @@ export abstract class PeopleShareRoles {
 
   static readonly allWithCustom = [...this.all, peopleRoleCustomFile, peopleRoleCustomFolder]
 
-  static list(isFolder: boolean, hasCustom = true): ShareRole[] {
-    return (hasCustom ? this.allWithCustom : this.all).filter((r) => r.folder === isFolder)
+  static list(isFolder: boolean, hasCustom = true, canDeny = false): ShareRole[] {
+    return [
+      ...(hasCustom ? this.allWithCustom : this.all),
+      ...(canDeny ? [peopleRoleDenyFolder] : [])
+    ].filter((r) => r.folder === isFolder)
   }
 
   static custom(isFolder: boolean): ShareRole {
@@ -311,7 +330,7 @@ export abstract class PeopleShareRoles {
   }
 
   static getByBitmask(bitmask: number, isFolder: boolean, allowSharing: boolean): ShareRole {
-    const role = this.allWithCustom
+    const role = [...this.allWithCustom, peopleRoleDenyFolder] // Retrieve all possible options always, even if deny is not enabled
       .filter((r) => !r.hasCustomPermissions)
       .find((r) => r.folder === isFolder && r.bitmask(allowSharing) === bitmask)
     return role || this.custom(isFolder)
@@ -396,7 +415,8 @@ const shareRoleDescriptions = {
   [peopleRoleEditorFolder.bitmask(false)]: $gettext('Upload, edit, delete, download and preview'),
   [peopleRoleEditorFolder.bitmask(true)]: $gettext(
     'Upload, edit, delete, download, preview and share'
-  )
+  ),
+  [peopleRoleDenyFolder.bitmask(false)]: $gettext('Deny access')
 }
 
 /**

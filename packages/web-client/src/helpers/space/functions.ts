@@ -123,6 +123,9 @@ export function buildSpace(space) {
     isReceivedShare: function () {
       return false
     },
+    canDeny: function () {
+      return false // FIXME
+    },
     getDomSelector: () => extractDomSelector(space.id)
   }
 }

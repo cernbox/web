@@ -1,6 +1,9 @@
 <template>
   <div>
-    <list-loader v-if="loadResourcesTask.isRunning" />
+    <h2 v-if="$route.query.project" class="oc-p-s">
+      Trashbin of project "{{ $route.query.name }}"
+    </h2>
+    <list-loader v-if="loadResourcesTask.isRunning || loading" />
     <template v-else>
       <no-content-message
         v-if="isEmpty"
@@ -96,7 +99,9 @@ export default {
     const loadResourcesTask = useTask(function* (signal, ref) {
       ref.CLEAR_CURRENT_FILES_LIST()
 
-      const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin)
+      const project = ref.$route.query.project
+      const query = project ? { base_path: project } : undefined
+      const resources = yield ref.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
 
       ref.LOAD_FILES({
         currentFolder: buildResource(resources[0]),
@@ -114,6 +119,11 @@ export default {
       handleSort,
       sortBy,
       sortDir
+    }
+  },
+  data: function () {
+    return {
+      loading: false
     }
   },
 
@@ -136,6 +146,12 @@ export default {
     }
   },
 
+  watch: {
+    $route(to, from) {
+      this.setupTrashbin()
+    }
+  },
+
   created() {
     this.loadResourcesTask.perform(this)
   },
@@ -145,6 +161,18 @@ export default {
 
     isResourceInSelection(resource) {
       return this.selected?.includes(resource)
+    },
+    async setupTrashbin() {
+      this.loading = true
+      this.CLEAR_CURRENT_FILES_LIST()
+      const project = this.$route.query.project
+      const query = project ? { base_path: project } : undefined
+      const resources = await this.$client.fileTrash.list('', '1', DavProperties.Trashbin, query)
+      this.LOAD_FILES({
+        currentFolder: buildResource(resources[0]),
+        files: resources.slice(1).map(buildDeletedResource)
+      })
+      this.loading = false
     }
   }
 }

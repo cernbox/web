@@ -28,10 +28,10 @@
       <h1 class="oc-invisible-sr" v-text="pageTitle" />
       <div class="files-app-bar-actions">
         <div
-          v-if="showActions || selectedFiles.length > 0 || hasBulkActions"
+          v-if="showActions || selectedFiles.length > 0 || hasBulkActions || isProjectsRoute"
           class="oc-flex-1 oc-flex oc-flex-start"
         >
-          <template v-if="showActions && areDefaultActionsVisible">
+          <template v-if="showActions && areDefaultActionsVisible && !isProjectsRoute">
             <oc-button
               id="new-file-menu-btn"
               key="new-file-menu-btn-enabled"
@@ -122,6 +122,20 @@
               </ul>
             </oc-drop>
           </template>
+          <template v-if="isProjectsRoute && areDefaultActionsVisible">
+            <oc-button
+              id="new-project-menu-btn"
+              key="new-project-menu-btn-enabled"
+              :aria-label="newButtonAriaLabel"
+              variation="primary"
+              appearance="filled"
+              :disabled="isNewProjectBtnDisabled"
+              @click="onNewProjectButtonClick"
+            >
+              <oc-icon name="add" />
+              <translate>New project</translate>
+            </oc-button>
+          </template>
           <size-info v-if="hasBulkActions && selectedFiles.length > 0" class="oc-mr oc-visible@l" />
           <batch-actions v-if="hasBulkActions" />
         </div>
@@ -141,7 +155,12 @@ import Mixins from '../../mixins'
 import MixinFileActions, { EDITOR_MODE_CREATE } from '../../mixins/fileActions'
 import { buildResource } from '../../helpers/resources'
 import { bus } from 'web-pkg/src/instance'
-import { isLocationActive, isLocationPublicActive, isLocationSpacesActive } from '../../router'
+import {
+  isLocationActive,
+  isLocationCommonActive,
+  isLocationPublicActive,
+  isLocationSpacesActive
+} from '../../router'
 
 import BatchActions from './SelectedResources/BatchActions.vue'
 import FileDrop from './Upload/FileDrop.vue'
@@ -167,7 +186,8 @@ export default {
     const router = useRouter()
     return {
       isPersonalLocation: isLocationSpacesActive(router, 'files-spaces-personal-home'),
-      isPublicLocation: isLocationPublicActive(router, 'files-public-files')
+      isPublicLocation: isLocationPublicActive(router, 'files-public-files'),
+      isProjectsLocation: isLocationCommonActive(router, 'files-common-projects')
     }
   },
   data: () => ({
@@ -187,6 +207,10 @@ export default {
     ]),
     ...mapGetters('Files', ['files', 'currentFolder', 'selectedFiles', 'publicLinkPassword']),
     ...mapState('Files', ['areHiddenFilesShown']),
+
+    isProjectsRoute() {
+      return this.$route.name === 'files-common-projects'
+    },
 
     mimetypesAllowedForCreation() {
       if (!get(this, 'mimeTypes', []).length) {
@@ -309,6 +333,10 @@ export default {
       return !this.canUpload || !this.hasFreeSpace
     },
 
+    isNewprojectBtnDisabled() {
+      return true
+    },
+
     selectedResourcesAnnouncement() {
       if (this.selectedFiles.length === 0) {
         return this.$gettext('No items selected.')
@@ -343,6 +371,13 @@ export default {
     ...mapActions(['openFile', 'showMessage', 'createModal', 'setModalInputErrorMessage']),
     ...mapMutations('Files', ['UPSERT_RESOURCE', 'SET_HIDDEN_FILES_VISIBILITY']),
     ...mapMutations(['SET_QUOTA']),
+
+    onNewProjectButtonClick() {
+      window.open(
+        'https://cern.service-now.com/service-portal?id=sc_cat_item&name=EOS-projet-space&se=CERNBox-Service',
+        '_blank'
+      )
+    },
 
     showCreateResourceModal(
       isFolder = true,

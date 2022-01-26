@@ -12,6 +12,7 @@ import SharedViaLink from './views/SharedViaLink.vue'
 import SpaceProjects from './views/spaces/Projects.vue'
 import Trashbin from './views/Trashbin.vue'
 import Home from './views/Home.vue'
+import Projects from './views/Projects.vue'
 import translations from '../l10n/translations.json'
 import quickActions from './quickActions'
 import store from './store'
@@ -89,6 +90,13 @@ const navItems = [
     }
   },
   {
+    name: $gettext('Projects'),
+    icon: 'layout-grid',
+    route: {
+      path: `/${appInfo.id}/projects`
+    }
+  },
+  {
     name: $gettext('Deleted files'),
     icon: 'delete-bin-5',
     route: {
@@ -114,6 +122,13 @@ const navItemsLightweight = [
     route: {
       path: `/${appInfo.id}/shares/with-me`
     }
+  },
+  {
+    name: $gettext('Projects'),
+    icon: 'layout-grid',
+    route: {
+      path: `/${appInfo.id}/projects`
+    }
   }
 ]
 
@@ -136,7 +151,8 @@ export default {
       Projects: SpaceProjects
     },
     Trashbin,
-    Home
+    Home,
+    Projects
   }),
   navItems: navItemFirst,
   quickActions,

@@ -81,16 +81,16 @@ export abstract class ShareRole {
   }
 }
 
-export class CustomShareRole extends ShareRole {
-  get hasCustomPermissions(): boolean {
-    return true
-  }
+// export class CustomShareRole extends ShareRole {
+//   get hasCustomPermissions(): boolean {
+//     return true
+//   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public description(allowSharing: boolean): string {
-    return $gettext('Set detailed permissions')
-  }
-}
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   public description(allowSharing: boolean): string {
+//     return $gettext('Set detailed permissions')
+//   }
+// }
 
 export class PeopleShareRole extends ShareRole {
   public description(allowSharing: boolean): string {
@@ -138,26 +138,26 @@ export const peopleRoleEditorFolder = new PeopleShareRole(
     SharePermissions.share
   ]
 )
-export const peopleRoleCustomFile = new CustomShareRole(
-  'custom',
-  false,
-  $gettext('Custom permissions'),
-  $gettext('custom permissions'),
-  [SharePermissions.read, SharePermissions.update, SharePermissions.share]
-)
-export const peopleRoleCustomFolder = new CustomShareRole(
-  'custom',
-  true,
-  $gettext('Custom permissions'),
-  $gettext('custom permissions'),
-  [
-    SharePermissions.read,
-    SharePermissions.update,
-    SharePermissions.create,
-    SharePermissions.delete,
-    SharePermissions.share
-  ]
-)
+// export const peopleRoleCustomFile = new CustomShareRole(
+//   'custom',
+//   false,
+//   $gettext('Custom permissions'),
+//   $gettext('custom permissions'),
+//   [SharePermissions.read, SharePermissions.update, SharePermissions.share]
+// )
+// export const peopleRoleCustomFolder = new CustomShareRole(
+//   'custom',
+//   true,
+//   $gettext('Custom permissions'),
+//   $gettext('custom permissions'),
+//   [
+//     SharePermissions.read,
+//     SharePermissions.update,
+//     SharePermissions.create,
+//     SharePermissions.delete,
+//     SharePermissions.share
+//   ]
+// )
 export const peopleRoleDenyFolder = new PeopleShareRole(
   'deny',
   true,
@@ -208,9 +208,9 @@ export abstract class PeopleShareRoles {
     peopleRoleViewerFile,
     peopleRoleViewerFolder,
     peopleRoleEditorFile,
-    peopleRoleEditorFolder,
-    peopleRoleCustomFile,
-    peopleRoleCustomFolder
+    peopleRoleEditorFolder//,
+    // peopleRoleCustomFile,
+    // peopleRoleCustomFolder
   ]
 
   static list(isFolder: boolean, canDeny: boolean): ShareRole[] {

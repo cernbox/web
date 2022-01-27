@@ -34,7 +34,7 @@
         </li>
       </oc-list>
     </oc-drop>
-    <oc-drop
+    <!-- <oc-drop
       ref="customPermissionsDrop"
       class="files-recipient-custom-permissions-drop"
       mode="manual"
@@ -70,7 +70,7 @@
           v-text="$gettext('Apply')"
         />
       </div>
-    </oc-drop>
+    </oc-drop> -->
   </span>
 </template>
 

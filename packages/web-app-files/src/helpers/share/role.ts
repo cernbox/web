@@ -188,6 +188,13 @@ export const linkRoleContributorFolder = new LinkShareRole(
   $gettext('contributor'),
   [SharePermissions.read, SharePermissions.create]
 )
+export const linkRoleEditorFile = new LinkShareRole(
+  'editor',
+  false,
+  $gettext('Editor'),
+  $gettext('editor'),
+  [SharePermissions.read, SharePermissions.update]
+)
 export const linkRoleEditorFolder = new LinkShareRole(
   'editor',
   true,
@@ -238,6 +245,7 @@ export abstract class LinkShareRoles {
     linkRoleViewerFile,
     linkRoleViewerFolder,
     linkRoleContributorFolder,
+    linkRoleEditorFile,
     linkRoleEditorFolder,
     linkRoleUploaderFolder
   ]
@@ -276,6 +284,9 @@ const linkRoleDescriptions = {
   [linkRoleViewerFolder.bitmask(false)]: $gettext('Recipients can view and download contents.'),
   [linkRoleContributorFolder.bitmask(false)]: $gettext(
     'Recipients can view, download and upload contents.'
+  ),
+  [linkRoleEditorFile.bitmask(false)]: $gettext(
+    'Recipients can view, download and edit contents.'
   ),
   [linkRoleEditorFolder.bitmask(false)]: $gettext(
     'Recipients can view, download, edit, delete and upload contents.'

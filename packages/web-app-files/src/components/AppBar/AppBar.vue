@@ -122,7 +122,7 @@
               </ul>
             </oc-drop>
           </template>
-          <template v-if="isProjectsRoute && areDefaultActionsVisible">
+          <template v-if="isProjectsRoute && areDefaultActionsVisible && !isLightweight">
             <oc-button
               id="new-project-menu-btn"
               key="new-project-menu-btn-enabled"
@@ -130,6 +130,7 @@
               variation="primary"
               appearance="filled"
               :disabled="isNewProjectBtnDisabled"
+              class="oc-mb-xs oc-background-primary-gradient"
               @click="onNewProjectButtonClick"
             >
               <oc-icon name="add" />
@@ -210,6 +211,10 @@ export default {
 
     isProjectsRoute() {
       return this.$route.name === 'files-common-projects'
+    },
+
+    isLightweight() {
+      return window.Vue.$store.getters.user.usertype
     },
 
     mimetypesAllowedForCreation() {

@@ -7,7 +7,7 @@ type commonTypes =
   | 'files-common-trash'
   | 'files-common-home'
   | 'files-common-projects'
-  | 'files-common-projects-trashbin'
+  | 'files-common-projects-trash'
 
 export const createLocationCommon = (name: commonTypes, location = {}): Location =>
   createLocation(name, location)
@@ -16,7 +16,7 @@ export const locationFavorites = createLocationCommon('files-common-favorites')
 export const locationTrash = createLocationCommon('files-common-trash')
 export const locationHome = createLocationCommon('files-common-home')
 export const locationProjects = createLocationCommon('files-common-projects')
-export const locationProjectsTrashbin = createLocationCommon('files-common-projects-trashbin')
+export const locationProjectsTrashbin = createLocationCommon('files-common-projects-trash')
 
 export const isLocationCommonActive = isLocationActiveDirector<commonTypes>(
   locationFavorites,

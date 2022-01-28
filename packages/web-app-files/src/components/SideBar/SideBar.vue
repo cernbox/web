@@ -285,7 +285,10 @@ export default {
         return
       }
 
-      if (isLocationCommonActive(this.$router, 'files-common-trash')) {
+      if (
+        isLocationCommonActive(this.$router, 'files-common-trash') ||
+        isLocationCommonActive(this.$router, 'files-common-projects-trash')
+      ) {
         this.selectedFile = this.highlightedFile
         return
       }

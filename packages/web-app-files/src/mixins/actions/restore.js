@@ -12,7 +12,10 @@ export default {
           label: () => this.$gettext('Restore'),
           handler: this.$_restore_trigger,
           isEnabled: ({ resources }) => {
-            if (!isLocationCommonActive(this.$router, 'files-common-trash')) {
+            if (
+              !isLocationCommonActive(this.$router, 'files-common-trash') &&
+              !isLocationCommonActive(this.$router, 'files-common-projects-trash')
+            ) {
               return false
             }
             return resources.length > 0

@@ -25,6 +25,9 @@ export default [
     component: FileDetails,
     default: !isLocationCommonActive(router, 'files-common-trash'),
     get enabled() {
+      if (isLocationCommonActive(router, 'files-common-projects-trash')) {
+        return false
+      }
       return (
         !isLocationCommonActive(router, 'files-common-trash') && !multipleSelection && !rootFolder
       )
@@ -58,6 +61,9 @@ export default [
       if (isLocationCommonActive(router, 'files-common-trash')) {
         return false
       }
+      if (isLocationCommonActive(router, 'files-common-projects-trash')) {
+        return false
+      }
 
       if (capabilities.files_sharing) {
         return capabilities.files_sharing.api_enabled
@@ -74,6 +80,9 @@ export default [
       if (isLocationCommonActive(router, 'files-common-trash')) {
         return false
       }
+      if (isLocationCommonActive(router, 'files-common-projects-trash')) {
+        return false
+      }
 
       if (capabilities.files_sharing) {
         return capabilities.files_sharing.public.enabled
@@ -88,6 +97,9 @@ export default [
     get enabled() {
       if (multipleSelection || rootFolder) return false
       if (isLocationCommonActive(router, 'files-common-trash')) {
+        return false
+      }
+      if (isLocationCommonActive(router, 'files-common-projects-trash')) {
         return false
       }
       return !!capabilities.core && highlightedFile && highlightedFile.type !== 'folder'

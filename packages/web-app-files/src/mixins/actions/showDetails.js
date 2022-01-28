@@ -17,6 +17,9 @@ export default {
             if (isLocationCommonActive(this.$router, 'files-common-trash')) {
               return false
             }
+            if (isLocationCommonActive(this.$router, 'files-common-projects-trash')) {
+              return false
+            }
             return resources.length > 0
           },
           componentType: 'oc-button',

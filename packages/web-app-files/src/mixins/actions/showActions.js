@@ -14,6 +14,7 @@ export default {
           isEnabled: ({ resources }) => {
             // we don't have batch actions in the right sidebar, yet.
             // return hardcoded `true` in all cases once we have them.
+            if (isLocationCommonActive(this.$router, 'files-common-projects-trash')) return false
             return resources.length === 1
           },
           componentType: 'oc-button',
@@ -29,7 +30,10 @@ export default {
       // we don't have details in the trashbin, yet.
       // return hardcoded `actions-item` in all cases once we have them.
       await this.openSidebarWithPanel(
-        isLocationCommonActive(this.$router, 'files-common-trash') ? null : 'actions-item'
+        isLocationCommonActive(this.$router, 'files-common-trash') ||
+          isLocationCommonActive(this.$router, 'files-common-projects-trash')
+          ? null
+          : 'actions-item'
       )
     }
   }

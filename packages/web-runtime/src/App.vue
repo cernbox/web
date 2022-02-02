@@ -234,6 +234,20 @@ export default {
   },
 
   mounted() {
+    if (localStorage.getItem('feedback') !== 'true') {
+      setTimeout(function () {
+        const element = document.getElementById('cernbox-feedback-button')
+        const event = new MouseEvent('mouseenter', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        })
+
+        element.dispatchEvent(event)
+        localStorage.setItem('feedback', 'true')
+      }, 30000)
+    }
+
     this.$nextTick(() => {
       window.addEventListener('resize', this.onResize)
       this.onResize()

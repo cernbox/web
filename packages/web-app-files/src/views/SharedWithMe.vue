@@ -113,6 +113,7 @@
         :header-position="fileListHeaderY"
         :sort-by="sharesSortBy"
         :sort-dir="sharesSortDir"
+        :grouping-settings="groupingSettings"
         @fileClick="$_fileActions_triggerDefaultAction"
         @rowMounted="rowMounted"
         @sort="sharesHandleSort"
@@ -297,6 +298,58 @@ export default {
     ...mapGetters(['isOcis', 'configuration', 'getToken']),
     ...mapState('Files/sidebar', { sidebarClosed: 'closed' }),
 
+    groupingSettings() {
+      const that = this
+      return {
+        groupingBy: 'Shared on',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Name alphabetically': function (row) {
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared on': function (row) {
+            const recently = Date.now() - 604800000
+            const lastMonth = Date.now() - 2592000000
+            if (Date.parse(row.sdate) < lastMonth) return 'Older'
+            if (Date.parse(row.sdate) >= recently) return 'Recently'
+            else return 'Last month'
+          }
+        },
+        sortGroups: {
+          'Name alphabetically': function (groups) {
+            // sort in alphabetical order by group name
+            const sortedGroups = groups.sort(function (a, b) {
+              if (a.name < b.name) {
+                return -1
+              }
+              if (a.name > b.name) {
+                return 1
+              }
+              return 0
+            })
+            // if sorting is done by name, reverse groups depending on asc/desc
+            if (that.sharesSortBy === 'name' && that.sharesSortDir === 'desc')
+              sortedGroups.reverse()
+            return sortedGroups
+          },
+          'Shared on': function (groups) {
+            // sort in order: 1-Recently, 2-Last month, 3-Older
+            const sortedGroups = []
+            const options = ['Recently', 'Last month', 'Older']
+            for (const o of options) {
+              const found = groups.find((el) => el.name.toLowerCase() === o.toLowerCase())
+              if (found) sortedGroups.push(found)
+            }
+            // if sorting is done by sdate, reverse groups depending on asc/desc
+            if (that.sharesSortBy === 'sdate' && that.sharesSortDir === 'asc')
+              sortedGroups.reverse()
+            return sortedGroups
+          }
+        }
+      }
+    },
     // pending shares
     pendingSelected: {
       get() {
@@ -358,6 +411,7 @@ export default {
       return this.sharesCount > 0
     },
     sharesCount() {
+      console.log('sharedItems', this.sharesItems)
       return this.sharesItems.length
     },
     sharesCountFiles() {
@@ -436,3 +490,10 @@ export default {
   }
 }
 </script>
+
+<style>
+#files-shared-with-me-pending-table,
+#files-shared-with-me-pending-table th {
+  background-color: var(--oc-color-background-highlight);
+}
+</style>

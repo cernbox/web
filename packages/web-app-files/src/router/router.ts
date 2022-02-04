@@ -22,4 +22,5 @@ export interface RouteComponents {
     Projects: ComponentOptions<Vue>
   }
   Trashbin: ComponentOptions<Vue>
+  Home: ComponentOptions<Vue>
 }

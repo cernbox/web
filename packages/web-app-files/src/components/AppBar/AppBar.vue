@@ -28,10 +28,10 @@
       <h1 class="oc-invisible-sr" v-text="pageTitle" />
       <div class="files-app-bar-actions">
         <div
-          v-if="showActions || selectedFiles.length > 0 || hasBulkActions"
+          v-if="showActions || selectedFiles.length > 0 || hasBulkActions || isProjectsRoute"
           class="oc-flex-1 oc-flex oc-flex-start"
         >
-          <template v-if="showActions && areDefaultActionsVisible">
+          <template v-if="showActions && areDefaultActionsVisible && !isProjectsRoute">
             <oc-button
               id="new-file-menu-btn"
               key="new-file-menu-btn-enabled"
@@ -122,6 +122,21 @@
               </ul>
             </oc-drop>
           </template>
+          <template v-if="isProjectsRoute && areDefaultActionsVisible && !isLightweight">
+            <oc-button
+              id="new-project-menu-btn"
+              key="new-project-menu-btn-enabled"
+              :aria-label="newButtonAriaLabel"
+              variation="primary"
+              appearance="filled"
+              :disabled="isNewProjectBtnDisabled"
+              class="oc-mb-xs oc-background-primary-gradient"
+              @click="onNewProjectButtonClick"
+            >
+              <oc-icon name="add" />
+              <translate>New project</translate>
+            </oc-button>
+          </template>
           <size-info v-if="hasBulkActions && selectedFiles.length > 0" class="oc-mr oc-visible@l" />
           <batch-actions v-if="hasBulkActions" />
         </div>
@@ -170,7 +185,7 @@ export default {
   setup() {
     return {
       isPersonalLocation: watchActiveLocation(isLocationSpacesActive, 'files-spaces-personal-home'),
-      isPublicLocation: watchActiveLocation(isLocationPublicActive, 'files-public-files')
+      isPublicLocation: watchActiveLocation(isLocationPublicActive, 'files-public-files'),
     }
   },
   data: () => ({
@@ -191,6 +206,9 @@ export default {
     ...mapGetters('Files', ['files', 'currentFolder', 'selectedFiles', 'publicLinkPassword']),
     ...mapState('Files', ['areHiddenFilesShown']),
 
+    isProjectsRoute() {
+      return this.$route.name === 'files-common-projects'
+    },
     isLightweight() {
       return window.Vue.$store.getters.user.usertype === 'lightweight'
     },
@@ -322,6 +340,10 @@ export default {
       return !this.canUpload || !this.hasFreeSpace
     },
 
+    isNewprojectBtnDisabled() {
+      return true
+    },
+
     selectedResourcesAnnouncement() {
       if (this.selectedFiles.length === 0) {
         return this.$gettext('No items selected.')
@@ -356,6 +378,13 @@ export default {
     ...mapActions(['openFile', 'showMessage', 'createModal', 'setModalInputErrorMessage']),
     ...mapMutations('Files', ['UPSERT_RESOURCE', 'SET_HIDDEN_FILES_VISIBILITY']),
     ...mapMutations(['SET_QUOTA']),
+
+    onNewProjectButtonClick() {
+      window.open(
+        'https://cern.service-now.com/service-portal?id=sc_cat_item&name=EOS-projet-space&se=CERNBox-Service',
+        '_blank'
+      )
+    },
 
     showCreateResourceModal(
       isFolder = true,

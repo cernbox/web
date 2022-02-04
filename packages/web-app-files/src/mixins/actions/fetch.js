@@ -21,6 +21,9 @@ export default {
             if (isLocationCommonActive(this.$router, 'files-common-trash')) {
               return false
             }
+            if (isLocationCommonActive(this.$router, 'files-common-projects-trash')) {
+              return false
+            }
             if (resources.length !== 1) {
               return false
             }

@@ -12,7 +12,10 @@ export default {
           label: () => this.$gettext('Restore'),
           handler: this.$_restore_trigger,
           isEnabled: ({ resources }) => {
-            if (!isLocationCommonActive(this.$router, 'files-common-trash')) {
+            if (
+              !isLocationCommonActive(this.$router, 'files-common-trash') &&
+              !isLocationCommonActive(this.$router, 'files-common-projects-trash')
+            ) {
               return false
             }
             return resources.length > 0
@@ -31,11 +34,15 @@ export default {
       const failedResources = []
       const restorePromises = []
       const restoreQueue = new PQueue({ concurrency: 4 })
+
+      const project = this.$route.query.project
+      const query = project ? { base_path: project } : undefined
+
       resources.forEach((resource) => {
         restorePromises.push(
           restoreQueue.add(async () => {
             try {
-              await this.$client.fileTrash.restore(resource.id, resource.path)
+              await this.$client.fileTrash.restore(resource.id, resource.path, false, query)
               restoredResources.push(resource)
             } catch (e) {
               console.error(e)

@@ -1,7 +1,7 @@
 import get from 'lodash-es/get'
 import { mapGetters, mapActions, mapState } from 'vuex'
 
-import { isAuthenticatedRoute, isLocationActive } from '../router'
+import { isAuthenticatedRoute, isLocationActive, isLocationCommonActive } from '../router'
 import AcceptShare from './actions/acceptShare'
 import Copy from './actions/copy'
 import DeclineShare from './actions/declineShare'
@@ -85,6 +85,7 @@ export default {
               if (resources.length !== 1) {
                 return false
               }
+              if (isLocationCommonActive(this.$router, 'files-common-projects-trash')) return false
               if (
                 Array.isArray(editor.routes) &&
                 !isLocationActive(this.$router, ...editor.routes.map((name) => ({ name })))

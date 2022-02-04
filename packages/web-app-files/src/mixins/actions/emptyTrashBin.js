@@ -6,7 +6,7 @@ export default {
     ...mapGetters('Files', ['activeFiles']),
     $_emptyTrashBin_items() {
       return [
-        /*{
+        /* {
           name: 'empty-trash-bin',
           icon: 'delete-bin-5',
           label: () => this.$gettext('Empty trash bin'),
@@ -22,7 +22,7 @@ export default {
           componentType: 'oc-button',
           class: 'oc-files-actions-empty-trash-bin-trigger',
           variation: 'danger'
-        }*/
+        } */
       ]
     }
   },

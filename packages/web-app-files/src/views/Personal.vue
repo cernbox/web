@@ -217,10 +217,8 @@ export default {
       return window.Vue.$store.getters.user.usertype === 'lightweight'
     },
     isHomeRoute() {
-      return (
-        this.$route.fullPath.includes('eos/user/g/guest') ||
-        (this.$route.fullPath.includes('eos/user/') &&
-          this.$route.fullPath.includes(window.Vue.$store.getters.user.email))
+      return this.$route.fullPath.includes(
+        `/${window.Vue.$store.getters.user.id.charAt(0)}/${window.Vue.$store.getters.user.id}`
       )
     },
     isEmpty() {

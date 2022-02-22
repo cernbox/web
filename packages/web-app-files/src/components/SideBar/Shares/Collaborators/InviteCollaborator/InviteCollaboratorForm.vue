@@ -155,7 +155,7 @@ export default {
     },
 
     inviteDescriptionMessage() {
-      return this.$gettext('Add new person by name, email or federation IDs')
+      return this.$gettext('Add new person by name, email or service/secondary/guest accounts')
     },
 
     $_announcementWhenCollaboratorAdded() {

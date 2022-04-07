@@ -19,10 +19,6 @@ const routes = [
   }
 ]
 
-const fileExtensionConfig = {
-  canBeDefault: true
-}
-
 const appInfo = {
   name: $gettext('Text Editor'),
   id: 'text-editor',
@@ -36,16 +32,11 @@ const appInfo = {
           return $gettext('Plain text file')
         }
       },
-      ...fileExtensionConfig
+      canBeDefault: true
     },
     {
       extension: 'md',
-      newFileMenu: {
-        menuTitle($gettext) {
-          return $gettext('Markdown file')
-        }
-      },
-      ...fileExtensionConfig
+      canBeDefault: false
     }
   ]
 }
@@ -53,7 +44,7 @@ const appInfo = {
 for (const ext of ['js', 'json', 'xml', 'py', 'php', 'yaml']) {
   appInfo.extensions.push({
     extension: ext,
-    ...fileExtensionConfig
+    canBeDefault: true
   })
 }
 

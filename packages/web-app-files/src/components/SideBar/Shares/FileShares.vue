@@ -200,6 +200,7 @@ export default {
 
     collaborators() {
       return [...this.currentFileOutgoingCollaborators, ...this.indirectOutgoingShares]
+        .filter((c) => c.displayName || c.collaborator.displayName)
         .sort(this.collaboratorsComparator)
         .map((collaborator) => {
           collaborator.key = 'collaborator-' + collaborator.id

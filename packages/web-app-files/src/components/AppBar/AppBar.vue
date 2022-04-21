@@ -79,6 +79,9 @@ export default {
     ...mapGetters('Files', ['files', 'selectedFiles']),
     ...mapState('Files', ['areHiddenFilesShown', 'areFileExtensionsShown']),
 
+    isProjectsRoute() {
+      return this.$route.name === 'files-common-projects'
+    },
     isLightweight() {
       return window.Vue.$store.getters.user.usertype === 'lightweight'
     },

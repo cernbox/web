@@ -31,7 +31,8 @@ import {
   isLocationPublicActive,
   isLocationSharesActive,
   isLocationSpacesActive,
-  isLocationTrashActive
+  isLocationTrashActive,
+  isLocationCommonActive
 } from '../../router'
 import { computed, defineComponent } from '@vue/composition-api'
 
@@ -176,6 +177,7 @@ export default defineComponent({
       if (
         isLocationTrashActive(this.$router, 'files-trash-personal') ||
         isLocationTrashActive(this.$router, 'files-trash-spaces-project') ||
+        isLocationCommonActive(this.$router, 'files-common-projects-trash') ||
         this.highlightedFileIsSpace
       ) {
         this.selectedFile = this.highlightedFile

@@ -266,6 +266,12 @@ export default defineComponent({
       'REMOVE_FILE_SELECTION'
     ]),
 
+    onNewProjectButtonClick() {
+      window.open(
+        'https://cern.service-now.com/service-portal?id=sc_cat_item&name=EOS-projet-space&se=CERNBox-Service',
+        '_blank'
+      )
+    },
     async fileDropped(fileIdTarget) {
       const selected = [...this.selectedResources]
       const targetInfo = this.paginatedResources.find((e) => e.id === fileIdTarget)

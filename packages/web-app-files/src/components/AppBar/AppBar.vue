@@ -81,6 +81,9 @@ export default {
     ...mapState('Files', ['areHiddenFilesShown', 'areFileExtensionsShown']),
     ...mapGetters(['user']),
 
+    isProjectsRoute() {
+      return this.$route.name === 'files-common-projects'
+    },
     isLightweight() {
       return this.user.usertype === 'lightweight'
     },

@@ -114,6 +114,19 @@ export default {
     // when discussing the boot process of applications we need to implement a
     // registry that does not rely on call order, aka first register "on" and only after emit.
     eventBus.publish('app.search.register.provider', Registry.sdkSearch)
+    
+    if (store.getters.capabilities.group_based?.capabilities?.includes('cephfs-mount'))
+      store.commit('ADD_NAV_ITEM', {
+        extension: 'files',
+        navItem: {
+          name: $gettext('HPC Data'),
+          icon: 'folder',
+          route: {
+            path: '/files/spaces/cephfs'
+          },
+          separate: true
+        }
+      })
 
     archiverService.initialize(
       store.getters.configuration.server || window.location.origin,

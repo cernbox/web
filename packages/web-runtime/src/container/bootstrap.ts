@@ -15,8 +15,8 @@ import { unref } from '@vue/composition-api'
 import { useDefaultThemeName } from '../composables'
 import { clientService } from 'web-pkg/src/services'
 
-import * as Sentry from '@sentry/browser'
-import * as Integrations from '@sentry/integrations'
+import { init as SentryInit } from '@sentry/browser'
+import { Vue as SentryVueIntegration } from '@sentry/integrations'
 
 /**
  * fetch runtime configuration, this step is optional, all later steps can use a static
@@ -306,10 +306,11 @@ export const announceVersions = ({ store }: { store: Store<unknown> }): void => 
  */
 export const startSentry = (runtimeConfiguration: RuntimeConfiguration): void => {
   if (runtimeConfiguration.sentry?.dsn) {
-    Sentry.init({
+    SentryInit({
       dsn: runtimeConfiguration.sentry.dsn,
-      integrations: [new Integrations.Vue({ Vue, attachProps: true, logErrors: true })],
-      environment: runtimeConfiguration.sentry.environment || 'production'
+      integrations: [new SentryVueIntegration({ Vue, attachProps: true, logErrors: true })],
+      environment: runtimeConfiguration.sentry.environment || 'production',
+      autoSessionTracking: false
     })
   }
 }

@@ -78,7 +78,7 @@
             />
           </td>
         </tr>
-        <tr>
+        <tr v-if="isEos">
           <!-- TODO FIX ME -->
           <th scope="col" class="oc-pr-s">EOS Path:</th>
           <td>
@@ -151,6 +151,7 @@ import { computed, defineComponent, ref } from '@vue/composition-api'
 import Mixins from '../../../mixins'
 import MixinResources from '../../../mixins/resources'
 import { mapActions, mapGetters } from 'vuex'
+import { getParentPaths } from '../../../helpers/path'
 import { ImageDimension } from '../../../constants'
 import { loadPreview } from '../../../helpers/resource'
 import upperFirst from 'lodash-es/upperFirst'
@@ -210,8 +211,69 @@ export default defineComponent({
     ]),
     ...mapGetters(['user', 'getToken', 'configuration']),
 
+    sharedWithLabel() {
+      return this.$gettext('Shared with')
+    },
     file() {
       return this.displayedItem.value
+    },
+
+    isEos() {
+      return this.capabilities.core.eos
+    },
+
+    hasSharees() {
+      return this.collaboratorsAvatar.length > 0
+    },
+
+    collaboratorsAvatar() {
+      return this.collaborators.map((c) => {
+        return {
+          ...c.collaborator,
+          shareType: c.shareType
+        }
+      })
+    },
+
+    collaborators() {
+      return [...this.currentFileOutgoingCollaborators, ...this.indirectOutgoingShares]
+        .filter((c) => c.displayName || c.collaborator.displayName)
+        .sort(this.collaboratorsComparator)
+        .map((collaborator) => {
+          collaborator.key = 'collaborator-' + collaborator.id
+          if (
+            collaborator.owner.name !== collaborator.fileOwner.name &&
+            collaborator.owner.name !== this.user.id
+          ) {
+            collaborator.resharers = [collaborator.owner]
+          }
+          return collaborator
+        })
+    },
+
+    indirectOutgoingShares() {
+      const allShares = []
+      const parentPaths = getParentPaths(this.highlightedFile.path, false)
+      if (parentPaths.length === 0) {
+        return []
+      }
+
+      // remove root entry
+      parentPaths.pop()
+
+      parentPaths.forEach((parentPath) => {
+        const shares = this.sharesTree[parentPath]
+        if (shares) {
+          shares.forEach((share) => {
+            if (share.outgoing && this.$_isCollaboratorShare(share)) {
+              share.key = 'indirect-collaborator-' + share.id
+              allShares.push(share)
+            }
+          })
+        }
+      })
+
+      return allShares
     },
 
     hasContent() {

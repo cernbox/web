@@ -16,15 +16,15 @@
         @close="clearLastError"
       />
     </oc-notifications>
-    <div class="oc-flex">
-      <div :class="showPreview ? 'oc-width-1-2' : 'oc-width-1-1'">
+    <div class="oc-flex editor-height">
+      <div :class="showPreview ? 'oc-width-1-2 editor-height' : 'oc-width-1-1 editor-height'">
         <oc-textarea
           id="text-editor-input"
           v-model="currentContent"
           name="input"
           full-width
           label=""
-          class="oc-height-1-1"
+          class="'editor-height'"
           :rows="20"
           :disabled="isReadOnly"
         />
@@ -231,12 +231,16 @@ export default {
   }
 }
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 #text-editor-preview {
   max-height: 80vh;
   overflow-y: scroll;
 }
 #text-editor-input {
   resize: vertical;
+}
+.editor-height,
+#text-editor-input {
+  height: 80vh;
 }
 </style>

@@ -639,10 +639,10 @@ export default {
   width: 100%;
 
   &-hover tr {
-    // transition: background-color $transition-duration-short ease-in-out;
+    //transition: background-color $transition-duration-short ease-in-out;
   }
 
-  &-hover tr:hover span {
+  &-hover tr:hover span:not(.avatarInitials):not(button span) {
     color: var(--oc-color-swatch-brand-hover) !important;
   }
 
@@ -690,7 +690,6 @@ export default {
     vertical-align: middle;
     display: inline-table;
     color: var(--oc-color-swatch-passive-default);
-
     &:hover {
       text-decoration: underline;
     }

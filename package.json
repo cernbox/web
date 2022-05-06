@@ -41,7 +41,9 @@
     "not OperaMobile > 0"
   ],
   "dependencies": {
-    "vue": "^2.6.10"
+    "shepherd.js": "^9.0.0",
+    "vue": "^2.6.10",
+    "vue-shepherd": "^0.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.17.5",

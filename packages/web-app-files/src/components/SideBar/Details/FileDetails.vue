@@ -23,7 +23,7 @@
       </div>
       <table class="details-table" :aria-label="detailsTableLabel">
         <tr v-if="hasTimestamp" data-testid="timestamp">
-          <th scope="col" class="oc-pr-s" v-text="timestampTitle" />
+          <th scope="col" class="oc-pr-s" v-text="timestampLabel" />
           <td>
             <oc-button
               v-if="showVersions"
@@ -51,7 +51,7 @@
           </td>
         </tr>
         <tr v-if="ownerDisplayName" data-testid="ownerDisplayName">
-          <th scope="col" class="oc-pr-s" v-text="ownerTitle" />
+          <th scope="col" class="oc-pr-s" v-text="ownerLabel" />
           <td>
             <p class="oc-m-rm">
               {{ ownerDisplayName }}
@@ -63,11 +63,11 @@
           </td>
         </tr>
         <tr v-if="showSize" data-testid="sizeInfo">
-          <th scope="col" class="oc-pr-s" v-text="sizeTitle" />
+          <th scope="col" class="oc-pr-s" v-text="sizeLabel" />
           <td v-text="getResourceSize(file.size)" />
         </tr>
         <tr v-if="showVersions" data-testid="versionsInfo">
-          <th scope="col" class="oc-pr-s" v-text="versionsTitle" />
+          <th scope="col" class="oc-pr-s" v-text="versionsLabel" />
           <td>
             <oc-button
               v-oc-tooltip="seeVersionsLabel"
@@ -79,20 +79,12 @@
           </td>
         </tr>
         <tr v-if="isEos">
-          <!-- TODO FIX ME -->
-          <th scope="col" class="oc-pr-s">EOS Path:</th>
+          <th scope="col" class="oc-pr-s" v-text="filePathLabel" />
           <td>
             <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
               <div class="oc-flex oc-flex-middle">
-                <p class="oc-my-rm" v-text="file.path" />
+                <p ref="filePath" class="oc-my-rm oc-text-truncate" v-oc-tooltip="file.path" v-text="file.path" />
               </div>
-              <!-- <copy-to-clipboard-button
-                class="oc-files-public-link-copy-url oc-ml-xs"
-                :value="file.path"
-                label="Copy EOS path"
-                success-msg-title="Link copy"
-                success-msg-text="The EOS path has been copied to your clipboard."
-              /> -->
               <oc-button
                 oc-tooltip="Copy EOS path"
                 appearance="raw"
@@ -114,12 +106,11 @@
           </td>
         </tr>
         <tr>
-          <!-- TODO FIX ME -->
-          <th scope="col" class="oc-pr-s">Direct link:</th>
+          <th scope="col" class="oc-pr-s" v-text="directLinkLabel" />
           <td>
             <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
               <div class="oc-flex oc-flex-middle">
-                <p class="oc-my-rm" v-text="directLink" />
+                <p ref="directLink" class="oc-my-rm oc-text-truncate" v-oc-tooltip="directLink" v-text="directLink" />
               </div>
               <oc-button
                 oc-tooltip="Copy direct link"
@@ -219,7 +210,7 @@ export default defineComponent({
     },
 
     isEos() {
-      return this.capabilities.core.eos
+      return !!this.configuration.options.eos
     },
 
     hasSharees() {
@@ -292,10 +283,10 @@ export default defineComponent({
       return this.$gettext('Overview of the information about the selected file')
     },
     shareDateLabel() {
-      return this.$gettext('Shared:')
+      return this.$gettext('Shared')
     },
     sharedViaLabel() {
-      return this.$gettext('Shared via:')
+      return this.$gettext('Shared via')
     },
     sharedViaTooltip() {
       return this.$gettextInterpolate(
@@ -332,16 +323,16 @@ export default defineComponent({
       return this.$gettext('This file has been shared.')
     },
     sharedByLabel() {
-      return this.$gettext('Shared by:')
+      return this.$gettext('Shared by')
     },
     hasTimestamp() {
       return this.file.mdate?.length > 0
     },
-    timestampTitle() {
-      return this.$gettext('Last modified:')
+    timestampLabel() {
+      return this.$gettext('Last modified')
     },
-    ownerTitle() {
-      return this.$gettext('Owner:')
+    ownerLabel() {
+      return this.$gettext('Owner')
     },
     ownerDisplayName() {
       return (
@@ -356,11 +347,17 @@ export default defineComponent({
     directLink() {
       return `${this.configuration.server}files/spaces/personal/home${encodePath(this.file.path)}`
     },
+    directLinkLabel() {
+      return this.$gettext('Direct link')
+    },
+    filePathLabel() {
+      return this.$gettext('EOS Path')
+    },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'
     },
-    sizeTitle() {
-      return this.$gettext('Size:')
+    sizeLabel() {
+      return this.$gettext('Size')
     },
     showVersions() {
       if (this.file.type === 'folder') {
@@ -368,8 +365,8 @@ export default defineComponent({
       }
       return this.versions.length > 0 && isAuthenticatedRoute(this.$route)
     },
-    versionsTitle() {
-      return this.$gettext('Versions:')
+    versionsLabel() {
+      return this.$gettext('Versions')
     },
     seeVersionsLabel() {
       return this.$gettext('See all versions')
@@ -522,10 +519,20 @@ export default defineComponent({
 
   tr {
     height: 1.5rem;
+
+    td {
+      max-width: 0;
+      width: 100%;
+
+      div {
+        min-width: 0;
+      }
+    }
   }
 
   th {
     font-weight: 600;
+    white-space: nowrap;
   }
 }
 

@@ -242,6 +242,15 @@ export default {
         return []
       }
       const { mimeType, webDavPath, fileId } = resources[0]
+
+      // CERN only cleaning the urls
+
+      const cleaning = webDavPath.split('/')
+      cleaning.splice(0, 3)
+      const cleanWebDavPath = '/' + cleaning.join('/')
+
+      /// /
+
       const mimeTypes = this.$store.getters['External/mimeTypes'] || []
       if (
         mimeType === undefined ||
@@ -268,7 +277,7 @@ export default {
           class: `oc-files-actions-${app.name}-trigger`,
           isEnabled: () => true,
           canBeDefault: defaultApplication === app.name,
-          handler: () => this.$_fileActions_openLink(app.name, webDavPath, fileId),
+          handler: () => this.$_fileActions_openLink(app.name, cleanWebDavPath, fileId),
           label: () => this.$gettextInterpolate(label, { appName: app.name })
         }
       })

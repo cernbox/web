@@ -85,13 +85,18 @@ export default {
               iconFillType: this.apps.meta[editor.app].iconFillType
             }),
             img: this.apps.meta[editor.app].img,
-            handler: ({ resources }) =>
-              this.$_fileActions_openEditor(
+            handler: ({ resources }) => {
+              const cleaning = resources[0].webDavPath.split('/')
+              cleaning.splice(0, 3)
+              const cleanWebDavPath = '/spaces/' + cleaning.join('/')
+
+              return this.$_fileActions_openEditor(
                 editor,
-                resources[0].webDavPath,
+                cleanWebDavPath,
                 resources[0].id,
                 EDITOR_MODE_EDIT
-              ),
+              )
+            },
             isEnabled: ({ resources }) => {
               if (resources.length !== 1) {
                 return false
@@ -247,7 +252,7 @@ export default {
 
       const cleaning = webDavPath.split('/')
       cleaning.splice(0, 3)
-      const cleanWebDavPath = '/' + cleaning.join('/')
+      const cleanWebDavPath = '/spaces/' + cleaning.join('/')
 
       /// /
 

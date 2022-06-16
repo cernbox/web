@@ -47,7 +47,7 @@ export function useAppDefaults(options: AppDefaultsOptions): AppDefaultsResult {
 
   const userId = computed(() => {
     return store.getters.user.id
-  }) 
+  })
 
   const currentFileContext = computed((): FileContext => {
     const queryItemAsString = (queryItem: string | string[]) => {
@@ -58,8 +58,9 @@ export function useAppDefaults(options: AppDefaultsOptions): AppDefaultsResult {
       return queryItem
     }
 
-    const path = `/files/${userId}/${unref(currentRoute)
+    const path = `/files/${unref(userId)}/${unref(currentRoute)
       .params.filePath.split('/')
+      .slice(1)
       .filter(Boolean)
       .join('/')}`
 

@@ -52,7 +52,7 @@ const navItemFirst = [
     icon: appInfo.icon,
     hideByLightweight: true,
     route: {
-      path: `/${appInfo.id}/spaces/personal`
+      path: `/${appInfo.id}/spaces`
     }
   }
 ]

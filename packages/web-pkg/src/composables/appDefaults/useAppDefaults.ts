@@ -45,6 +45,10 @@ export function useAppDefaults(options: AppDefaultsOptions): AppDefaultsResult {
   const isPublicLinkContext = usePublicLinkContext({ currentRoute })
   const publicLinkPassword = usePublicLinkPassword({ store })
 
+  const userId = computed(() => {
+    return store.getters.user.id
+  })
+
   const currentFileContext = computed((): FileContext => {
     const queryItemAsString = (queryItem: string | string[]) => {
       if (Array.isArray(queryItem)) {
@@ -54,7 +58,11 @@ export function useAppDefaults(options: AppDefaultsOptions): AppDefaultsResult {
       return queryItem
     }
 
-    const path = `/${unref(currentRoute).params.filePath?.split('/').filter(Boolean).join('/')}`
+    const path = `/files/${unref(userId)}/${unref(currentRoute)
+      .params.filePath.split('/')
+      .filter(Boolean)
+      .slice(1)
+      .join('/')}`
 
     return {
       path,

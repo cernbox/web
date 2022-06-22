@@ -333,6 +333,8 @@ export default {
               storageId = this.currentStorageId
             }
 
+            storageId = this.user.id
+
             this.addShare({
               client: this.$client,
               graphClient: this.graphClient,

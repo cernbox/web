@@ -30,7 +30,7 @@ export class FolderLoaderSpacesPersonal implements FolderLoader {
             router.currentRoute.params.storageId,
             path || router.currentRoute.params.item || ''
           ),
-          DavProperties.Default
+          DavProperties.Default, store.getters.user.id
         )
         resources = resources.map(buildResource)
 

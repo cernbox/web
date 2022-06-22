@@ -27,7 +27,12 @@ import SideBar from 'web-pkg/src/components/sidebar/SideBar.vue'
 import { Panel } from 'web-pkg/src/components/sidebar/'
 
 import { buildResource } from '../../helpers/resources'
-import { isLocationPublicActive, isLocationSharesActive, isLocationTrashActive, isLocationCommonActive } from '../../router'
+import {
+  isLocationPublicActive,
+  isLocationSharesActive,
+  isLocationTrashActive,
+  isLocationCommonActive
+} from '../../router'
 import { computed, defineComponent } from '@vue/composition-api'
 
 import FileInfo from './FileInfo.vue'

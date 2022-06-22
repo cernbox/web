@@ -34,7 +34,7 @@ export class FolderLoaderLegacyPersonal implements FolderLoader {
             router.currentRoute.params.storageId,
             path || router.currentRoute.params.item || ''
           ),
-          DavProperties.Default
+          DavProperties.Default, store.getters.user.id
         )
         resources = resources.map(buildResource)
 
@@ -55,7 +55,7 @@ export class FolderLoaderLegacyPersonal implements FolderLoader {
 
         // fetch user quota
         ;(async () => {
-          const user = await client.users.getUser(router.currentRoute.params.storageId)
+          const user = await client.users.getUser(store.getters.user.id)//(router.currentRoute.params.storageId)
           store.commit('SET_QUOTA', user.quota)
         })()
       } catch (error) {

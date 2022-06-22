@@ -362,7 +362,7 @@ export default defineComponent({
       if (folderName === '') {
         return
       }
-
+      const storageId = this.user.id
       this.fileFolderCreationLoading = true
 
       try {
@@ -378,7 +378,7 @@ export default defineComponent({
           await this.$client.files.createFolder(path)
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else if (this.isSpacesProjectLocation) {
-          path = buildWebDavSpacesPath(this.$route.params.storageId, path)
+          path = buildWebDavSpacesPath(storageId, path)
           await this.$client.files.createFolder(path)
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else if (this.isSpacesShareLocation) {
@@ -460,6 +460,8 @@ export default defineComponent({
         return
       }
 
+      const storageId = this.user.id
+
       this.fileFolderCreationLoading = true
 
       try {
@@ -475,7 +477,7 @@ export default defineComponent({
           await this.$client.files.putFileContents(path, '')
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else if (this.isSpacesProjectLocation) {
-          path = buildWebDavSpacesPath(this.$route.params.storageId, path)
+          path = buildWebDavSpacesPath(storageId, path)
           await this.$client.files.putFileContents(path, '')
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else if (this.isSpacesShareLocation) {
@@ -541,6 +543,7 @@ export default defineComponent({
           `?parent_container_id=${parent}&filename=${encodeURIComponent(fileName)}`
 
         const response = await this.makeRequest('POST', url)
+        const storageId = this.user.id
 
         if (response.status !== 200) {
           throw new Error(`An error has occurred: ${response.status}`)
@@ -556,7 +559,7 @@ export default defineComponent({
           }
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else if (this.isSpacesProjectLocation) {
-          path = buildWebDavSpacesPath(this.$route.params.storageId, path)
+          path = buildWebDavSpacesPath(storageId, path)
           resource = await this.$client.files.fileInfo(path, DavProperties.Default)
         } else if (this.isSpacesShareLocation) {
           path = buildWebDavSpacesPath([SHARE_JAIL_ID, this.$route.query.shareId].join('!'), path)

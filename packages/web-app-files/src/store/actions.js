@@ -242,6 +242,7 @@ export default {
     context.commit('CURRENT_FILE_OUTGOING_SHARES_SET', [])
     context.commit('CURRENT_FILE_OUTGOING_SHARES_ERROR', null)
     context.commit('CURRENT_FILE_OUTGOING_SHARES_LOADING', true)
+    storageId = context.rootGetters.user.id
 
     let spaceRef
     if (storageId) {
@@ -422,6 +423,8 @@ export default {
     }
   ) {
     let spaceRef
+
+    storageId = context.rootGetters.user.id
     if (storageId) {
       spaceRef = `${storageId}${path}`
     }
@@ -535,6 +538,7 @@ export default {
       })
   },
   deleteShare(context, { client, graphClient, share, resource, storageId }) {
+    storageId = context.rootGetters.user.id
     const additionalParams = {}
     if (share.shareType === ShareTypes.space.value) {
       additionalParams.shareWith = share.collaborator.name
@@ -579,6 +583,7 @@ export default {
    * not remove unrelated existing ones.
    */
   loadSharesTree(context, { client, path, storageId }) {
+    storageId = context.rootGetters.user.id
     context.commit('SHARESTREE_ERROR', null)
     // prune shares tree cache for all unrelated paths, keeping only
     // existing relevant parent entries
@@ -681,6 +686,7 @@ export default {
   },
 
   addLink(context, { path, client, params, storageId }) {
+    storageId = context.rootGetters.user.id
     return new Promise((resolve, reject) => {
       client.shares
         .shareFileWithLink(path, params)
@@ -711,6 +717,7 @@ export default {
     })
   },
   removeLink(context, { share, client, resource, storageId }) {
+    storageId = context.rootGetters.user.id
     client.shares
       .deleteShare(share.id)
       .then(() => {

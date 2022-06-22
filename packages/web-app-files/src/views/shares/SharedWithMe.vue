@@ -223,7 +223,7 @@ export default defineComponent({
       unref(hasShareJail)
         ? createLocationSpaces('files-spaces-share')
         : createLocationSpaces('files-spaces-personal', {
-            params: { storageId: store.getters.user.id }
+            params: { storageId: 'personal' } // store.getters.user.id }
           })
     )
     const resourceTargetParamMapping = computed(() =>

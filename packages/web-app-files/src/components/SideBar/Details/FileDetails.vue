@@ -150,7 +150,7 @@ import upperFirst from 'lodash-es/upperFirst'
 import path from 'path'
 import { createLocationSpaces, isAuthenticatedRoute, isLocationSpacesActive } from '../../../router'
 import { ShareTypes } from '../../../helpers/share'
-import { useRouteParam, useRouter } from 'web-pkg/src/composables'
+import { useRouter, useStore } from 'web-pkg/src/composables'
 import { getIndicators } from '../../../helpers/statusIndicators'
 import copyToClipboard from 'copy-to-clipboard'
 import { encodePath } from 'web-pkg/src/utils'
@@ -163,7 +163,9 @@ export default defineComponent({
   setup() {
     const sharedParentDir = ref('')
     const router = useRouter()
-    const currentStorageId = useRouteParam('storageId')
+    const store = useStore()
+
+    const currentStorageId = store.getters.user.id // useRouteParam('storageId')
 
     const sharedParentRoute = computed(() => {
       if (isLocationSpacesActive(router, 'files-spaces-project')) {

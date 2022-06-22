@@ -214,6 +214,8 @@ export default defineComponent({
             storageId = drivesResponse.data.value[0].id
           }
 
+          storageId = 'personal'
+
           return this.$router.replace({
             to,
             params: { ...to.params, storageId },

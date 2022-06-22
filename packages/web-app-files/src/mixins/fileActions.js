@@ -88,7 +88,7 @@ export default {
             handler: ({ resources }) =>
               this.$_fileActions_openEditor(
                 editor,
-                resources[0].webDavPath,
+                this.getCernPath(resources[0].webDavPath),
                 resources[0].id,
                 EDITOR_MODE_EDIT
               ),
@@ -137,6 +137,17 @@ export default {
 
   methods: {
     ...mapActions(['openFile']),
+
+    getCernPath(webdavPath) {
+      const cleaning = webdavPath.split('/')
+      if (cleaning[1] === 'files') {
+        cleaning.splice(1, 2)
+        cleaning.splice(1, 0, 'spaces')
+      } else {
+        cleaning.splice(1, 0, 'public')
+      }
+      return cleaning.join('/')
+    },
 
     $_fileActions__routeOpts(app, filePath, fileId, mode) {
       const route = this.$route
@@ -267,7 +278,7 @@ export default {
           class: `oc-files-actions-${app.name}-trigger`,
           isEnabled: () => true,
           canBeDefault: defaultApplication === app.name,
-          handler: () => this.$_fileActions_openLink(app.name, webDavPath, fileId),
+          handler: () => this.$_fileActions_openLink(app.name, this.getCernPath(webDavPath), fileId),
           label: () => this.$gettextInterpolate(label, { appName: app.name })
         }
       })

@@ -48,8 +48,16 @@ export function useAppDefaults(options: AppDefaultsOptions): AppDefaultsResult {
   const isPublicLinkContext = usePublicLinkContext({ currentRoute })
   const publicLinkPassword = usePublicLinkPassword({ store })
 
+  const userId = computed(() => {
+    return store.getters.user.id
+  })
+
   const currentFileContext = computed((): FileContext => {
-    const path = `/${unref(currentRoute).params.filePath?.split('/').filter(Boolean).join('/')}`
+    const route = unref(currentRoute)
+    let path = `/${route.params.filePath?.split('/').filter(Boolean).slice(1).join('/')}`
+    if (route.params.filePath?.startsWith('spaces/')) {
+      path = `/files/${unref(userId)}${path}`
+    }
 
     return {
       path,

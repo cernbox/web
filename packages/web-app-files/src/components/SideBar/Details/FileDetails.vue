@@ -283,7 +283,7 @@ export default defineComponent({
       return this.file.owner?.[0].additionalInfo
     },
     directLink() {
-      return `${this.configuration.server}files/spaces/personal/home${encodePath(this.file.path)}`
+      return `${this.configuration.server}files/spaces/${encodePath(this.file.path)}`
     },
     directLinkLabel() {
       return this.$gettext('Direct link')

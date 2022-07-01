@@ -79,7 +79,7 @@
           </td>
         </tr>
         <tr v-if="runningOnEos">
-          <th scope="col" class="oc-pr-s" v-text="eosPathLabel" />
+          <th scope="col" class="oc-pr-s" v-text="eosFusePathLabel" />
           <td>
             <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
               <p
@@ -89,14 +89,42 @@
                 v-text="file.path"
               />
               <oc-button
-                v-oc-tooltip="copyEosPathLabel"
-                :aria-label="copyEosPathLabel"
+                v-oc-tooltip="copyEosFusePathLabel"
+                :aria-label="copyEosFusePathLabel"
                 appearance="raw"
-                :variation="copiedEos ? 'success' : 'passive'"
-                @click="copyEosPathToClipboard"
+                :variation="copiedEosFuse ? 'success' : 'passive'"
+                @click="copyEosFusePathToClipboard"
               >
                 <oc-icon
-                  v-if="copiedEos"
+                  v-if="copiedEosFuse"
+                  key="oc-copy-to-clipboard-copied"
+                  name="checkbox-circle"
+                  class="_clipboard-success-animation"
+                />
+                <oc-icon v-else key="oc-copy-to-clipboard-copy" name="clipboard" />
+              </oc-button>
+            </div>
+          </td>
+        </tr>
+        <tr v-if="runningOnEos && getEosWindowsPath(file.path)">
+          <th scope="col" class="oc-pr-s" v-text="eosWindowsPathLabel" />
+          <td>
+            <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
+              <p
+                ref="eosWindowsFilePath"
+                v-oc-tooltip="getEosWindowsPath(file.path)"
+                class="oc-my-rm oc-text-truncate"
+                v-text="getEosWindowsPath(file.path)"
+              />
+              <oc-button
+                v-oc-tooltip="copyEosWindowsPathLabel"
+                :aria-label="copyEosWindowsPathLabel"
+                appearance="raw"
+                :variation="copiedEosWindows ? 'success' : 'passive'"
+                @click="copyEosWindowsPathToClipboard"
+              >
+                <oc-icon
+                  v-if="copiedEosWindows"
                   key="oc-copy-to-clipboard-copied"
                   name="checkbox-circle"
                   class="_clipboard-success-animation"
@@ -154,6 +182,7 @@ import { useRouteParam, useRouter } from 'web-pkg/src/composables'
 import { getIndicators } from '../../../helpers/statusIndicators'
 import copyToClipboard from 'copy-to-clipboard'
 import { encodePath } from 'web-pkg/src/utils'
+import pathMappings from '../../../helpers/path/pathMappings'
 
 export default defineComponent({
   name: 'FileDetails',
@@ -192,7 +221,8 @@ export default defineComponent({
     sharedItem: null,
     shareIndicators: [],
     copiedDirect: false,
-    copiedEos: false,
+    copiedEosFuse: false,
+    copiedEosWindows: false,
     timeout: null
   }),
   computed: {
@@ -291,11 +321,17 @@ export default defineComponent({
     copyDirectLinkLabel() {
       return this.$gettext('Copy direct link')
     },
-    eosPathLabel() {
-      return this.$gettext('EOS Path')
+    eosFusePathLabel() {
+      return this.$gettext('EOS FUSE Path')
     },
-    copyEosPathLabel() {
-      return this.$gettext('Copy EOS path')
+    copyEosFusePathLabel() {
+      return this.$gettext('Copy EOS FUSE path')
+    },
+    eosWindowsPathLabel() {
+      return this.$gettext('EOS Windows Path')
+    },
+    copyEosWindowsPathLabel() {
+      return this.$gettext('Copy EOS Windows path')
     },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'
@@ -429,14 +465,31 @@ export default defineComponent({
       await Promise.all(calls.map((p) => p.catch((e) => e)))
       this.loading = false
     },
-    copyEosPathToClipboard() {
+    copyEosFusePathToClipboard() {
       copyToClipboard(this.file.path)
-      this.copiedEos = true
+      this.copiedEosFuse = true
       this.clipboardSuccessHandler()
       this.showMessage({
-        title: this.$gettext('EOS path copied'),
-        desc: this.$gettext('The EOS path has been copied to your clipboard.')
+        title: this.$gettext('EOS FUSE path copied'),
+        desc: this.$gettext('The EOS FUSE path has been copied to your clipboard.')
       })
+    },
+    copyEosWindowsPathToClipboard() {
+      copyToClipboard(this.getEosWindowsPath(this.file.path))
+      this.copiedEosWindows = true
+      this.clipboardSuccessHandler()
+      this.showMessage({
+        title: this.$gettext('EOS Windows path copied'),
+        desc: this.$gettext('The EOS Windows path has been copied to your clipboard.')
+      })
+    },
+    getEosWindowsPath(path) {
+      return Object.keys(pathMappings).includes(path.split('/')[2])
+        ? '\\\\' +
+            path
+              .replace('/eos/' + path.split('/')[2], pathMappings[path.split('/')[2]])
+              .replaceAll('/', '\\')
+        : null
     },
     copyDirectLinkToClipboard() {
       copyToClipboard(this.directLink)
@@ -451,7 +504,8 @@ export default defineComponent({
       clearTimeout(this.timeout)
       this.timeout = setTimeout(() => {
         this.copiedDirect = false
-        this.copiedEos = false
+        this.copiedEosFuse = false
+        this.copiedEosWindows = false
       }, 550)
     }
   }

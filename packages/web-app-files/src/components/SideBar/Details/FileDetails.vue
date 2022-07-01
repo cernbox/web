@@ -322,16 +322,16 @@ export default defineComponent({
       return this.$gettext('Copy direct link')
     },
     eosFusePathLabel() {
-      return this.$gettext('EOS FUSE Path')
+      return this.$gettext('EOS Path')
     },
     copyEosFusePathLabel() {
-      return this.$gettext('Copy EOS FUSE path')
+      return this.$gettext('Copy EOS path')
     },
     eosWindowsPathLabel() {
-      return this.$gettext('EOS Windows Path')
+      return this.$gettext('Windows Path')
     },
     copyEosWindowsPathLabel() {
-      return this.$gettext('Copy EOS Windows path')
+      return this.$gettext('Copy Windows path')
     },
     showSize() {
       return this.getResourceSize(this.file.size) !== '?'
@@ -470,8 +470,8 @@ export default defineComponent({
       this.copiedEosFuse = true
       this.clipboardSuccessHandler()
       this.showMessage({
-        title: this.$gettext('EOS FUSE path copied'),
-        desc: this.$gettext('The EOS FUSE path has been copied to your clipboard.')
+        title: this.$gettext('EOS path copied'),
+        desc: this.$gettext('The EOS path has been copied to your clipboard.')
       })
     },
     copyEosWindowsPathToClipboard() {
@@ -479,8 +479,8 @@ export default defineComponent({
       this.copiedEosWindows = true
       this.clipboardSuccessHandler()
       this.showMessage({
-        title: this.$gettext('EOS Windows path copied'),
-        desc: this.$gettext('The EOS Windows path has been copied to your clipboard.')
+        title: this.$gettext('Windows path copied'),
+        desc: this.$gettext('The Windows path has been copied to your clipboard.')
       })
     },
     getEosWindowsPath(path) {

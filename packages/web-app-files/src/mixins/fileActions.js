@@ -88,7 +88,7 @@ export default {
             handler: ({ resources }) =>
               this.$_fileActions_openEditor(
                 editor,
-                this.getCernPath(resources[0].webDavPath),
+                resources[0].webDavPath,
                 resources[0].id,
                 EDITOR_MODE_EDIT
               ),
@@ -165,6 +165,7 @@ export default {
     },
 
     $_fileActions_openEditor(editor, filePath, fileId, mode) {
+      filePath = this.getCernPath(filePath)
       if (editor.handler) {
         return editor.handler({
           config: this.configuration,
@@ -279,7 +280,8 @@ export default {
           class: `oc-files-actions-${app.name}-trigger`,
           isEnabled: () => true,
           canBeDefault: defaultApplication === app.name,
-          handler: () => this.$_fileActions_openLink(app.name, this.getCernPath(webDavPath), fileId),
+          handler: () =>
+            this.$_fileActions_openLink(app.name, this.getCernPath(webDavPath), fileId),
           label: () => this.$gettextInterpolate(label, { appName: app.name })
         }
       })

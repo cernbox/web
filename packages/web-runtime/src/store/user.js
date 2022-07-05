@@ -99,7 +99,11 @@ const actions = {
           return
         }
 
-        const userGroups = await client.users.getUserGroups(login.id)
+        const userGroups = await client.users.getUserGroups(login.id).catch(() => {
+          // Invalid token, empty session storage and reload.
+          sessionStorage.clear()
+          location.reload()
+        })
         const user = await client.users.getUser(login.id)
 
         // FIXME: Can be removed as soon as the uuid is integrated in the OCS api

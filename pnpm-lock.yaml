@@ -650,6 +650,7 @@ importers:
       qs: ^6.10.3
       sanitize-html: ^2.7.0
       semver: ^7.3.8
+      shepherd.js: ^9.1.0
       tippy.js: ^6.3.7
       utf8: ^3.0.0
       uuid: ^9.0.0
@@ -702,6 +703,7 @@ importers:
       qs: 6.10.3
       sanitize-html: 2.7.0
       semver: 7.3.8
+      shepherd.js: 9.1.1
       tippy.js: 6.3.7
       utf8: 3.0.0
       uuid: 9.0.0
@@ -19554,6 +19556,15 @@ packages:
     resolution: {integrity: sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==}
     dev: true
 
+  /shepherd.js/9.1.1:
+    resolution: {integrity: sha512-JS1zE/OulfqahISHLn8P3moFXB4QFvK7HGH42T5WW1TMmHWd4Ke95k6NQTfYFC56OaI0j9Y1E+i6C+5ZftLORg==}
+    engines: {node: 12.* || 14.* || >= 16}
+    dependencies:
+      '@popperjs/core': 2.11.5
+      deepmerge: 4.2.2
+      smoothscroll-polyfill: 0.4.4
+    dev: false
+
   /side-channel/1.0.4:
     resolution: {integrity: sha512-q5XPytqFEIKHkGdiMIrY10mvLRvnQh42/+GoBlFW3b2LXLE2xxJpZFdm94we0BaoV3RwJyGqg5wS7epxTv0Zvw==}
     dependencies:
@@ -19612,6 +19623,10 @@ packages:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
     dev: true
+
+  /smoothscroll-polyfill/0.4.4:
+    resolution: {integrity: sha512-TK5ZA9U5RqCwMpfoMq/l1mrH0JAR7y7KRvOBx0n2869aLxch+gT9GhN3yUfjiw+d/DiF1mKo14+hd62JyMmoBg==}
+    dev: false
 
   /snake-case/3.0.4:
     resolution: {integrity: sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==}

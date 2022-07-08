@@ -55,6 +55,8 @@ import { isPublicLinkContext, isUserContext } from './router'
 import { additionalTranslations } from './helpers/additionalTranslations' // eslint-disable-line
 import { eventBus } from 'web-pkg/src/services'
 
+import { autostartTours } from './helpers/tours'
+
 export default defineComponent({
   components: {
     SkipTo
@@ -71,6 +73,7 @@ export default defineComponent({
     ...mapState(['route', 'user', 'modal', 'sidebar']),
     ...mapGetters(['configuration', 'capabilities', 'getSettingsValue']),
     ...mapGetters('runtime/auth', ['isUserContextReady', 'isPublicLinkContextReady']),
+    ...mapGetters(['currentTranslatedTourInfos']),
     layout() {
       const plainLayoutRoutes = [
         'login',
@@ -116,6 +119,9 @@ export default defineComponent({
         const { shortDocumentTitle, fullDocumentTitle } = extracted
         this.announceRouteChange(shortDocumentTitle)
         document.title = fullDocumentTitle
+        if (this.currentTranslatedTourInfos.length > 0) {
+          autostartTours(this.currentTranslatedTourInfos, to.name)
+        }
       }
     },
     capabilities: {
@@ -151,6 +157,7 @@ export default defineComponent({
         if (languageCode) {
           this.$language.current = languageCode
           document.documentElement.lang = languageCode
+          this.setCurrentTranslatedTourInfos(languageCode)
         }
       }
     }
@@ -187,6 +194,7 @@ export default defineComponent({
 
   methods: {
     ...mapActions(['fetchNotifications']),
+    ...mapActions(['setCurrentTranslatedTourInfos']),
 
     focusModal(component, event) {
       this.focus({

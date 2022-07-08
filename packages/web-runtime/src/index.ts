@@ -25,7 +25,8 @@ import {
   announceUppyService,
   announceAuthService,
   announcePermissionManager,
-  startSentry
+  startSentry,
+  announceTours
 } from './container'
 import {
   buildPublicSpaceResource,
@@ -57,6 +58,7 @@ export const bootstrap = async (configurationPath: string): Promise<void> => {
   announcePermissionManager({ vue: Vue, store })
   announceTranslations({ vue: Vue, supportedLanguages, translations })
   announceDefaults({ store, router })
+  announceTours({ store, runtimeConfiguration })
 }
 
 export const renderSuccess = (): void => {

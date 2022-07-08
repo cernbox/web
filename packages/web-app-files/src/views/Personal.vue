@@ -1,75 +1,78 @@
 <template>
   <div>
-    <keyboard-actions :paginated-resources="paginatedResources" />
-    <app-bar
-      :has-bulk-actions="true"
-      :breadcrumbs="breadcrumbs"
-      :breadcrumbs-context-actions-items="[currentFolder]"
-      :show-actions-on-selection="true"
-    >
-      <template #actions>
-        <create-and-upload />
+    <div v-if="isLightweight && isHomeRoute"><home /></div>
+    <div v-else>
+      <keyboard-actions :paginated-resources="paginatedResources" />
+      <app-bar
+        :has-bulk-actions="true"
+        :breadcrumbs="breadcrumbs"
+        :breadcrumbs-context-actions-items="[currentFolder]"
+        :show-actions-on-selection="true"
+      >
+        <template #actions>
+          <create-and-upload />
+        </template>
+      </app-bar>
+      <app-loading-spinner v-if="areResourcesLoading" />
+      <template v-else>
+        <not-found-message v-if="folderNotFound" class="files-not-found oc-height-1-1" />
+        <no-content-message
+          v-else-if="isEmpty"
+          id="files-personal-empty"
+          class="files-empty"
+          icon="folder"
+        >
+          <template #message>
+            <span v-translate>There are no resources in this folder</span>
+          </template>
+          <template #callToAction>
+            <span v-translate>
+              Drag files and folders here or use the "New" or "Upload" buttons to add files
+            </span>
+          </template>
+        </no-content-message>
+        <resource-table
+          v-else
+          id="files-personal-table"
+          v-model="selectedResourcesIds"
+          class="files-table"
+          :class="{ 'files-table-squashed': !sidebarClosed }"
+          :are-thumbnails-displayed="displayThumbnails"
+          :resources="paginatedResources"
+          :target-route="resourceTargetLocation"
+          :header-position="fileListHeaderY"
+          :drag-drop="true"
+          :sort-by="sortBy"
+          :sort-dir="sortDir"
+          @fileDropped="fileDropped"
+          @fileClick="$_fileActions_triggerDefaultAction"
+          @rowMounted="rowMounted"
+          @sort="handleSort"
+        >
+          <template #quickActions="{ resource }">
+            <quick-actions
+              :class="resource.preview"
+              class="oc-visible@s"
+              :item="resource"
+              :actions="app.quickActions"
+            />
+          </template>
+          <template #contextMenu="{ resource }">
+            <context-actions v-if="isResourceInSelection(resource)" :items="selectedResources" />
+          </template>
+          <template #footer>
+            <pagination :pages="paginationPages" :current-page="paginationPage" />
+            <list-info
+              v-if="paginatedResources.length > 0"
+              class="oc-width-1-1 oc-my-s"
+              :files="totalFilesCount.files"
+              :folders="totalFilesCount.folders"
+              :size="totalFilesSize"
+            />
+          </template>
+        </resource-table>
       </template>
-    </app-bar>
-    <app-loading-spinner v-if="areResourcesLoading" />
-    <template v-else>
-      <not-found-message v-if="folderNotFound" class="files-not-found oc-height-1-1" />
-      <no-content-message
-        v-else-if="isEmpty"
-        id="files-personal-empty"
-        class="files-empty"
-        icon="folder"
-      >
-        <template #message>
-          <span v-translate>There are no resources in this folder</span>
-        </template>
-        <template #callToAction>
-          <span v-translate>
-            Drag files and folders here or use the "New" or "Upload" buttons to add files
-          </span>
-        </template>
-      </no-content-message>
-      <resource-table
-        v-else
-        id="files-personal-table"
-        v-model="selectedResourcesIds"
-        class="files-table"
-        :class="{ 'files-table-squashed': !sidebarClosed }"
-        :are-thumbnails-displayed="displayThumbnails"
-        :resources="paginatedResources"
-        :target-route="resourceTargetLocation"
-        :header-position="fileListHeaderY"
-        :drag-drop="true"
-        :sort-by="sortBy"
-        :sort-dir="sortDir"
-        @fileDropped="fileDropped"
-        @fileClick="$_fileActions_triggerDefaultAction"
-        @rowMounted="rowMounted"
-        @sort="handleSort"
-      >
-        <template #quickActions="{ resource }">
-          <quick-actions
-            :class="resource.preview"
-            class="oc-visible@s"
-            :item="resource"
-            :actions="app.quickActions"
-          />
-        </template>
-        <template #contextMenu="{ resource }">
-          <context-actions v-if="isResourceInSelection(resource)" :items="selectedResources" />
-        </template>
-        <template #footer>
-          <pagination :pages="paginationPages" :current-page="paginationPage" />
-          <list-info
-            v-if="paginatedResources.length > 0"
-            class="oc-width-1-1 oc-my-s"
-            :files="totalFilesCount.files"
-            :folders="totalFilesCount.folders"
-            :size="totalFilesSize"
-          />
-        </template>
-      </resource-table>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -88,6 +91,7 @@ import { ImageDimension, ImageType } from '../constants'
 import { bus } from 'web-pkg/src/instance'
 import { breadcrumbsFromPath, concatBreadcrumbs } from '../helpers/breadcrumbs'
 
+import Home from './Home.vue'
 import AppBar from '../components/AppBar/AppBar.vue'
 import CreateAndUpload from '../components/AppBar/CreateAndUpload.vue'
 import ResourceTable from '../components/FilesList/ResourceTable.vue'
@@ -121,7 +125,8 @@ export default defineComponent({
     ListInfo,
     Pagination,
     ContextActions,
-    KeyboardActions
+    KeyboardActions,
+    Home
   },
 
   mixins: [
@@ -160,6 +165,12 @@ export default defineComponent({
     ]),
     ...mapGetters(['user', 'homeFolder', 'configuration']),
 
+    isLightweight() {
+      return this.user.usertype === 'lightweight'
+    },
+    isHomeRoute() {
+      return this.$route.fullPath.includes(`/${this.user.id.charAt(0)}/${this.user.id}`)
+    },
     isEmpty() {
       return this.paginatedResources.length < 1
     },

@@ -56,6 +56,8 @@ import { additionalTranslations } from './helpers/additionalTranslations' // esl
 import { eventBus } from 'web-pkg/src/services'
 
 import { autostartTours } from './helpers/tours'
+import { useAccessToken } from 'web-pkg/src/composables'
+import { unref } from 'vue'
 
 export default defineComponent({
   components: {
@@ -119,8 +121,10 @@ export default defineComponent({
         const { shortDocumentTitle, fullDocumentTitle } = extracted
         this.announceRouteChange(shortDocumentTitle)
         document.title = fullDocumentTitle
-        if (this.currentTranslatedTourInfos.length > 0) {
-          autostartTours(this.currentTranslatedTourInfos, to.name)
+
+        const accessToken = unref(useAccessToken({ store: this.$store }))
+        if (this.user?.id && accessToken && this.currentTranslatedTourInfos.length > 0) {
+          autostartTours(this.currentTranslatedTourInfos, to.name, accessToken, this.user.id)
         }
       }
     },

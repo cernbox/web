@@ -2,7 +2,7 @@
   <main id="files" class="oc-flex oc-height-1-1">
     <div v-if="dragareaEnabled" class="dragarea" />
     <div ref="filesListWrapper" tabindex="-1" class="files-list-wrapper oc-width-expand">
-      <router-view id="files-view" tabindex="0" />
+      <router-view id="files-view" tabindex="0"  @click="unselectOnClick"/>
     </div>
     <side-bar
       v-if="showSidebar"
@@ -84,6 +84,15 @@ export default defineComponent({
         to: this.$refs.filesSidebar?.$el,
         revert: event === 'beforeDestroy'
       })
+    },
+    /* on click instead of on focus since child element got the higher tabindex and focuses first */
+    unselectOnClick(e) {
+      if (
+        e.target?.id === 'files-view' ||
+        e.target?.className.includes('oc-files-appbar-batch-actions') ||
+        e.target?.className === 'oc-flex oc-flex-between'
+      )
+        this.resetFileSelection()
     }
   }
 })

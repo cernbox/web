@@ -5,6 +5,8 @@
       'oc-app-navigation-collapsed': navigation.closed,
       'oc-app-navigation-expanded': !navigation.closed
     }"
+    tabindex="-1"
+    @focus="unselectOnFocus"
   >
     <oc-button
       appearance="raw"
@@ -130,6 +132,11 @@ export default {
   },
   methods: {
     ...mapActions(['openNavigation', 'closeNavigation']),
+    ...mapActions('Files', ['resetFileSelection']),
+
+    unselectOnFocus(e) {
+      this.resetFileSelection()
+    },
 
     toggleSidebarButtonClick() {
       return this.navigation.closed ? this.openNavigation() : this.closeNavigation()

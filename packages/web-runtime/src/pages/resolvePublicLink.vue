@@ -153,7 +153,12 @@ export default defineComponent({
         return this.$router.push({ path: redirectUrl })
       }
 
-      if (parseInt(publicLink.fileInfo[DavProperty.PublicLinkPermission]) === SharePermissionBit.Create) {
+      const publicLinkPermission = parseInt(publicLink.fileInfo[DavProperty.PublicLinkPermission])
+      const uploadPublicLinkPermissions = [
+        SharePermissionBit.Create,
+        SharePermissionBit.Create + SharePermissionBit.DenyAccess
+      ]
+      if (uploadPublicLinkPermissions.includes(publicLinkPermission)) {
         return this.$router.push({ name: 'files-public-drop', params: { token: this.token } })
       }
 

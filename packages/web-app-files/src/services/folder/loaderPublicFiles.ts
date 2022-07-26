@@ -42,7 +42,7 @@ export class FolderLoaderPublicFiles implements FolderLoader {
         const sharePermissions = parseInt(
           resources[0].getProperty(DavProperty.PublicLinkPermission)
         )
-        if (linkRoleUploaderFolder.bitmask(false) === sharePermissions || sharePermissions === 36) {
+        if (sharePermissions === 4 || sharePermissions === 36) {
           router.replace(
             createLocationPublic('files-public-drop', {
               params: { token: router.currentRoute.params.item }

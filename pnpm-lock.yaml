@@ -452,6 +452,7 @@ importers:
       web-app-search: workspace:*
       web-client: npm:@ownclouders/web-client
       web-pkg: npm:@ownclouders/web-pkg
+      web-pocs: workspace:*
       web-runtime: workspace:*
     dependencies:
       copy-to-clipboard: 3.3.1
@@ -477,6 +478,7 @@ importers:
       web-app-search: link:../web-app-search
       web-client: link:../web-client
       web-pkg: link:../web-pkg
+      web-pocs: link:../web-pocs
       web-runtime: link:../web-runtime
 
   packages/web-app-pdf-viewer:
@@ -610,6 +612,9 @@ importers:
       vuex-extensions: 1.1.5
       web-client: link:../web-client
       web-pkg: 'link:'
+
+  packages/web-pocs:
+    specifiers: {}
 
   packages/web-runtime:
     specifiers:

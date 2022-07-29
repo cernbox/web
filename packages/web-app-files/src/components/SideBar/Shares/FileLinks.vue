@@ -218,14 +218,14 @@ export default defineComponent({
     },
 
     availableRoleOptions() {
-      if (this.share?.incoming && this.canCreatePublicLinks) {
-        return LinkShareRoles.filterByBitmask(
-          parseInt(this.share.permissions),
-          this.highlightedFile.isFolder,
-          this.hasPublicLinkEditing,
-          this.hasPublicLinkAliasSupport
-        )
-      }
+      // if (this.share?.incoming && this.canCreatePublicLinks) {
+      //   return LinkShareRoles.filterByBitmask(
+      //     parseInt(this.share.permissions),
+      //     this.highlightedFile.isFolder,
+      //     this.hasPublicLinkEditing,
+      //     this.hasPublicLinkAliasSupport
+      //   )
+      // }
 
       return LinkShareRoles.list(
         this.highlightedFile.isFolder,

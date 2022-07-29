@@ -211,13 +211,13 @@ export default defineComponent({
     },
 
     availableRoleOptions() {
-      if (this.share?.incoming && this.canCreatePublicLinks) {
-        return LinkShareRoles.filterByBitmask(
-          parseInt(this.share.permissions),
-          this.highlightedFile.isFolder,
-          this.capabilities.files_sharing?.public?.can_edit
-        )
-      }
+      // if (this.share?.incoming && this.canCreatePublicLinks) {
+      //   return LinkShareRoles.filterByBitmask(
+      //     parseInt(this.share.permissions),
+      //     this.highlightedFile.isFolder,
+      //     this.capabilities.files_sharing?.public?.can_edit
+      //   )
+      // }
 
       const roles = LinkShareRoles.list(
         this.highlightedFile.isFolder,

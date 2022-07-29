@@ -169,14 +169,14 @@ export default {
         return SpacePeopleShareRoles.list(this.resource.canDeny())
       }
 
-      if (this.share?.incoming && this.resourceIsSharable) {
-        return PeopleShareRoles.filterByBitmask(
-          parseInt(this.share.permissions),
-          this.resource.isFolder,
-          this.allowSharePermission,
-          this.allowCustomSharing !== false
-        )
-      }
+      // if (this.share?.incoming && this.resourceIsSharable) {
+      //   return PeopleShareRoles.filterByBitmask(
+      //     parseInt(this.share.permissions),
+      //     this.resource.isFolder,
+      //     this.allowSharePermission,
+      //     this.allowCustomSharing !== false
+      //   )
+      // }
 
       return PeopleShareRoles.list(
         this.resource.isFolder,

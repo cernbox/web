@@ -366,7 +366,7 @@ export abstract class LinkShareRoles {
   static readonly all = [
     linkRoleViewerFile,
     linkRoleViewerFolder,
-    linkRoleContributorFolder,
+    // linkRoleContributorFolder,
     linkRoleEditorFolder,
     linkRoleUploaderFolder
   ]

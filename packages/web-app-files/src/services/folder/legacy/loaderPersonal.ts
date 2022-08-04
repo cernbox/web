@@ -36,7 +36,8 @@ export class FolderLoaderLegacyPersonal implements FolderLoader {
             router.currentRoute.params.storageId,
             path || router.currentRoute.params.item || ''
           ),
-          DavProperties.Default
+          DavProperties.Default,
+          signal2,
         )
         resources = resources.map(buildResource)
 
@@ -57,7 +58,9 @@ export class FolderLoaderLegacyPersonal implements FolderLoader {
         })
       } catch (error) {
         store.commit('Files/SET_CURRENT_FOLDER', null)
-        console.error(error)
+        if (error.name !== 'CanceledError') {
+          console.log(error)
+        }
       }
 
       ref.refreshFileListHeaderPosition()

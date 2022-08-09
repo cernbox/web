@@ -58,18 +58,19 @@
         <oc-spinner :aria-label="$gettext('Creating share')" size="small" />
         <span v-translate :aria-hidden="true" v-text="saveButtonLabel" />
       </oc-button>
-      <oc-button
-        v-else
-        id="new-collaborators-form-create-button"
-        key="new-collaborator-save-button"
-        data-testid="new-collaborators-form-create-button"
-        :disabled="!$_isValid"
-        variation="primary"
-        appearance="filled"
-        submit="submit"
-        @click="share"
-        v-text="$gettext(saveButtonLabel)"
-      />
+      <span v-else v-oc-tooltip="saveButtonTooltip">
+        <oc-button
+          id="new-collaborators-form-create-button"
+          key="new-collaborator-save-button"
+          data-testid="new-collaborators-form-create-button"
+          :disabled="!$_isValid"
+          variation="primary"
+          appearance="filled"
+          submit="submit"
+          @click="share"
+          v-text="saveButtonLabel"
+        />
+      </span>
     </div>
     <oc-hidden-announcer level="assertive" :announcement="announcement" />
   </div>
@@ -153,6 +154,14 @@ export default defineComponent({
       return this.configuration?.options?.contextHelpers
     },
 
+    saveButtonTooltip() {
+      if (!this.selectedCollaborators.length) {
+        return $gettext('Add some people')
+      } else if (!this.selectedRole) {
+        return $gettext('Select a role')
+      }
+    },
+
     inviteCollaboratorHelp() {
       const cernFeatures = !!this.configuration?.options?.cernFeatures
       return cernFeatures
@@ -182,7 +191,7 @@ export default defineComponent({
     },
 
     $_isValid() {
-      return this.selectedCollaborators.length > 0
+      return this.selectedCollaborators.length && this.selectedRole
     },
 
     minSearchLength() {
@@ -198,10 +207,6 @@ export default defineComponent({
   },
   mounted() {
     this.fetchRecipients = debounce(this.fetchRecipients, 500)
-
-    this.selectedRole = this.resourceIsSpace
-      ? SpacePeopleShareRoles.list()[0]
-      : PeopleShareRoles.list(this.highlightedFile.isFolder)[0]
   },
 
   methods: {

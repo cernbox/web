@@ -221,7 +221,11 @@ export default {
     },
 
     collaborators() {
-      return [...this.currentFileOutgoingCollaborators, ...this.indirectOutgoingShares]
+      // filter out bad egroups
+      return [
+        ...this.currentFileOutgoingCollaborators.filter(e => e.collaborator.displayName || e.displayName),
+        ...this.indirectOutgoingShares.filter(e => e.collaborator.displayName || e.displayName),
+      ]
         .sort(this.collaboratorsComparator)
         .map((collaborator) => {
           collaborator.key = 'collaborator-' + collaborator.id

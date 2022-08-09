@@ -76,12 +76,14 @@ export default defineComponent({
           return
         }
         this.$nextTick(() => {
-          const [panelName, ref] = this.activePanel.split('#')
+          if (this.activePanel) {
+            const [panelName, ref] = this.activePanel.split('#')
 
-          if (!ref || !this.$refs[ref]) {
-            return
+            if (!ref || !this.$refs[ref]) {
+              return
+            }
+            this.$emit('scrollToElement', { element: this.$refs[ref].$el, panelName })
           }
-          this.$emit('scrollToElement', { element: this.$refs[ref].$el, panelName })
         })
       }
     },

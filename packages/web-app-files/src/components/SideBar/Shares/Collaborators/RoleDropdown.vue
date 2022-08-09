@@ -1,5 +1,5 @@
 <template>
-  <span v-if="selectedRole" class="oc-flex oc-flex-middle">
+  <span class="oc-flex oc-flex-middle">
     <span v-if="availableRoles.length === 1">
       <span v-if="!existingRole" v-text="inviteLabel" />
       <span v-else>{{ $gettext(selectedRole.label) }}</span>
@@ -167,6 +167,9 @@ export default defineComponent({
       return this.$gettext('Select role for the invitation')
     },
     inviteLabel() {
+      if (!this.selectedRole) {
+        return this.$gettext('Select a role...')
+      }
       if (this.selectedRole.hasCustomPermissions) {
         return this.$gettext('Invite with custom permissions')
       } else if (this.selectedRole.permissions().includes(SharePermissions.deny)) {
@@ -238,19 +241,14 @@ export default defineComponent({
     applyRoleAndPermissions() {
       if (this.existingRole) {
         this.selectedRole = this.existingRole
-      } else if (this.resourceIsSpace) {
-        this.selectedRole = SpacePeopleShareRoles.list(this.resource.canDeny())[0]
-      } else {
-        this.selectedRole = PeopleShareRoles.list(
-          this.resource.isFolder,
-          this.resource.canDeny()
-        )[0]
       }
 
-      if (this.selectedRole.hasCustomPermissions) {
-        this.customPermissions = this.existingPermissions
-      } else {
-        this.customPermissions = [...this.selectedRole.permissions(this.allowSharePermission)]
+      if (this.selectedRole) {
+        if (this.selectedRole.hasCustomPermissions) {
+          this.customPermissions = this.existingPermissions
+        } else {
+          this.customPermissions = [...this.selectedRole.permissions(this.allowSharePermission)]
+        }
       }
     },
 
@@ -272,7 +270,7 @@ export default defineComponent({
     },
 
     isSelectedRole(role) {
-      return this.selectedRole.name === role.name
+      return this.selectedRole?.name === role.name
     },
 
     isPermissionDisabled(permission) {

@@ -5,10 +5,12 @@ import {
   isLocationSpacesActive
 } from '../../router'
 import isFilesAppActive from './helpers/isFilesAppActive'
+import { mapGetters } from 'vuex'
 
 export default {
   mixins: [isFilesAppActive],
   computed: {
+    ...mapGetters(['homeFolder']),
     $_downloadFile_items() {
       return [
         {
@@ -34,6 +36,9 @@ export default {
               return false
             }
             if (resources[0].isFolder) {
+              return false
+            }
+            if (resources[0].path === this.homeFolder) {
               return false
             }
             return resources[0].canDownload()

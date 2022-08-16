@@ -152,6 +152,7 @@ export default {
   },
   computed: {
     ...mapGetters('Files', ['highlightedFile', 'currentFileOutgoingCollaborators']),
+    ...mapGetters(['homeFolder']),
     ...mapGetters(['configuration']),
     ...mapState('Files', ['incomingShares', 'sharesTree']),
     ...mapState(['user']),
@@ -186,6 +187,10 @@ export default {
 
     hasSharees() {
       return this.collaborators.length > 0
+    },
+
+    highlightedIsHomeFolder() {
+      return this.highlightedFile?.path === this.homeFolder
     },
 
     /**
@@ -283,6 +288,9 @@ export default {
     },
 
     currentUserCanShare() {
+      if (this.highlightedIsHomeFolder) {
+        return false
+      }
       if (this.highlightedFile.isReceivedShare() && !this.hasResharing) {
         return false
       }
@@ -294,9 +302,13 @@ export default {
       return this.highlightedFile.canShare({ user: this.user })
     },
     noResharePermsMessage() {
-      const translatedFile = this.$gettext("You don't have permission to share this file.")
-      const translatedFolder = this.$gettext("You don't have permission to share this folder.")
-      return this.highlightedFile.type === 'file' ? translatedFile : translatedFolder
+      if (this.highlightedIsHomeFolder) {
+        return this.$gettext("You can't share your entire home folder")
+      } else if (this.highlightedFile.type === 'file') {
+        return this.$gettext("You don't have permission to share this file.")
+      } else if (this.highlightedFile.type === 'folder') {
+        return this.$gettext("You don't have permission to share this folder.")
+      }
     },
 
     currentUsersPermissions() {

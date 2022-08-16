@@ -7,6 +7,7 @@ export default {
   computed: {
     ...mapState('Files', ['currentFolder']),
     ...mapGetters(['capabilities']),
+    ...mapGetters(['homeFolder']),
     $_delete_items() {
       return [
         {
@@ -35,7 +36,7 @@ export default {
             }
 
             const deleteDisabled = resources.some((resource) => {
-              return !resource.canBeDeleted()
+              return !resource.canBeDeleted() || resource.path === this.homeFolder
             })
             return !deleteDisabled
           },

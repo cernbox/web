@@ -4,6 +4,7 @@ export default {
     $_project_trashbin() {
       return [
         {
+          name: 'project-trashbin',
           icon: 'delete-bin-5',
           handler: this.$_navigate_to_trashbin,
           label: () =>

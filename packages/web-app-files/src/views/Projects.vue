@@ -6,7 +6,6 @@
           <oc-button
             id="new-project-menu-btn"
             key="new-project-menu-btn-enabled"
-            :aria-label="newButtonAriaLabel"
             variation="primary"
             appearance="filled"
             class="oc-background-primary-gradient"
@@ -34,7 +33,7 @@
       <resource-table
         v-else
         id="files-shared-with-me-shares-table"
-        v-model="selected"
+        v-model="selectedResourcesIds"
         class="files-table"
         :class="{ 'files-table-squashed': !sidebarClosed }"
         :are-thumbnails-displayed="displayThumbnails"
@@ -49,7 +48,10 @@
         @sort="handleSort"
       >
         <template #contextMenu="{ resource }">
-          <context-actions v-if="isResourceInSharesSelection(resource)" :items="selected" />
+          <context-actions
+            v-if="isResourceInSharesSelection(resource)"
+            :items="selectedResources"
+          />
         </template>
       </resource-table>
     </template>
@@ -67,7 +69,7 @@ import MixinFilesListFilter from '../mixins/filesListFilter'
 import MixinMountSideBar from '../mixins/sidebar/mountSideBar'
 import { VisibilityObserver } from 'web-pkg/src/observer'
 import { ImageDimension, ImageType } from '../constants'
-import { useFileListHeaderPosition, useSort } from '../composables'
+import { useSort, useResourcesViewDefaults } from '../composables'
 import {
   useStore,
   useCapabilityFilesSharingResharing,
@@ -82,6 +84,7 @@ import { useTask } from 'vue-concurrency'
 import { ShareStatus } from 'web-client/src/helpers/share'
 import { computed, unref } from '@vue/composition-api'
 import { createLocationSpaces } from '../router'
+import { Resource } from 'web-client'
 
 const visibilityObserver = new VisibilityObserver()
 
@@ -97,8 +100,13 @@ export default {
   mixins: [FileActions, MixinMountSideBar, MixinFilesListFilter],
 
   setup() {
+    const { fileListHeaderY, selectedResourcesIds, selectedResources } = useResourcesViewDefaults<
+      Resource,
+      any,
+      any[]
+    >()
+
     const store = useStore()
-    const { y: fileListHeaderY } = useFileListHeaderPosition()
 
     const loadResourcesTask = useTask(function* (signal, ref) {
       ref.CLEAR_CURRENT_FILES_LIST()
@@ -232,7 +240,9 @@ export default {
       handleSort,
       sortBy,
       sortDir,
-      activeFiles
+      activeFiles,
+      selectedResources,
+      selectedResourcesIds
     }
   },
 

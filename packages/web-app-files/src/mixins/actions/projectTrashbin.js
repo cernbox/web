@@ -1,6 +1,8 @@
-import { createLocationOperations } from '../../router'
+import { createLocationCommon } from '../../router'
+import { mapState } from 'vuex'
 export default {
   computed: {
+    ...mapState('Files', ['currentFolder']),
     $_project_trashbin() {
       return [
         {
@@ -29,7 +31,7 @@ export default {
             }
             return true
           },
-          componentType: 'oc-button',
+          componentType: 'button',
           class: 'oc-files-actions-accept-share-trigger'
         }
       ]
@@ -38,7 +40,7 @@ export default {
   methods: {
     $_navigate_to_trashbin({ resources }) {
       this.$router.push(
-        createLocationOperations('files-common-projects-trash', {
+        createLocationCommon('files-common-projects-trash', {
           params: {
             context: 'private'
           },

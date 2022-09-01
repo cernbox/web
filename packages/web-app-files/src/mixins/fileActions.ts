@@ -3,9 +3,9 @@ import { mapGetters, mapActions, mapState } from 'vuex'
 
 import { isLocationSharesActive, isLocationTrashActive, isLocationCommonActive } from '../router'
 import { routeToContextQuery } from 'web-pkg/src/composables/appDefaults'
-import AcceptShare from './actions/acceptShare'
+import unhideShare from './actions/unhideShare'
 import Copy from './actions/copy'
-import DeclineShare from './actions/declineShare'
+import hideShare from './actions/hideShare'
 import Delete from './actions/delete'
 import DownloadArchive from './actions/downloadArchive'
 import DownloadFile from './actions/downloadFile'
@@ -27,8 +27,8 @@ const actionsMixins = [
   'rename',
   'restore',
   'delete',
-  'acceptShare',
-  'declineShare'
+  'unhideShare',
+  'hideShare'
 ]
 
 export const EDITOR_MODE_EDIT = 'edit'
@@ -36,9 +36,9 @@ export const EDITOR_MODE_CREATE = 'create'
 
 export default {
   mixins: [
-    AcceptShare,
+    unhideShare,
     Copy,
-    DeclineShare,
+    hideShare,
     Delete,
     DownloadFile,
     DownloadArchive,

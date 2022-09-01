@@ -291,10 +291,7 @@ export default defineComponent({
     },
 
     linksHeading() {
-      if (this.hasSpaces) {
-        return this.$gettext('Share via link')
-      }
-      return this.$gettext('Share via public link')
+      return this.$gettext('Share publicly')
     },
 
     indirectLinksHeading() {

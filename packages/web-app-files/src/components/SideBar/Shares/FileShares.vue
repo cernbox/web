@@ -19,6 +19,7 @@
       <h4 class="oc-text-bold oc-my-rm" v-text="sharedWithLabel" />
     </div>
     <template v-if="hasSharees">
+      <name-and-copy :link="shareLink" />
       <ul
         id="files-collaborators-list"
         class="oc-list oc-list-divider oc-overflow-hidden"
@@ -88,12 +89,15 @@ import {
   shareInviteCollaboratorHelp,
   shareInviteCollaboratorHelpCern
 } from '../../../helpers/contextualHelpers'
+import NameAndCopy from './Links/NameAndCopy.vue'
+import { encodePath } from 'web-pkg/src/utils'
 
 export default {
   name: 'FileShares',
   components: {
     InviteCollaboratorForm,
-    CollaboratorListItem
+    CollaboratorListItem,
+    NameAndCopy
   },
   setup() {
     const store = useStore()
@@ -336,6 +340,12 @@ export default {
         this.highlightedFile.type !== 'space' &&
         this.currentUserIsMemberOfSpace
       )
+    },
+    shareLink() {
+      return {
+        path: `${this.configuration.server}files/spaces${encodePath(this.highlightedFile.path)}`,
+        url: `${this.configuration.server}files/spaces${encodePath(this.highlightedFile.path)}`
+      }
     }
   },
   async mounted() {

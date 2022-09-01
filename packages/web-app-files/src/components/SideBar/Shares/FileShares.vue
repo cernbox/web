@@ -228,8 +228,10 @@ export default {
     collaborators() {
       // filter out bad egroups
       return [
-        ...this.currentFileOutgoingCollaborators.filter(e => e.collaborator.displayName || e.displayName),
-        ...this.indirectOutgoingShares.filter(e => e.collaborator.displayName || e.displayName),
+        ...this.currentFileOutgoingCollaborators.filter(
+          (e) => e.collaborator.displayName || e.displayName
+        ),
+        ...this.indirectOutgoingShares.filter((e) => e.collaborator.displayName || e.displayName)
       ]
         .sort(this.collaboratorsComparator)
         .map((collaborator) => {

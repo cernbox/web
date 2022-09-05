@@ -26,7 +26,7 @@ export function getParentPaths(path = '', includeCurrent = false) {
   }
 
   sections.pop()
-  while (sections.length > 0) {
+  while (sections.length > 4) { // CERNBox ignore paths above user/project dir
     paths.push(sections.join('/'))
     sections.pop()
   }

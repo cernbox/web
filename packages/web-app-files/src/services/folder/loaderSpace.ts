@@ -1,6 +1,7 @@
 import { FolderLoader, FolderLoaderTask, TaskContext } from '../folder'
 import Router from 'vue-router'
 import { useTask } from 'vue-concurrency'
+import { Resource } from 'web-client'
 import { isLocationPublicActive, isLocationSpacesActive } from '../../router'
 import {
   useCapabilityFilesSharingResharing,
@@ -42,6 +43,13 @@ export class FolderLoaderSpace implements FolderLoader {
     const hasResharing = useCapabilityFilesSharingResharing(store)
     const hasSpaces = useCapabilitySpacesEnabled(store)
 
+    const getResourcesAndCurrent = async (
+      resourcePromise: Promise<any>
+    ): Promise<[Resource[], Resource]> => {
+      const { resource: currentFolder, children: resources } = await resourcePromise
+      return [resources, currentFolder]
+    }
+
     return useTask(function* (
       signal1,
       signal2,
@@ -53,11 +61,17 @@ export class FolderLoaderSpace implements FolderLoader {
       try {
         store.commit('Files/CLEAR_CURRENT_FILES_LIST')
 
-        let { resource: currentFolder, children: resources } = yield webdav.listFiles(space, {
-          path,
-          fileId
-        })
-        replaceInvalidFileRoute({ space, resource: currentFolder, path, fileId })
+        const resourcesPromise = webdav.listFiles(space, { path, fileId })
+
+        // Re-use the passed path and fileid...
+        let currentFolder = { path, fileId } as Resource
+        let resources
+
+        // ... but if any of these is null, just wait for the files list and
+        // take them from there
+        if (!currentFolder.path || !currentFolder.fileId) {
+          ;[resources, currentFolder] = yield getResourcesAndCurrent(resourcesPromise)
+        }
 
         if (path === '/') {
           if (space.driveType === 'share') {
@@ -76,13 +90,24 @@ export class FolderLoaderSpace implements FolderLoader {
         }
 
         if (options.loadShares) {
+          // If id based routing is enabled, we might have the wrong path at this point (since we used the passed params)
+          // The backend will still give the proper output, since it also uses fileId as precedence, but the shares tree is wrong
+          // But we will eventually redirect the user (bellow) to the correct path, so this call will just be ignored
           yield store.dispatch('Files/loadSharesTree', {
             client,
             path: currentFolder.path,
             ...(unref(hasSpaces) && { storageId: currentFolder.fileId }),
             includeRoot: currentFolder.path === '/' && space.driveType !== 'personal'
           })
+        }
 
+        // By now we haven't awaited for the file listing yet (unless the passed params were null)
+        if (!resources) {
+          ;[resources, currentFolder] = yield getResourcesAndCurrent(resourcesPromise)
+        }
+        replaceInvalidFileRoute({ space, resource: currentFolder, path, fileId })
+
+        if (options.loadShares) {
           for (const file of resources) {
             file.indicators = getIndicators(file, store.state.Files.sharesTree, unref(hasShareJail))
           }

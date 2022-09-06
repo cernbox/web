@@ -132,6 +132,7 @@ import pathUtil from 'path'
 import MixinFileActions, { EDITOR_MODE_CREATE } from '../../mixins/fileActions'
 import { isLocationPublicActive, isLocationSpacesActive } from '../../router'
 import { useActiveLocation } from '../../composables'
+import MixinFilesListScrolling from '../../mixins/filesListScrolling'
 
 import {
   useRequest,
@@ -164,7 +165,7 @@ export default defineComponent({
   components: {
     ResourceUpload
   },
-  mixins: [MixinFileActions],
+  mixins: [MixinFileActions, MixinFilesListScrolling],
   props: {
     space: {
       type: Object as PropType<SpaceResource>,
@@ -424,6 +425,14 @@ export default defineComponent({
     },
 
     async addNewFolder(folderName) {
+      const resource = await this.addNewFolderInner(folderName)
+      if (resource && resource.id) {
+        this.scrollToResource({
+          id: resource.id
+        })
+      }
+    },
+    async addNewFolderInner(folderName) {
       if (folderName === '') {
         return
       }
@@ -451,6 +460,7 @@ export default defineComponent({
             }
           )
         })
+        return resource
       } catch (error) {
         console.error(error)
         this.showMessage({

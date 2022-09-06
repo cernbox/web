@@ -161,6 +161,7 @@ import { WebDAV } from 'web-client/src/webdav'
 import { configurationManager } from 'web-pkg/src/configuration'
 import { urlJoin } from 'web-client/src/utils'
 import qs from 'qs'
+import { useScrollTo } from 'web-app-files/src/composables/scrollTo'
 
 export default defineComponent({
   components: {
@@ -210,6 +211,7 @@ export default defineComponent({
     })
 
     return {
+      ...useScrollTo(),
       ...useUpload({
         uppyService
       }),
@@ -424,6 +426,14 @@ export default defineComponent({
     },
 
     async addNewFolder(folderName) {
+      const resource = await this.addNewFolderInner(folderName)
+      if (resource && resource.id) {
+        this.scrollToResource({
+          id: resource.id
+        })
+      }
+    },
+    async addNewFolderInner(folderName) {
       if (folderName === '') {
         return
       }
@@ -451,6 +461,7 @@ export default defineComponent({
             }
           )
         })
+        return resource
       } catch (error) {
         console.error(error)
         this.showMessage({

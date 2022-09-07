@@ -1,60 +1,62 @@
 <template>
-  <div class="oc-flex oc-flex-column">
-    <app-bar :has-bulk-actions="true">
-      <template #actions>
-        <template v-if="!isLightweight">
-          <oc-button
-            id="new-project-menu-btn"
-            key="new-project-menu-btn-enabled"
-            variation="primary"
-            appearance="filled"
-            class="oc-background-primary-gradient"
-            style="white-space: nowrap"
-            @click="onNewProjectButtonClick"
-          >
-            <oc-icon name="add" />
-            <translate>New Project</translate>
-          </oc-button>
+  <div class="oc-flex">
+    <files-view-wrapper>
+      <app-bar :has-bulk-actions="true">
+        <template #actions>
+          <template v-if="!isLightweight">
+            <oc-button
+              id="new-project-menu-btn"
+              key="new-project-menu-btn-enabled"
+              variation="primary"
+              appearance="filled"
+              class="oc-background-primary-gradient"
+              style="white-space: nowrap"
+              @click="onNewProjectButtonClick"
+            >
+              <oc-icon name="add" />
+              <translate>New Project</translate>
+            </oc-button>
+          </template>
         </template>
+      </app-bar>
+      <app-loading-spinner v-if="loadResourcesTask.isRunning" />
+      <template v-else>
+        <no-content-message
+          v-if="!hasProjects"
+          id="files-shared-with-me-shares-empty"
+          class="files-empty oc-flex-stretch"
+          icon="group"
+        >
+          <template #message>
+            <span>{{ sharesEmptyMessage }}</span>
+          </template>
+        </no-content-message>
+        <resource-table
+          v-else
+          id="files-shared-with-me-shares-table"
+          v-model="selectedResourcesIds"
+          class="files-table"
+          :class="{ 'files-table-squashed': !sidebarClosed }"
+          :are-thumbnails-displayed="displayThumbnails"
+          :resources="activeFiles"
+          :are-resources-clickable="true"
+          :target-route="resourceTargetLocation"
+          :header-position="fileListHeaderY"
+          :sort-by="sortBy"
+          :sort-dir="sortDir"
+          @fileClick="$_fileActions_triggerDefaultAction"
+          @rowMounted="rowMounted"
+          @sort="handleSort"
+        >
+          <template #contextMenu="{ resource }">
+            <context-actions
+              v-if="isResourceInSharesSelection(resource)"
+              :items="selectedResources"
+            />
+          </template>
+        </resource-table>
       </template>
-    </app-bar>
-    <app-loading-spinner v-if="loadResourcesTask.isRunning" />
-    <template v-else>
-      <no-content-message
-        v-if="!hasProjects"
-        id="files-shared-with-me-shares-empty"
-        class="files-empty oc-flex-stretch"
-        icon="group"
-      >
-        <template #message>
-          <span>{{ sharesEmptyMessage }}</span>
-        </template>
-      </no-content-message>
-      <resource-table
-        v-else
-        id="files-shared-with-me-shares-table"
-        v-model="selectedResourcesIds"
-        class="files-table"
-        :class="{ 'files-table-squashed': !sidebarClosed }"
-        :are-thumbnails-displayed="displayThumbnails"
-        :resources="activeFiles"
-        :are-resources-clickable="true"
-        :target-route="resourceTargetLocation"
-        :header-position="fileListHeaderY"
-        :sort-by="sortBy"
-        :sort-dir="sortDir"
-        @fileClick="$_fileActions_triggerDefaultAction"
-        @rowMounted="rowMounted"
-        @sort="handleSort"
-      >
-        <template #contextMenu="{ resource }">
-          <context-actions
-            v-if="isResourceInSharesSelection(resource)"
-            :items="selectedResources"
-          />
-        </template>
-      </resource-table>
-    </template>
+    </files-view-wrapper>
   </div>
 </template>
 
@@ -84,11 +86,13 @@ import { ShareStatus } from 'web-client/src/helpers/share'
 import { computed, unref } from '@vue/composition-api'
 import { createLocationSpaces } from '../router'
 import { Resource } from 'web-client'
+import FilesViewWrapper from '../components/FilesViewWrapper.vue'
 
 const visibilityObserver = new VisibilityObserver()
 
 export default {
   components: {
+    FilesViewWrapper,
     AppBar,
     ResourceTable,
     NoContentMessage,

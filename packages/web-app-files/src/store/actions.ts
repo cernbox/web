@@ -265,6 +265,7 @@ export default {
         )
         context.dispatch('updateCurrentFileShareTypes')
         context.dispatch('loadIndicators', { client, currentFolder: path, storageId })
+        return share
       })
       .catch((e) => {
         context.dispatch(

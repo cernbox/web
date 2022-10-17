@@ -56,19 +56,24 @@ export default {
       const failedResources = []
       const restorePromises = []
       const restoreQueue = new PQueue({ concurrency: 4 })
+
+      const path = this.$router.currentRoute.params.driveAliasAndItem || ''
+      const re = /eos\/project\/[a-z]\/([a-z'-]+)/i
+      const found = path.match(re)
+      const projectName = found ? found[1] : undefined
+      const query = projectName
+        ? { base_path: `/eos/project/${projectName[0]}/${projectName}` }
+        : undefined
+
       resources.forEach((resource) => {
         const hasShareJail = this.capabilities?.spaces?.share_jail === true
-        const path = hasShareJail
-          ? buildWebDavSpacesTrashPath(this.space.id)
-          : buildWebDavFilesTrashPath(this.user.id)
-        const restorePath = hasShareJail
-          ? buildWebDavSpacesPath(this.space.id, resource.path)
-          : buildWebDavFilesPath(this.user.id, resource.path)
+        const path = buildWebDavFilesTrashPath(this.user.id)
+        const restorePath = buildWebDavFilesPath(this.user.id, `/eos/${resource.path}`)
 
         restorePromises.push(
           restoreQueue.add(async () => {
             try {
-              await this.$client.fileTrash.restore(path, resource.id, restorePath)
+              await this.$client.fileTrash.restore(path, resource.id, restorePath, query)
               restoredResources.push(resource)
             } catch (e) {
               console.error(e)
@@ -114,20 +119,12 @@ export default {
       }
 
       // Load quota
-      if (this.capabilities?.spaces?.enabled) {
-        const accessToken = this.$store.getters['runtime/auth/accessToken']
-        const graphClient = clientService.graphAuthenticated(this.configuration.server, accessToken)
-        const driveId = this.space.id
-        const driveResponse = await graphClient.drives.getDrive(driveId)
-        this.UPDATE_SPACE_FIELD({
-          id: driveResponse.data.id,
-          field: 'spaceQuota',
-          value: driveResponse.data.quota
-        })
-      } else {
-        const user = await this.$client.users.getUser(this.user.id)
-        this.SET_QUOTA(user.quota)
-      }
+      const user = await this.$client.users.getUser(this.user.id)
+      this.UPDATE_SPACE_FIELD({
+        id: this.space.id,
+        field: 'spaceQuota',
+        value: user.quota
+      })
     }
   }
 }

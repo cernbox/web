@@ -137,6 +137,7 @@ import CreateQuickLink from './Links/CreateQuickLink.vue'
 import { getLocaleFromLanguage } from 'web-pkg/src/helpers'
 import { SpaceResource } from 'web-client/src/helpers'
 import { isLocationSharesActive } from '../../../router'
+import { getEosPath } from '../../../store/actions'
 
 export default defineComponent({
   name: 'FileLinks',
@@ -323,7 +324,7 @@ export default defineComponent({
       }
 
       parentPaths.forEach((parentPath) => {
-        const shares = cloneStateObject(this.sharesTree[parentPath])
+        const shares = cloneStateObject(this.sharesTree[getEosPath(parentPath)])
         if (shares) {
           shares.forEach((share) => {
             if (share.outgoing && share.shareType === ShareTypes.link.value) {

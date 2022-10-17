@@ -105,9 +105,28 @@ const actions = {
   async loadSpaces(context, { graphClient }) {
     context.commit('SET_SPACES_LOADING', true)
     try {
+      /*
       const graphResponse = await graphClient.drives.listMyDrives()
       if (!graphResponse.data) {
         return
+      }
+      */
+
+      const user = (window.Vue as any).$store.getters['user']
+      const graphResponse = {
+        data: {
+          value: [
+            {
+              driveAlias: 'eos',
+              driveType: 'personal',
+              id: 'eos',
+              lastModifiedDateTime: '',
+              name: user.displayname,
+              webDavPath: `files/${user.id}/eos`,
+              quota: user.quota
+            }
+          ]
+        }
       }
       const spaces = graphResponse.data.value.map((space) =>
         buildSpace({ ...space, serverUrl: configurationManager.serverUrl })

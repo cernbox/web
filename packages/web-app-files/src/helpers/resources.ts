@@ -207,7 +207,7 @@ export function buildSharedResource(
     resource.shareOwner = share.uid_owner
     resource.shareOwnerDisplayname = share.displayname_owner
     resource.name = path.basename(share.path)
-    resource.path = share.path
+    resource.path = share.path.split('/').slice(1).join('/')
     resource.webDavPath = hasShareJail
       ? buildWebDavSpacesPath(resource.storageId, share.path)
       : buildWebDavFilesPath(share.uid_owner, share.path)
@@ -392,7 +392,10 @@ export function buildDeletedResource(resource): Resource {
     ddate: resource.fileInfo[DavProperty.TrashbinDeletedDate],
     name: path.basename(fullName),
     extension,
-    path: urlJoin(resource.fileInfo[DavProperty.TrashbinOriginalLocation], { leadingSlash: true }),
+    path: urlJoin(
+      resource.fileInfo[DavProperty.TrashbinOriginalLocation].split('/').slice(1).join('/'),
+      { leadingSlash: true }
+    ),
     id,
     parentFolderId: resource.fileInfo[DavProperty.FileParent],
     indicators: [],

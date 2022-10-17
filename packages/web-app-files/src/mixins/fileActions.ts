@@ -7,6 +7,7 @@ import AcceptShare from './actions/acceptShare'
 import Copy from './actions/copy'
 import DeclineShare from './actions/declineShare'
 import Delete from './actions/delete'
+import DeletedFiles from './actions/deletedFiles'
 import DownloadArchive from './actions/downloadArchive'
 import DownloadFile from './actions/downloadFile'
 import Favorite from './actions/favorite'
@@ -32,7 +33,8 @@ const actionsMixins = [
   'restore',
   'delete',
   'acceptShare',
-  'declineShare'
+  'declineShare',
+  'deletedFiles'
 ]
 
 export const EDITOR_MODE_EDIT = 'edit'
@@ -49,6 +51,7 @@ export default {
     Copy,
     DeclineShare,
     Delete,
+    DeletedFiles,
     DownloadFile,
     DownloadArchive,
     Favorite,

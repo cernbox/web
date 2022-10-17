@@ -85,6 +85,7 @@ import {
 import { computed, defineComponent, PropType } from '@vue/composition-api'
 import { SpaceResource } from 'web-client/src/helpers'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
+import { getEosPath } from '../../../store/actions'
 
 export default defineComponent({
   name: 'FileShares',
@@ -200,7 +201,7 @@ export default defineComponent({
       }
 
       parentPaths.forEach((parentPath) => {
-        const shares = this.sharesTree[parentPath]
+        const shares = this.sharesTree[getEosPath(parentPath)]
         if (shares) {
           shares.forEach((share) => {
             if (share.outgoing && this.$_isCollaboratorShare(share)) {
@@ -332,7 +333,7 @@ export default defineComponent({
       }
 
       // TODO: this doesn't work on files-spaces-share routes?!
-      if (this.space && this.sharesTree[parentShare.path]) {
+      if (this.space && this.sharesTree[getEosPath(parentShare.path)]) {
         return createLocationSpaces(
           'files-spaces-generic',
           createFileRouteOptions(this.space, {

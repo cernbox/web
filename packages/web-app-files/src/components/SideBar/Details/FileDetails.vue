@@ -165,6 +165,7 @@ import { Resource } from 'web-client'
 import { buildShareSpaceResource } from 'web-client/src/helpers'
 import { configurationManager } from 'web-pkg/src/configuration'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
+import { getEosPath } from '../../../store/actions'
 
 export default defineComponent({
   name: 'FileDetails',
@@ -380,7 +381,7 @@ export default defineComponent({
         if (sharePathParentOrCurrent === null) {
           return
         }
-        const shares = this.sharesTree[sharePathParentOrCurrent]?.filter((s) =>
+        const shares = this.sharesTree[getEosPath(sharePathParentOrCurrent)]?.filter((s) =>
           ShareTypes.containsAnyValue(
             [...ShareTypes.individuals, ...ShareTypes.unauthenticated],
             [s.shareType]

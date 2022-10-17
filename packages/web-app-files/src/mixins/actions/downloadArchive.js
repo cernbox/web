@@ -50,6 +50,11 @@ export default {
             ) {
               return false
             }
+            // CERNBox do not allow actions above home/project root
+            const elems = resources[0].path?.split('/').filter(Boolean) || [] //"/eos/project/c/cernbox"
+            if (elems.length < 4) {
+              return false
+            }
             const downloadDisabled = resources.some((resource) => {
               return !resource.canDownload()
             })

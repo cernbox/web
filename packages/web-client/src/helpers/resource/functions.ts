@@ -71,7 +71,7 @@ export function buildResource(resource): Resource {
   let resourcePath
 
   if (resource.name.startsWith('/files') || resource.name.startsWith('/space')) {
-    resourcePath = resource.name.split('/').slice(3).join('/')
+    resourcePath = resource.name.split('/').slice(4).join('/')
   } else {
     resourcePath = resource.name
   }

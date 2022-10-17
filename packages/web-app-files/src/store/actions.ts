@@ -239,6 +239,7 @@ export default {
     context,
     { client, path, shareWith, shareType, permissions, role, expirationDate, storageId }
   ) {
+    path = getEosPath(path)
     if (shareType === ShareTypes.group.value) {
       client.shares
         .shareFileWithGroup(path, shareWith, {
@@ -307,6 +308,7 @@ export default {
       })
   },
   deleteShare(context, { client, share, path, storageId, loadIndicators = false }) {
+    path = getEosPath(path)
     return client.shares.deleteShare(share.id, {} as any).then(() => {
       context.commit('CURRENT_FILE_OUTGOING_SHARES_REMOVE', share)
       context.dispatch('updateCurrentFileShareTypes')
@@ -321,6 +323,7 @@ export default {
    * unrelated to the given path
    */
   pruneSharesTreeOutsidePath(context, path) {
+    path = getEosPath(path)
     context.commit('SHARESTREE_PRUNE_OUTSIDE_PATH', path)
   },
   /**
@@ -329,6 +332,7 @@ export default {
    * not remove unrelated existing ones.
    */
   loadSharesTree(context, { client, path, storageId, includeRoot = false, useCached = true }) {
+    path = getEosPath(path)
     context.commit('SHARESTREE_ERROR', null)
     // prune shares tree cache for all unrelated paths, keeping only
     // existing relevant parent entries
@@ -431,6 +435,7 @@ export default {
   },
 
   addLink(context, { path, client, params, storageId }) {
+    path = getEosPath(path)
     return new Promise((resolve, reject) => {
       client.shares
         .shareFileWithLink(path, { ...params, spaceRef: storageId })
@@ -461,6 +466,7 @@ export default {
     })
   },
   removeLink(context, { share, client, path, storageId, loadIndicators = false }) {
+    path = getEosPath(path)
     return client.shares.deleteShare(share.id).then(() => {
       context.commit('CURRENT_FILE_OUTGOING_SHARES_REMOVE', share)
       context.dispatch('updateCurrentFileShareTypes')
@@ -550,4 +556,13 @@ function computeShareTypes(shares) {
     shareTypes.add(share.shareType)
   })
   return Array.from(shareTypes)
+}
+
+export function getEosPath(path) {
+  if (path && path.startsWith('/eos/eos')) {
+    return `/${path.split('/').slice(2).join('/')}`
+  } else if (path && path !== '/' && !path.startsWith('/eos')) {
+    return `/eos${path}`
+  }
+  return path
 }

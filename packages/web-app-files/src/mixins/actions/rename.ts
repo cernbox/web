@@ -40,6 +40,11 @@ export default {
             if (resources.length !== 1) {
               return false
             }
+            // CERNBox do not allow actions above home/project root
+            const elems = resources[0].path?.split('/').filter(Boolean) || [] //"/eos/project/c/cernbox"
+            if (elems.length < 4) {
+              return false
+            }
 
             const renameDisabled = resources.some((resource) => {
               return !resource.canRename()

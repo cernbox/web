@@ -111,7 +111,7 @@ export const renderSuccess = (): void => {
         store.commit('runtime/spaces/UPDATE_SPACE_FIELD', {
           id: personalSpace.id,
           field: 'name',
-          value: instance.$gettext('Personal')
+          value: instance.$gettext('eos')
         })
         return
       }

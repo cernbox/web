@@ -21,7 +21,7 @@
           icon="layout-grid"
         >
           <template #message>
-            <span v-translate>You don't have access to any spaces</span>
+            <span v-translate>You don't have access to any Project</span>
           </template>
         </no-content-message>
         <div v-else class="spaces-list oc-px-m oc-mt-l">
@@ -170,11 +170,14 @@ export default defineComponent({
       ref.CLEAR_FILES_SEARCHED()
       ref.CLEAR_CURRENT_FILES_LIST()
 
+      /*
       const response = yield unref(graphClient).drives.listMyDrives(
         'name asc',
         'driveType eq project'
       )
       let loadedSpaces = response.data?.value || []
+      */
+      let loadedSpaces = yield ref.getProjects(accessToken.value)
 
       loadedSpaces = loadedSpaces.map((s) =>
         buildSpace({ ...s, serverUrl: configurationManager.serverUrl })
@@ -205,13 +208,13 @@ export default defineComponent({
     breadcrumbs() {
       return [
         {
-          text: this.$gettext('Spaces'),
+          text: this.$gettext('Projects'),
           onClick: () => this.loadResourcesTask.perform(this)
         }
       ]
     },
     hasCreatePermission() {
-      return this.$permissionManager.hasSpaceManagement()
+      return true
     }
   },
   watch: {
@@ -272,6 +275,43 @@ export default defineComponent({
       'CLEAR_FILES_SEARCHED',
       'SET_FILE_SELECTION'
     ]),
+
+    async getProjects(accessToken) {
+      const headers = new Headers()
+      headers.append('Authorization', 'Bearer ' + accessToken)
+      headers.append('X-Requested-With', 'XMLHttpRequest')
+      const response = await fetch('api/v0/projects', {
+        method: 'GET',
+        headers
+      })
+      if (!response.ok) {
+        const message = `An error has occured: ${response.status}`
+        throw new Error(message)
+      }
+      const data = await response.json()
+
+      // const data = {
+      //   projects: [
+      //     {
+      //       name: 'cernbox',
+      //       path: '/eos/project/c/cernbox',
+      //       permissions: 'admin'
+      //     }
+      //   ]
+      // }
+
+      let projects = []
+      data.projects.forEach((project) => {
+        projects.push({
+          name: project.name,
+          id: project.name,
+          driveType: 'project',
+          driveAlias: project.path,
+          quota: { remaining: 1, state: 'normal', total: 2, used: 1 }
+        })
+      })
+      return projects
+    },
 
     getSpaceProjectRoute(space: SpaceResource) {
       return space.disabled

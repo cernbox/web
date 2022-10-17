@@ -166,6 +166,7 @@ export class UserManager extends OidcUserManager {
 
     user = this.clientService.owncloudSdk.users.getUser(login.id) // waited bellow
 
+    /*
     if (this.store.getters.capabilities.spaces?.enabled) {
       const graphClient = this.clientService.graphAuthenticated(
         this.configurationManager.serverUrl,
@@ -182,8 +183,9 @@ export class UserManager extends OidcUserManager {
 
       role = await this.fetchRole({ graphUser, accessToken, roles })
     } else {
+    */
       userGroups = await this.clientService.owncloudSdk.users.getUserGroups(login.id)
-    }
+    //}
 
     user = await user
 
@@ -198,7 +200,7 @@ export class UserManager extends OidcUserManager {
       language: login?.language
     })
 
-    if (!this.store.getters.capabilities.spaces?.enabled && user.quota) {
+    if (user.quota) {
       this.store.commit('SET_QUOTA', user.quota)
     }
   }

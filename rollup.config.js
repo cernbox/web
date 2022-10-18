@@ -29,7 +29,9 @@ const compilationTimestamp = new Date().getTime()
 
 const config = {
   requirejs: {},
-  cdn: process.env.CDN === 'true'
+  cdn: process.env.CDN === 'true',
+  baseUrl: process.env.BASE_URL || '/',
+  history_mode: process.env.HISTORY_MODE === 'true'
 }
 if (process.env.REQUIRE_TIMEOUT) {
   config.requirejs.waitSeconds = parseInt(process.env.REQUIRE_TIMEOUT)
@@ -98,6 +100,7 @@ const plugins = [
       { src: './packages/web-container/img/*', dest: 'img' },
       { src: './packages/web-container/*.{html,json,txt}' },
       { src: './packages/web-runtime/themes/**/*', dest: 'themes' },
+      { src: './packages/web-runtime/tours/*', dest: 'tours' },
       { src: `./config/${production ? 'config.json.dist' : 'config.json'}` }
     ]
   }),
@@ -156,8 +159,8 @@ const plugins = [
                 return acc
               }, {}),
               roots: {
-                css: 'css',
-                js: 'js'
+                css: config.baseUrl + 'css',
+                js: config.baseUrl + 'js'
               },
               config: config,
               compilationTimestamp: compilationTimestamp

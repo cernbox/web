@@ -36,14 +36,16 @@
   </div>
 </template>
 <script lang="ts">
+import { unref, defineComponent } from '@vue/composition-api'
 import { mapGetters, mapState, mapActions } from 'vuex'
 import SkipTo from './components/SkipTo.vue'
 import LayoutApplication from './layouts/Application.vue'
 import LayoutLoading from './layouts/Loading.vue'
 import LayoutPlain from './layouts/Plain.vue'
 import { getBackendVersion, getWebVersion } from './container/versions'
-import { defineComponent } from '@vue/composition-api'
 import { isPublicLinkContext, isUserContext, isAuthenticationRequired } from './router'
+import { autostartTours } from './helpers/tours'
+import { useAccessToken } from 'web-pkg/src/composables'
 
 export default defineComponent({
   components: {
@@ -61,6 +63,7 @@ export default defineComponent({
     ...mapState(['route', 'user', 'modal', 'sidebar']),
     ...mapGetters(['configuration', 'capabilities', 'getSettingsValue']),
     ...mapGetters('runtime/auth', ['isUserContextReady', 'isPublicLinkContextReady']),
+    ...mapGetters(['currentTranslatedTourInfos']),
     layout() {
       if (!this.$route.name || !isAuthenticationRequired(this.$router, this.$route)) {
         return LayoutPlain
@@ -95,6 +98,10 @@ export default defineComponent({
       handler: function (to) {
         this.announceRouteChange(to)
         document.title = this.extractPageTitleFromRoute(to)
+        const store = this.$store
+        const accessToken = unref(useAccessToken({ store }))
+        if (this.user?.id && accessToken && this.currentTranslatedTourInfos.length > 0)
+          autostartTours(this.currentTranslatedTourInfos, to.name, accessToken, this.user.id)
       }
     },
     capabilities: {
@@ -130,6 +137,7 @@ export default defineComponent({
         if (languageCode) {
           this.$language.current = languageCode
           document.documentElement.lang = languageCode
+          this.setCurrentTranslatedTourInfos(languageCode)
         }
       }
     }
@@ -158,6 +166,7 @@ export default defineComponent({
 
   methods: {
     ...mapActions(['fetchNotifications']),
+    ...mapActions(['setCurrentTranslatedTourInfos']),
 
     focusModal(component, event) {
       this.focus({

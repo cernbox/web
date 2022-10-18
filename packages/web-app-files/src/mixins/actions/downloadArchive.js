@@ -8,10 +8,12 @@ import isFilesAppActive from './helpers/isFilesAppActive'
 import path from 'path'
 import first from 'lodash-es/first'
 import { archiverService } from '../../services'
+import { mapGetters } from 'vuex'
 
 export default {
   mixins: [isFilesAppActive],
   computed: {
+    ...mapGetters(['homeFolder']),
     $_downloadArchive_items() {
       return [
         {
@@ -29,10 +31,7 @@ export default {
               !isLocationSpacesActive(this.$router, 'files-spaces-share') &&
               !isLocationPublicActive(this.$router, 'files-public-files') &&
               !isLocationCommonActive(this.$router, 'files-common-favorites') &&
-              !isLocationCommonActive(this.$router, 'files-common-search') &&
-              !isLocationSharesActive(this.$router, 'files-shares-with-me') &&
-              !isLocationSharesActive(this.$router, 'files-shares-with-others') &&
-              !isLocationSharesActive(this.$router, 'files-shares-via-link')
+              !isLocationSharesActive(this.$router, 'files-shares-with-me')
             ) {
               return false
             }
@@ -43,6 +42,9 @@ export default {
               return false
             }
             if (!archiverService.available) {
+              return false
+            }
+            if (resources[0].path === this.homeFolder) {
               return false
             }
             if (

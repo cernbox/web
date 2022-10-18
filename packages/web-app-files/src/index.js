@@ -12,10 +12,12 @@ import SpaceProject from './views/spaces/Project.vue'
 import SpaceTrashbin from './views/spaces/Trashbin.vue'
 import SpaceProjects from './views/spaces/Projects.vue'
 import Trashbin from './views/Trashbin.vue'
+import Home from './views/Home.vue'
+import Projects from './views/Projects.vue'
 import translations from '../l10n/translations.json'
 import quickActions from './quickActions'
 import store from './store'
-import { SDKSearch } from './search'
+import { FilterSearch, SDKSearch } from './search'
 import { bus } from 'web-pkg/src/instance'
 import { archiverService, thumbnailService, Registry } from './services'
 import fileSideBars from './fileSideBars'
@@ -38,16 +40,20 @@ const appInfo = {
   extensions: [],
   fileSideBars
 }
-const navItems = [
+
+const navItemFirst = [
   {
     name(capabilities) {
       return capabilities.spaces?.enabled ? $gettext('Personal') : $gettext('All files')
     },
     icon: appInfo.icon,
+    hideByLightweight: true,
     route: {
-      path: `/${appInfo.id}/spaces/personal`
+      path: `/${appInfo.id}/spaces`
     }
-  },
+  }
+]
+const navItems = [
   {
     name: $gettext('Favorites'),
     icon: 'star',
@@ -80,6 +86,13 @@ const navItems = [
     }
   },
   {
+    name: $gettext('Projects'),
+    icon: 'layout-grid',
+    route: {
+      path: `/${appInfo.id}/projects`
+    }
+  },
+  {
     name: $gettext('Deleted files'),
     icon: 'delete-bin-5',
     route: {
@@ -87,6 +100,23 @@ const navItems = [
     },
     enabled(capabilities) {
       return capabilities.dav && capabilities.dav.trashbin === '1.0'
+    }
+  }
+]
+
+const navItemsLightweight = [
+  {
+    name: $gettext('Shared with me'),
+    icon: 'share-forward',
+    route: {
+      path: `/${appInfo.id}/shares/with-me`
+    }
+  },
+  {
+    name: $gettext('Projects'),
+    icon: 'layout-grid',
+    route: {
+      path: `/${appInfo.id}/projects`
     }
   }
 ]
@@ -111,17 +141,42 @@ export default {
       Projects: SpaceProjects,
       Trashbin: SpaceTrashbin
     },
-    Trashbin
+    Trashbin,
+    Home,
+    Projects
   }),
-  navItems,
+  navItems: navItemFirst,
   quickActions,
   translations,
   ready({ router, store }) {
+    Registry.filterSearch = new FilterSearch(store, router)
     Registry.sdkSearch = new SDKSearch(store, router)
 
     // when discussing the boot process of applications we need to implement a
     // registry that does not rely on call order, aka first register "on" and only after emit.
+    bus.publish('app.search.register.provider', Registry.filterSearch)
     bus.publish('app.search.register.provider', Registry.sdkSearch)
+    ;(store.getters.user.usertype && store.getters.user.usertype === 'lightweight'
+      ? navItemsLightweight
+      : navItems
+    ).forEach((navItem) => {
+      store.commit('ADD_NAV_ITEM', {
+        extension: 'files',
+        navItem
+      })
+    })
+    if (store.getters.capabilities.group_based?.capabilities?.includes('cephfs-mount'))
+      store.commit('ADD_NAV_ITEM', {
+        extension: 'files',
+        navItem: {
+          name: $gettext('HPC Data'),
+          icon: 'folder',
+          route: {
+            path: '/files/spaces/cephfs'
+          },
+          separate: true
+        }
+      })
 
     archiverService.initialize(
       store.getters.configuration.server || window.location.origin,
@@ -132,7 +187,8 @@ export default {
           formats: ['tar', 'zip'],
           archiver_url: `${store.getters.configuration.server}index.php/apps/files/ajax/download.php`
         }
-      ])
+      ]),
+      get(store, 'getters.capabilities.core.support-url-signing', true)
     )
     // FIXME: Use capability data only as soon as available
     thumbnailService.initialize(

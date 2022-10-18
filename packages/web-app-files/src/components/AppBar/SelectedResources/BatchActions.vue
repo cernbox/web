@@ -16,9 +16,9 @@
 <script>
 import { mapGetters } from 'vuex'
 import ActionMenuItem from '../../ActionMenuItem.vue'
-import AcceptShare from '../../../mixins/actions/acceptShare'
+import unhideShare from '../../../mixins/actions/unhideShare'
 import Copy from '../../../mixins/actions/copy'
-import DeclineShare from '../../../mixins/actions/declineShare'
+import hideShare from '../../../mixins/actions/hideShare'
 import Delete from '../../../mixins/actions/delete'
 import DownloadArchive from '../../../mixins/actions/downloadArchive'
 import DownloadFile from '../../../mixins/actions/downloadFile'
@@ -26,21 +26,23 @@ import EmptyTrashBin from '../../../mixins/actions/emptyTrashBin'
 import Move from '../../../mixins/actions/move'
 import Restore from '../../../mixins/actions/restore'
 import ClearSelection from '../../../mixins/actions/clearSelection'
+import ProjectTrashin from '../../../mixins/actions/projectTrashbin'
 
 export default {
   name: 'BatchActions',
   components: { ActionMenuItem },
   mixins: [
-    AcceptShare,
+    unhideShare,
     Copy,
-    DeclineShare,
+    hideShare,
     Delete,
     DownloadArchive,
     DownloadFile,
     EmptyTrashBin,
     Move,
     Restore,
-    ClearSelection
+    ClearSelection,
+    ProjectTrashin
   ],
   props: {
     showTooltips: {
@@ -61,15 +63,16 @@ export default {
     menuItemsBatchActions() {
       return [
         ...this.$_clearSelection_items,
-        ...this.$_acceptShare_items,
-        ...this.$_declineShare_items,
+        ...this.$_unhideShare_items,
+        ...this.$_hideShare_items,
         ...this.$_downloadArchive_items,
         ...this.$_downloadFile_items,
         ...this.$_move_items,
         ...this.$_copy_items,
         ...this.$_emptyTrashBin_items,
         ...this.$_delete_items,
-        ...this.$_restore_items
+        ...this.$_restore_items,
+        ...this.$_projectTrashbin_items
       ].filter((item) => item.isEnabled({ resources: this.selectedFiles }))
     }
   }

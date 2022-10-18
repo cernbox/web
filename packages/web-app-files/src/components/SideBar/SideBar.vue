@@ -165,7 +165,7 @@ export default defineComponent({
       return panels
     },
     isShareAccepted() {
-      return this.highlightedFile?.status === 0
+      return this.highlightedFile?.status === 0 || this.highlightedFile?.status === 1
     },
     isContentDisplayed() {
       return isLocationSharesActive(this.$router, 'files-shares-with-me')
@@ -258,6 +258,7 @@ export default defineComponent({
       if (
         isLocationTrashActive(this.$router, 'files-trash-personal') ||
         isLocationTrashActive(this.$router, 'files-trash-spaces-project') ||
+        isLocationCommonActive(this.$router, 'files-common-projects-trash') ||
         this.highlightedFileIsSpace
       ) {
         if (loadShares) {

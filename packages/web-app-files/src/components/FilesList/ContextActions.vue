@@ -6,10 +6,10 @@
 import ContextActionMenu from '../ContextActionMenu.vue'
 
 import FileActions from '../../mixins/fileActions'
-import AcceptShare from '../../mixins/actions/acceptShare'
+import unhideShare from '../../mixins/actions/unhideShare'
 import Copy from '../../mixins/actions/copy'
 import CreateQuicklink from '../../mixins/actions/createQuicklink'
-import DeclineShare from '../../mixins/actions/declineShare'
+import hideShare from '../../mixins/actions/hideShare'
 import Delete from '../../mixins/actions/delete'
 import DownloadArchive from '../../mixins/actions/downloadArchive'
 import DownloadFile from '../../mixins/actions/downloadFile'
@@ -29,15 +29,17 @@ import SpaceNavigate from '../../mixins/spaces/actions/navigate'
 import { PropType } from '@vue/composition-api'
 import { Resource } from 'web-client'
 
+import ProjectTrashin from '../../mixins/actions/projectTrashbin'
+
 export default {
   name: 'ContextActions',
   components: { ContextActionMenu },
   mixins: [
     FileActions,
-    AcceptShare,
+    unhideShare,
     Copy,
     CreateQuicklink,
-    DeclineShare,
+    hideShare,
     Delete,
     DownloadArchive,
     DownloadFile,
@@ -53,13 +55,19 @@ export default {
     ShowShares,
     SetSpaceImage,
     SetSpaceReadme,
-    SpaceNavigate
+    SpaceNavigate,
+    ProjectTrashin
   ],
 
   props: {
     items: {
       type: Array as PropType<Resource[]>,
       required: true
+    },
+    deactivateApps: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
 
@@ -80,7 +88,7 @@ export default {
         return sections
       }
 
-      if (this.menuItemsContext.length) {
+      if (this.menuItemsContext.length && !this.deactivateApps) {
         sections.push({
           name: 'context',
           items: this.menuItemsContext
@@ -115,14 +123,15 @@ export default {
 
     menuItemsBatchActions() {
       return [
-        ...this.$_acceptShare_items,
-        ...this.$_declineShare_items,
+        ...this.$_unhideShare_items,
+        ...this.$_hideShare_items,
         ...this.$_downloadArchive_items,
         ...this.$_delete_items,
         ...this.$_move_items,
         ...this.$_copy_items,
         ...this.$_emptyTrashBin_items,
-        ...this.$_restore_items
+        ...this.$_restore_items,
+        ...this.$_projectTrashbin_items
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 
@@ -153,11 +162,12 @@ export default {
         ...this.$_paste_items,
         ...this.$_rename_items,
         ...this.$_restore_items,
-        ...this.$_acceptShare_items,
-        ...this.$_declineShare_items,
+        ...this.$_unhideShare_items,
+        ...this.$_hideShare_items,
         ...this.$_setSpaceImage_items,
         ...this.$_setSpaceReadme_items,
-        ...this.$_navigate_space_items
+        ...this.$_navigate_space_items,
+        ...this.$_projectTrashbin_items
       ].filter((item) => item.isEnabled(this.filterParams))
     },
 

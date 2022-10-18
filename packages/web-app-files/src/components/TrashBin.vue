@@ -2,6 +2,9 @@
   <div class="oc-flex">
     <files-view-wrapper>
       <app-bar :breadcrumbs="breadcrumbs" :has-bulk-actions="true" :side-bar-open="sideBarOpen" />
+      <h2 v-if="$route.query.project" class="oc-px-m oc-py-s">
+        Trashbin for project "{{ $route.query.name }}"
+      </h2>
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
         <no-content-message
@@ -17,7 +20,8 @@
         </no-content-message>
         <resource-table
           v-else
-          id="files-trashbin-table"
+          :id="$route.query.project ? 'files-project-trashbin-table' : 'files-trashbin-table'"
+          :key="$route.query.project ? `trashbin${$route.query.project}` : 'trashbin'"
           v-model="selectedResourcesIds"
           class="files-table"
           :class="{ 'files-table-squashed': sideBarOpen }"
@@ -54,6 +58,9 @@
 import { mapGetters, mapMutations, mapState } from 'vuex'
 import AppBar from './AppBar/AppBar.vue'
 import ResourceTable from './FilesList/ResourceTable.vue'
+
+import MixinFilesListFilter from '../mixins/filesListFilter'
+
 import AppLoadingSpinner from 'web-pkg/src/components/AppLoadingSpinner.vue'
 import NoContentMessage from 'web-pkg/src/components/NoContentMessage.vue'
 import ListInfo from './FilesList/ListInfo.vue'
@@ -81,6 +88,7 @@ export default defineComponent({
     SideBar
   },
 
+  mixins: [MixinFilesListFilter],
   props: {
     breadcrumbs: { type: Array, default: () => [] },
     noContentMessage: {
@@ -105,20 +113,29 @@ export default defineComponent({
     }
   },
 
+  watch: {
+    $route(to, from) {
+      this.onCreated()
+    }
+  },
+
   created() {
-    this.loadResourcesTask.perform(this)
-
-    const loadResourcesEventToken = bus.subscribe('app.files.list.load', (path) => {
-      this.loadResourcesTask.perform(this, this.$route.params.item === path, path)
-    })
-
-    this.$on('beforeDestroy', () => {
-      bus.unsubscribe('app.files.list.load', loadResourcesEventToken)
-    })
+    this.onCreated()
   },
 
   methods: {
-    ...mapMutations('Files', ['LOAD_FILES', 'CLEAR_CURRENT_FILES_LIST'])
+    ...mapMutations('Files', ['LOAD_FILES', 'CLEAR_CURRENT_FILES_LIST']),
+    onCreated() {
+      this.loadResourcesTask.perform(this)
+
+      const loadResourcesEventToken = bus.subscribe('app.files.list.load', (path) => {
+        this.loadResourcesTask.perform(this, this.$route.params.item === path, path)
+      })
+
+      this.$on('beforeDestroy', () => {
+        bus.unsubscribe('app.files.list.load', loadResourcesEventToken)
+      })
+    }
   }
 })
 </script>

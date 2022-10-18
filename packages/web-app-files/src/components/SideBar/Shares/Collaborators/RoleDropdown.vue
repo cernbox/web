@@ -10,7 +10,7 @@
       class="files-recipient-role-select-btn"
       appearance="raw"
       gap-size="none"
-    >
+      ><oc-icon v-if="!existingRole" :name="selectedRole.icon" class="oc-pl-s oc-pr-m" />
       <span v-if="!existingRole" v-text="inviteLabel" />
       <span v-else>{{ $gettext(selectedRole.label) }}</span>
       <oc-icon name="arrow-down-s" />
@@ -192,14 +192,14 @@ export default defineComponent({
         return SpacePeopleShareRoles.list()
       }
 
-      if (this.incomingParentShare.value && this.resourceIsSharable) {
-        return PeopleShareRoles.filterByBitmask(
-          parseInt(this.incomingParentShare.value.permissions),
-          this.resource.isFolder,
-          this.allowSharePermission,
-          this.allowCustomSharing !== false
-        )
-      }
+      // if (this.incomingParentShare.value && this.resourceIsSharable) {
+      //   return PeopleShareRoles.filterByBitmask(
+      //     parseInt(this.incomingParentShare.value.permissions),
+      //     this.resource.isFolder,
+      //     this.allowSharePermission,
+      //     this.allowCustomSharing !== false
+      //   )
+      // }
 
       return PeopleShareRoles.list(
         this.resource.isFolder,

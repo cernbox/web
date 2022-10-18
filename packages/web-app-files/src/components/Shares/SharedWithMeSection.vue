@@ -1,10 +1,5 @@
 <template>
   <div>
-    <h2 class="oc-px-m oc-py-s">
-      {{ title }}
-      <span class="oc-text-medium">({{ items.length }})</span>
-    </h2>
-
     <no-content-message v-if="!items.length" class="files-empty oc-flex-stretch" icon="group">
       <template #message>
         <span>{{ emptyMessage }}</span>
@@ -27,6 +22,7 @@
       :header-position="fileListHeaderY"
       :sort-by="sortBy"
       :sort-dir="sortDir"
+      :grouping-settings="groupingSettings"
       @fileClick="$_fileActions_triggerDefaultAction"
       @rowMounted="rowMounted"
       @sort="sortHandler"
@@ -37,26 +33,34 @@
           class="oc-text-nowrap oc-flex oc-flex-middle oc-flex-right"
         >
           <oc-button
-            v-if="getShowAcceptButton(resource)"
+            v-if="getShowUnhideButton(resource)"
             size="small"
-            variation="success"
             class="file-row-share-status-accept"
-            @click.stop="$_acceptShare_trigger({ resources: [resource] })"
+            @click.stop="$_unhideShare_trigger({ resources: [resource] })"
           >
-            <oc-icon size="small" name="check" />
-            <translate>Accept</translate>
+            <oc-icon size="small" name="eye" />
+            <translate>Unhide</translate>
           </oc-button>
           <oc-button
-            v-if="getShowDeclineButton(resource)"
+            v-if="getShowHideButton(resource)"
             size="small"
             class="file-row-share-decline oc-ml-s"
-            @click.stop="$_declineShare_trigger({ resources: [resource] })"
+            @click.stop="$_hideShare_trigger({ resources: [resource] })"
           >
-            <oc-icon size="small" name="close" />
-            <translate>Decline</translate>
+            <oc-icon size="small" name="eye-off" />
+            <translate>Hide</translate>
           </oc-button>
         </div>
       </template>
+      <!-- <template #quickActions="{ resource }">
+        <quick-actions
+          :class="resource.preview"
+          class="oc-visible@s"
+          :item="resource"
+          :actions="app.quickActions"
+          :methods="[$_hideShare_trigger, $_unhideShare_trigger]"
+        />
+      </template>-->
       <template #contextMenu>
         <context-actions :items="selectedResources" />
       </template>
@@ -93,8 +97,9 @@ import { ImageDimension, ImageType } from '../../constants'
 import { VisibilityObserver } from 'web-pkg/src/observer'
 import { mapActions, mapGetters, mapMutations } from 'vuex'
 import FileActions from '../../mixins/fileActions'
-import MixinAcceptShare from '../../mixins/actions/acceptShare'
-import MixinDeclineShare from '../../mixins/actions/declineShare'
+import MixinUnhideShare from '../../mixins/actions/unhideShare'
+import MixinHideShare from '../../mixins/actions/hideShare'
+import MixinFilesListFilter from '../../mixins/filesListFilter'
 import { useCapabilityShareJailEnabled, useStore } from 'web-pkg/src/composables'
 import { createLocationSpaces } from '../../router'
 import ListInfo from '../../components/FilesList/ListInfo.vue'
@@ -114,7 +119,8 @@ export default defineComponent({
     NoContentMessage
   },
 
-  mixins: [FileActions, MixinAcceptShare, MixinDeclineShare],
+  mixins: [FileActions, MixinUnhideShare, MixinHideShare, MixinFilesListFilter],
+
   props: {
     title: {
       type: String,
@@ -175,6 +181,11 @@ export default defineComponent({
     fileListHeaderY: {
       type: Number,
       default: 0
+    },
+    groupingSettings: {
+      type: Object,
+      required: false,
+      default: null
     }
   },
   setup() {
@@ -211,7 +222,7 @@ export default defineComponent({
     ...mapGetters(['configuration']),
 
     displayedFields() {
-      return ['name', 'status', 'owner', 'sdate', 'sharedWith']
+      return ['name', 'owner', 'sdate', 'sharedWith', 'status']
     },
     countFiles() {
       return this.items.filter((s) => s.type !== 'folder').length
@@ -261,10 +272,10 @@ export default defineComponent({
         onExit: debounced.cancel
       })
     },
-    getShowAcceptButton(resource) {
-      return resource.status === ShareStatus.declined || resource.status === ShareStatus.pending
+    getShowUnhideButton(resource) {
+      return resource.status === ShareStatus.declined
     },
-    getShowDeclineButton(resource) {
+    getShowHideButton(resource) {
       return resource.status === ShareStatus.accepted || resource.status === ShareStatus.pending
     },
     toggleShowMore() {

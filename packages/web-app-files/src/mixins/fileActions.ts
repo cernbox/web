@@ -1,11 +1,11 @@
 import get from 'lodash-es/get'
 import { mapGetters, mapActions, mapState } from 'vuex'
 
-import { isLocationSharesActive, isLocationTrashActive } from '../router'
+import { isLocationSharesActive, isLocationTrashActive, isLocationCommonActive } from '../router'
 import { routeToContextQuery } from 'web-pkg/src/composables/appDefaults'
-import AcceptShare from './actions/acceptShare'
+import unhideShare from './actions/unhideShare'
 import Copy from './actions/copy'
-import DeclineShare from './actions/declineShare'
+import hideShare from './actions/hideShare'
 import Delete from './actions/delete'
 import DownloadArchive from './actions/downloadArchive'
 import DownloadFile from './actions/downloadFile'
@@ -14,9 +14,9 @@ import Move from './actions/move'
 import Navigate from './actions/navigate'
 import Rename from './actions/rename'
 import Restore from './actions/restore'
+import ProjectTrashbin from './actions/projectTrashbin'
 import kebabCase from 'lodash-es/kebabCase'
 import { ShareStatus } from 'web-client/src/helpers/share'
-import isSearchActive from './helpers/isSearchActive'
 
 const actionsMixins = [
   'navigate',
@@ -28,8 +28,9 @@ const actionsMixins = [
   'rename',
   'restore',
   'delete',
-  'acceptShare',
-  'declineShare'
+  'unhideShare',
+  'hideShare',
+  'projectTrashbin'
 ]
 
 export const EDITOR_MODE_EDIT = 'edit'
@@ -37,9 +38,9 @@ export const EDITOR_MODE_CREATE = 'create'
 
 export default {
   mixins: [
-    AcceptShare,
+    unhideShare,
     Copy,
-    DeclineShare,
+    hideShare,
     Delete,
     DownloadFile,
     DownloadArchive,
@@ -48,7 +49,7 @@ export default {
     Navigate,
     Rename,
     Restore,
-    isSearchActive
+    ProjectTrashbin
   ],
   computed: {
     ...mapState(['apps']),
@@ -62,6 +63,12 @@ export default {
     },
 
     $_fileActions_editorActions() {
+      if (
+        isLocationTrashActive(this.$router, 'files-trash-personal') ||
+        isLocationTrashActive(this.$router, 'files-trash-spaces-project')
+      ) {
+        return []
+      }
       return this.apps.fileEditors
         .map((editor) => {
           return {
@@ -81,24 +88,23 @@ export default {
               iconFillType: this.apps.meta[editor.app].iconFillType
             }),
             img: this.apps.meta[editor.app].img,
-            handler: ({ resources }) =>
+            handler: ({ resources, sameTab }) =>
               this.$_fileActions_openEditor(
                 editor,
                 resources[0].webDavPath,
                 resources[0].id,
-                EDITOR_MODE_EDIT
+                EDITOR_MODE_EDIT,
+                sameTab
               ),
             isEnabled: ({ resources }) => {
               if (resources.length !== 1) {
                 return false
               }
+              if (isLocationCommonActive(this.$router, 'files-common-projects-trash')) return false
 
               if (
-                !this.$_isSearchActive &&
-                (isLocationTrashActive(this.$router, 'files-trash-personal') ||
-                  isLocationTrashActive(this.$router, 'files-trash-spaces-project') ||
-                  (isLocationSharesActive(this.$router, 'files-shares-with-me') &&
-                    resources[0].status !== ShareStatus.accepted))
+                isLocationSharesActive(this.$router, 'files-shares-with-me') &&
+                resources[0].status === ShareStatus.declined
               ) {
                 return false
               }
@@ -137,6 +143,16 @@ export default {
   methods: {
     ...mapActions(['openFile']),
 
+    getCernPath(webdavPath) {
+      const cleaning = webdavPath.split('/')
+      if (cleaning[1] === 'files') {
+        cleaning.splice(1, 2)
+      } else {
+        cleaning.splice(1, 0, 'public')
+      }
+      return cleaning.join('/')
+    },
+
     $_fileActions__routeOpts(app, filePath, fileId, mode) {
       const route = this.$route
 
@@ -151,7 +167,8 @@ export default {
       }
     },
 
-    $_fileActions_openEditor(editor, filePath, fileId, mode) {
+    $_fileActions_openEditor(editor, filePath, fileId, mode, sameTab) {
+      filePath = this.getCernPath(filePath)
       if (editor.handler) {
         return editor.handler({
           config: this.configuration,
@@ -169,7 +186,7 @@ export default {
 
       const routeOpts = this.$_fileActions__routeOpts(editor, filePath, fileId, mode)
 
-      if (editor.newTab) {
+      if (!sameTab && editor.app !== 'preview') {
         const path = this.$router.resolve(routeOpts).href
         const target = `${editor.routeName}-${filePath}`
         const win = window.open(path, target)
@@ -186,12 +203,12 @@ export default {
     // TODO: Make user-configurable what is a defaultAction for a filetype/mimetype
     // returns the _first_ action from actions array which we now construct from
     // available mime-types coming from the app-provider and existing actions
-    $_fileActions_triggerDefaultAction(resource) {
-      const action = this.$_fileActions_getDefaultAction(resource)
-      action.handler({ resources: [resource], ...action.handlerData })
+    $_fileActions_triggerDefaultAction(resource, sameTab) {
+      const action = this.$_fileActions_getDefaultAction(resource, sameTab)
+      action.handler({ resources: [resource], ...action.handlerData, sameTab: sameTab })
     },
 
-    $_fileActions_getDefaultAction(resource) {
+    $_fileActions_getDefaultAction(resource, sameTab) {
       const resources = [resource]
       const filterCallback = (action) =>
         action.canBeDefault && action.isEnabled({ resources, parent: this.currentFolder })
@@ -204,8 +221,10 @@ export default {
 
       // second priority: `/app/open` endpoint of app provider if available
       // FIXME: files app should not know anything about the `external apps` app
-      const externalAppsActions =
-        this.$_fileActions_loadExternalAppActions(resources).filter(filterCallback)
+      const externalAppsActions = this.$_fileActions_loadExternalAppActions(
+        resources,
+        sameTab
+      ).filter(filterCallback)
       if (externalAppsActions.length) {
         return externalAppsActions[0]
       }
@@ -227,7 +246,7 @@ export default {
     // returns an array of available external Apps
     // to open a resource with a specific mimeType
     // FIXME: filesApp should not know anything about any other app, dont cross the line!!! BAD
-    $_fileActions_loadExternalAppActions(resources) {
+    $_fileActions_loadExternalAppActions(resources, sameTab) {
       if (
         isLocationTrashActive(this.$router, 'files-trash-personal') ||
         isLocationTrashActive(this.$router, 'files-trash-spaces-project')
@@ -266,13 +285,14 @@ export default {
           class: `oc-files-actions-${app.name}-trigger`,
           isEnabled: () => true,
           canBeDefault: defaultApplication === app.name,
-          handler: () => this.$_fileActions_openLink(app.name, webDavPath, fileId),
+          handler: () =>
+            this.$_fileActions_openLink(app.name, this.getCernPath(webDavPath), fileId, sameTab),
           label: () => this.$gettextInterpolate(label, { appName: app.name })
         }
       })
     },
 
-    $_fileActions_openLink(app, filePath, fileId) {
+    $_fileActions_openLink(app, filePath, fileId, sameTab) {
       const routeOpts = this.$_fileActions__routeOpts(
         {
           routeName: 'external-apps'
@@ -289,7 +309,7 @@ export default {
       }
 
       // TODO: Let users configure whether to open in same/new tab (`_blank` vs `_self`)
-      window.open(this.$router.resolve(routeOpts).href, '_blank')
+      window.open(this.$router.resolve(routeOpts).href, sameTab ? '_self' : '_blank')
     }
   }
 }

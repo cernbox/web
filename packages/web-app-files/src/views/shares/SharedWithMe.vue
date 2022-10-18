@@ -8,27 +8,26 @@
       />
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
-        <shared-with-me-section
-          v-if="pendingItems.length > 0"
-          id="files-shared-with-me-pending-section"
-          :display-thumbnails="false"
-          :file-list-header-y="fileListHeaderY"
-          :items="pendingItems"
-          :resource-clickable="false"
-          :share-status="ShareStatus.pending"
-          :show-more-toggle="true"
-          :side-bar-open="sideBarOpen"
-          :sort-by="pendingSortBy"
-          :sort-dir="pendingSortDir"
-          :sort-handler="pendingHandleSort"
-          :title="pendingTitle"
-        />
+        <h2 class="oc-px-m oc-py-s">
+          {{ showHiddenShares ? hiddenTitle : acceptedTitle }}
+          <span class="oc-text-medium"
+            >({{ showHiddenShares ? hiddenItems.length : acceptedItems.length }})</span
+          >
+          <oc-button
+            id="files-shared-with-me-toggle-view-mode"
+            class="oc-ml-m"
+            @click.stop="switchHiddenShares"
+          >
+            {{ switchHiddenSharesLabel }}
+          </oc-button>
+        </h2>
 
         <shared-with-me-section
+          v-if="!showHiddenShares"
           id="files-shared-with-me-accepted-section"
           :display-thumbnails="displayThumbnails"
-          :empty-message="acceptedEmptyMessage"
           :file-list-header-y="fileListHeaderY"
+          :empty-message="emptyMessage"
           :items="acceptedItems"
           :resource-clickable="true"
           :share-status="ShareStatus.accepted"
@@ -37,22 +36,24 @@
           :sort-dir="acceptedSortDir"
           :sort-handler="acceptedHandleSort"
           :title="acceptedTitle"
+          :grouping-settings="groupingSettings"
         />
 
         <shared-with-me-section
-          id="files-shared-with-me-declined-section"
-          :display-thumbnails="false"
-          :empty-message="declinedEmptyMessage"
+          v-else
+          id="files-shared-with-me-hidden-section"
+          :title="hiddenTitle"
+          :empty-message="hiddenEmptyMessage"
           :file-list-header-y="fileListHeaderY"
-          :items="declinedItems"
-          :resource-clickable="false"
-          :share-status="ShareStatus.declined"
-          :show-more-toggle="true"
+          :items="hiddenItems"
           :side-bar-open="sideBarOpen"
-          :sort-by="declinedSortBy"
-          :sort-dir="declinedSortDir"
-          :sort-handler="declinedHandleSort"
-          :title="declinedTitle"
+          :share-status="ShareStatus.declined"
+          :sort-by="hiddenSortBy"
+          :sort-dir="hiddenSortDir"
+          :sort-handler="hiddenHandleSort"
+          :display-thumbnails="false"
+          :resource-clickable="true"
+          :grouping-settings="groupingSettings"
         />
       </template>
     </files-view-wrapper>
@@ -95,25 +96,11 @@ export default defineComponent({
       storeItems
     } = useResourcesViewDefaults<Resource, any, any[]>()
 
-    // pending shares
-    const pending = computed(() =>
-      unref(storeItems).filter((item) => item.status === ShareStatus.pending)
-    )
-    const {
-      sortBy: pendingSortBy,
-      sortDir: pendingSortDir,
-      items: pendingItems,
-      handleSort: pendingHandleSort
-    } = useSort({
-      items: pending,
-      fields,
-      sortByQueryName: 'pending-sort-by',
-      sortDirQueryName: 'pending-sort-dir'
-    })
-
     // accepted shares
     const accepted = computed(() =>
-      unref(storeItems).filter((item) => item.status === ShareStatus.accepted)
+      unref(storeItems).filter(
+        (item) => item.status === ShareStatus.accepted || item.status === ShareStatus.pending
+      )
     )
     const {
       sortBy: acceptedSortBy,
@@ -127,20 +114,20 @@ export default defineComponent({
       sortDirQueryName: 'accepted-sort-dir'
     })
 
-    // declined shares
-    const declined = computed(() =>
+    // hidden shares
+    const hidden = computed(() =>
       unref(storeItems).filter((item) => item.status === ShareStatus.declined)
     )
     const {
-      sortBy: declinedSortBy,
-      sortDir: declinedSortDir,
-      items: declinedItems,
-      handleSort: declinedHandleSort
+      sortBy: hiddenSortBy,
+      sortDir: hiddenSortDir,
+      items: hiddenItems,
+      handleSort: hiddenHandleSort
     } = useSort({
-      items: declined,
+      items: hidden,
       fields,
-      sortByQueryName: 'declined-sort-by',
-      sortDirQueryName: 'declined-sort-dir'
+      sortByQueryName: 'hidden-sort-by',
+      sortDirQueryName: 'hidden-sort-dir'
     })
 
     return {
@@ -153,55 +140,137 @@ export default defineComponent({
       sideBarOpen,
       sideBarActivePanel,
 
-      // view specific
-      pendingHandleSort,
-      pendingSortBy,
-      pendingSortDir,
-      pendingItems,
-
       acceptedHandleSort,
       acceptedSortBy,
       acceptedSortDir,
       acceptedItems,
 
-      declinedHandleSort,
-      declinedSortBy,
-      declinedSortDir,
-      declinedItems
+      hiddenHandleSort,
+      hiddenSortBy,
+      hiddenSortDir,
+      hiddenItems
     }
   },
 
   data: () => ({
-    ShareStatus
+    ShareStatus,
+    showHiddenShares: false
   }),
 
   computed: {
     ...mapGetters(['configuration']),
 
+    groupingSettings() {
+      const that = this
+      return {
+        groupingBy: localStorage.getItem('grouping-shared-with-me') || 'Shared on',
+        showGroupingOptions: true,
+        groupingFunctions: {
+          'Name alphabetically': function (row) {
+            localStorage.setItem('grouping-shared-with-me', 'Name alphabetically')
+            if (!isNaN(row.name.charAt(0))) return '#'
+            if (row.name.charAt(0) === '.') return row.name.charAt(1).toLowerCase()
+            return row.name.charAt(0).toLowerCase()
+          },
+          'Shared on': function (row) {
+            localStorage.setItem('grouping-shared-with-me', 'Shared on')
+            const recently = Date.now() - 604800000
+            const lastMonth = Date.now() - 2592000000
+            if (Date.parse(row.sdate) < lastMonth) return 'Older'
+            if (Date.parse(row.sdate) >= recently) return 'Recently'
+            else return 'Last month'
+          },
+          'Share owner': function (row) {
+            localStorage.setItem('grouping-shared-with-me', 'Share owner')
+            return row.owner[0].displayName
+          },
+          None: function () {
+            localStorage.setItem('grouping-shared-with-me', 'None')
+          }
+        },
+        sortGroups: {
+          'Name alphabetically': function (groups) {
+            // sort in alphabetical order by group name
+            const sortedGroups = groups.sort(function (a, b) {
+              if (a.name < b.name) {
+                return -1
+              }
+              if (a.name > b.name) {
+                return 1
+              }
+              return 0
+            })
+            // if sorting is done by name, reverse groups depending on asc/desc
+            if (that.sharesSortBy === 'name' && that.sharesSortDir === 'desc')
+              sortedGroups.reverse()
+            return sortedGroups
+          },
+          'Shared on': function (groups) {
+            // sort in order: 1-Recently, 2-Last month, 3-Older
+            const sortedGroups = []
+            const options = ['Recently', 'Last month', 'Older']
+            for (const o of options) {
+              const found = groups.find((el) => el.name.toLowerCase() === o.toLowerCase())
+              if (found) sortedGroups.push(found)
+            }
+            // if sorting is done by sdate, reverse groups depending on asc/desc
+            if (that.sharesSortBy === 'sdate' && that.sharesSortDir === 'asc')
+              sortedGroups.reverse()
+            return sortedGroups
+          },
+          'Share owner': function (groups) {
+            // sort in alphabetical order by group name
+            const sortedGroups = groups.sort(function (a, b) {
+              if (a.name < b.name) {
+                return -1
+              }
+              if (a.name > b.name) {
+                return 1
+              }
+              return 0
+            })
+            // if sorting is done by owner, reverse groups depending on asc/desc
+            if (that.sharesSortBy === 'owner' && that.sharesSortDir === 'desc')
+              sortedGroups.reverse()
+            return sortedGroups
+          }
+        }
+      }
+    },
+
     pendingTitle() {
       return this.$gettext('Pending shares')
     },
-
     acceptedTitle() {
-      return this.$gettext('Accepted shares')
+      return this.$gettext('Shared with me')
     },
-    acceptedEmptyMessage() {
+    emptyMessage() {
       return this.$gettext("You are not collaborating on other people's resources.")
     },
 
-    declinedTitle() {
-      return this.$gettext('Declined shares')
+    hiddenTitle() {
+      return this.$gettext('Hidden shares')
     },
-    declinedEmptyMessage() {
-      return this.$gettext("You don't have any previously declined shares.")
+    hiddenEmptyMessage() {
+      return this.$gettext("You don't have any previously hidden shares.")
     },
     displayThumbnails() {
       return !this.configuration?.options?.disablePreviews
+    },
+    switchHiddenSharesLabel() {
+      return this.showHiddenShares
+        ? this.$gettext('Show shares')
+        : this.$gettext('Show hidden shares')
     }
   },
 
   created() {
     this.loadResourcesTask.perform()
+  },
+  methods: {
+    switchHiddenShares() {
+      this.showHiddenShares = !this.showHiddenShares
+    }
   }
 })
 </script>

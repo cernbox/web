@@ -19,17 +19,11 @@
       drop-id="account-info-container"
       toggle="#_userMenuButton"
       mode="click"
-      close-on-click
       padding-size="small"
     >
       <oc-list class="user-menu-list">
         <li>
-          <oc-button
-            id="oc-topbar-account-manage"
-            type="router-link"
-            :to="{ path: '/account' }"
-            appearance="raw"
-          >
+          <oc-button id="oc-topbar-account-manage" class="no-account-actions" appearance="raw">
             <avatar-image :width="32" :userid="userId" :user-name="user.displayname" />
             <span class="profile-info-wrapper" :class="{ 'oc-py-xs': !user.email }">
               <span v-text="user.displayname" />
@@ -96,10 +90,14 @@ export default {
       hasSpaces: useCapabilitySpacesEnabled()
     }
   },
+  data: () => ({
+    hovered: false
+  }),
   computed: {
     ...mapGetters(['quota', 'user']),
     ...mapGetters({ legacyQuota: 'quota' }),
     ...mapState('runtime/spaces', ['spaces']),
+    ...mapGetters(['user', 'configuration']),
 
     quota() {
       return this.hasSpaces
@@ -144,7 +142,7 @@ export default {
     },
     quotaUsagePercent() {
       return this.useLegacyQuota
-        ? this.quota.relative
+        ? parseFloat(this.quota.relative).toFixed(2)
         : parseFloat(((this.quota.used / this.quota.total) * 100).toFixed(2))
     },
 
@@ -161,6 +159,9 @@ export default {
     })
   },
   methods: {
+    toggleHover() {
+      this.hovered = !this.hovered
+    },
     logout() {
       authService.logoutUser()
     }
@@ -203,6 +204,10 @@ export default {
       align-self: flex-end;
       display: inline-block;
     }
+  }
+
+  .no-account-actions {
+    pointer-events: none;
   }
 }
 </style>

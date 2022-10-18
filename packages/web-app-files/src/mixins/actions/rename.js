@@ -2,12 +2,18 @@ import { mapActions, mapGetters, mapState } from 'vuex'
 import { isSameResource, extractNameWithoutExtension } from '../../helpers/resource'
 import { getParentPaths } from '../../helpers/path'
 import { buildResource } from '../../helpers/resources'
-import { isLocationTrashActive, isLocationSharesActive, isLocationSpacesActive } from '../../router'
+import {
+  isLocationTrashActive,
+  isLocationSharesActive,
+  isLocationSpacesActive,
+  isLocationCommonActive
+} from '../../router'
 
 export default {
   computed: {
     ...mapGetters('Files', ['files', 'currentFolder']),
     ...mapGetters(['capabilities']),
+    ...mapGetters(['homeFolder']),
     ...mapState('Files', ['areFileExtensionsShown']),
 
     $_rename_items() {
@@ -32,9 +38,24 @@ export default {
             ) {
               return false
             }
+            if (
+              isLocationCommonActive(this.$router, 'files-common-projects-trash') ||
+              isLocationCommonActive(this.$router, 'files-common-projects')
+            ) {
+              return false
+            }
             if (resources.length !== 1) {
               return false
             }
+            if (resources[0].path === this.homeFolder) {
+              return false
+            }
+
+            // if share file is single file shared
+            if (this.$route?.query?.contextRouteParams || this.$route?.query.sharelink) {
+              return false
+            }
+
             // FIXME: once renaming shares in share_jail has been sorted out backend side we can enable renaming shares again
             if (
               this.capabilities?.spaces?.share_jail === true &&

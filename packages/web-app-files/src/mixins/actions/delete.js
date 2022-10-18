@@ -1,17 +1,13 @@
 import MixinDeleteResources from '../../mixins/deleteResources'
 import { mapState, mapGetters } from 'vuex'
-import {
-  isLocationPublicActive,
-  isLocationSpacesActive,
-  isLocationTrashActive,
-  isLocationCommonActive
-} from '../../router'
+import { isLocationPublicActive, isLocationSpacesActive, isLocationTrashActive } from '../../router'
 
 export default {
   mixins: [MixinDeleteResources],
   computed: {
     ...mapState('Files', ['currentFolder']),
     ...mapGetters(['capabilities']),
+    ...mapGetters(['homeFolder']),
     $_delete_items() {
       return [
         {
@@ -24,8 +20,7 @@ export default {
               !isLocationSpacesActive(this.$router, 'files-spaces-personal') &&
               !isLocationSpacesActive(this.$router, 'files-spaces-project') &&
               !isLocationSpacesActive(this.$router, 'files-spaces-share') &&
-              !isLocationPublicActive(this.$router, 'files-public-files') &&
-              !isLocationCommonActive(this.$router, 'files-common-search')
+              !isLocationPublicActive(this.$router, 'files-public-files')
             ) {
               return false
             }
@@ -41,7 +36,7 @@ export default {
             }
 
             const deleteDisabled = resources.some((resource) => {
-              return !resource.canBeDeleted()
+              return !resource.canBeDeleted() || resource.path === this.homeFolder
             })
             return !deleteDisabled
           },

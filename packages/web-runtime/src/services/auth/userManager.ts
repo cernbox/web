@@ -2,8 +2,12 @@ import {
   Log,
   WebStorageStateStore,
   UserManager as OidcUserManager,
-  UserManagerSettings
+  UserManagerSettings,
+  User,
+  ErrorResponse,
+  JwtClaims
 } from 'oidc-client-ts'
+import jwt_decode from "jwt-decode";
 import { buildUrl } from '../../router'
 import { ConfigurationManager } from 'web-pkg/src/configuration'
 import { ClientService } from 'web-pkg/src/services'
@@ -155,20 +159,22 @@ export class UserManager extends OidcUserManager {
   }
 
   private async fetchUserInfo(accessToken): Promise<void> {
-    const login = await this.clientService.owncloudSdk.getCurrentUser()
-    await this.fetchCapabilities({ accessToken })
+    const [login] = await Promise.all([
+      this.clientService.owncloudSdk.getCurrentUser(),
+      this.fetchCapabilities({ accessToken })
+    ])
 
-    let role, graphUser, userGroups
+    let user, role, graphUser, userGroups
 
-    const user = await this.clientService.owncloudSdk.users.getUser(login.id)
+    user = this.clientService.owncloudSdk.users.getUser(login.id) // waited bellow
 
     if (this.store.getters.capabilities.spaces?.enabled) {
       const graphClient = this.clientService.graphAuthenticated(
         this.configurationManager.serverUrl,
         accessToken
       )
-      graphUser = await graphClient.users.getMe()
-      const [roles, settings] = await Promise.all([
+      const [graphUser, roles, settings] = await Promise.all([
+        graphClient.users.getMe(),
         this.fetchRoles({ accessToken }),
         this.fetchSettings()
       ])
@@ -179,6 +185,9 @@ export class UserManager extends OidcUserManager {
     } else {
       userGroups = await this.clientService.owncloudSdk.users.getUserGroups(login.id)
     }
+
+    user = await user
+
     this.store.commit('SET_USER', {
       id: login.id,
       uuid: graphUser?.data?.id || '',
@@ -186,6 +195,10 @@ export class UserManager extends OidcUserManager {
       displayname: user.displayname || login['display-name'],
       email: login?.email || user?.email || '',
       groups: graphUser?.data?.memberOf || userGroups || [],
+      usertype:
+        user['user-type'] === 'federated' || user['user-type'] === 'lightweight'
+          ? 'lightweight'
+          : user['user-type'],
       role,
       language: login?.language
     })
@@ -253,5 +266,50 @@ export class UserManager extends OidcUserManager {
     const capabilities = await client.getCapabilities()
 
     this.store.commit('SET_CAPABILITIES', capabilities)
+  }
+
+  // Copied from upstream oidc-client-ts UserManager with a personalisation
+  protected async _signinEnd(url: string, verifySub?: string): Promise<User> {
+    const logger = this._logger.create('_signinEnd')
+    const signinResponse = await this._client.processSigninResponse(url)
+    logger.debug('got signin response')
+
+    const user = new User(signinResponse)
+    if (verifySub) {
+      if (verifySub !== user.profile.sub) {
+        logger.debug(
+          'current user does not match user returned from signin. sub from signin:',
+          user.profile.sub
+        )
+        throw new ErrorResponse({ ...signinResponse, error: 'login_required' })
+      }
+      logger.debug('current user matches user returned from signin')
+    }
+
+    /* CERNBox personalisation
+      Do a call to the backend, as this will reply with the internal reva token.
+      Use that longer token in all calls to the backend (so, replace the default store token)
+    */
+    try {
+      console.log('CERNBox: loging successful, exchange sso token with reva token')
+      const revaTokenReq = await axios.get('/ocs/v1.php/cloud/user', {
+        headers: {
+          Authorization: 'Bearer ' + user.access_token
+        }
+      })
+      const revaToken = revaTokenReq.headers['x-access-token']
+      const claims = jwt_decode<JwtClaims>(revaToken)
+      user.access_token = revaToken
+      user.expires_at = claims.exp
+    } catch (e) {
+      console.error('Failed to get reva token, continue with sso one', e)
+    }
+    // end
+
+    await this.storeUser(user)
+    logger.debug('user stored')
+    this._events.load(user)
+
+    return user
   }
 }

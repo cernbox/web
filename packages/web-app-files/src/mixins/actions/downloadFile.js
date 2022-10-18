@@ -5,11 +5,12 @@ import {
   isLocationSpacesActive
 } from '../../router'
 import isFilesAppActive from './helpers/isFilesAppActive'
-import isSearchActive from '../helpers/isSearchActive'
+import { mapGetters } from 'vuex'
 
 export default {
-  mixins: [isFilesAppActive, isSearchActive],
+  mixins: [isFilesAppActive],
   computed: {
+    ...mapGetters(['homeFolder']),
     $_downloadFile_items() {
       return [
         {
@@ -22,16 +23,12 @@ export default {
           isEnabled: ({ resources }) => {
             if (
               this.$_isFilesAppActive &&
-              !this.$_isSearchActive &&
               !isLocationSpacesActive(this.$router, 'files-spaces-personal') &&
               !isLocationSpacesActive(this.$router, 'files-spaces-project') &&
               !isLocationSpacesActive(this.$router, 'files-spaces-share') &&
               !isLocationPublicActive(this.$router, 'files-public-files') &&
               !isLocationCommonActive(this.$router, 'files-common-favorites') &&
-              !isLocationCommonActive(this.$router, 'files-common-search') &&
-              !isLocationSharesActive(this.$router, 'files-shares-with-me') &&
-              !isLocationSharesActive(this.$router, 'files-shares-with-others') &&
-              !isLocationSharesActive(this.$router, 'files-shares-via-link')
+              !isLocationSharesActive(this.$router, 'files-shares-with-me')
             ) {
               return false
             }
@@ -39,6 +36,9 @@ export default {
               return false
             }
             if (resources[0].isFolder) {
+              return false
+            }
+            if (resources[0].path === this.homeFolder) {
               return false
             }
             return resources[0].canDownload()

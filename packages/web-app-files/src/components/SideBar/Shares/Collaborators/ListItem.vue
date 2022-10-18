@@ -41,6 +41,7 @@
                 :existing-permissions="share.customPermissions"
                 :existing-role="share.role"
                 :allow-share-permission="hasResharing || isSpace"
+                :share-permission-default="resharingDefault"
                 class="files-collaborators-collaborator-role"
                 @optionChange="shareRoleChanged"
               />
@@ -108,7 +109,10 @@ import { DateTime } from 'luxon'
 import EditDropdown from './EditDropdown.vue'
 import RoleDropdown from './RoleDropdown.vue'
 import { SharePermissions, ShareTypes } from 'web-client/src/helpers/share'
-import { useCapabilityFilesSharingResharing } from 'web-pkg/src/composables'
+import {
+  useCapabilityFilesSharingResharing,
+  useCapabilityFilesSharingResharingDefault
+} from 'web-pkg/src/composables'
 import { extractDomSelector } from 'web-client/src/helpers/resource'
 import { defineComponent } from '@vue/composition-api'
 import * as uuid from 'uuid'
@@ -136,7 +140,8 @@ export default defineComponent({
   },
   setup() {
     return {
-      hasResharing: useCapabilityFilesSharingResharing()
+      hasResharing: useCapabilityFilesSharingResharing(),
+      resharingDefault: useCapabilityFilesSharingResharingDefault()
     }
   },
   computed: {
@@ -359,7 +364,9 @@ export default defineComponent({
     saveShareChanges({ role, permissions, expirationDate }) {
       const bitmask = role.hasCustomPermissions
         ? SharePermissions.permissionsToBitmask(permissions)
-        : SharePermissions.permissionsToBitmask(role.permissions(this.hasResharing || this.isSpace))
+        : SharePermissions.permissionsToBitmask(
+            role.permissions((this.hasResharing && this.resharingDefault) || this.isSpace)
+          )
       const changeMethod = this.isSpace ? this.changeSpaceMember : this.changeShare
       changeMethod({
         client: this.$client,

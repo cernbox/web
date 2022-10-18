@@ -39,6 +39,7 @@
       <role-dropdown
         :resource="highlightedFile"
         :allow-share-permission="hasResharing || resourceIsSpace"
+        :share-permission-default="resharingDefault"
         @optionChange="collaboratorRoleChanged"
       />
       <expiration-datepicker
@@ -84,6 +85,7 @@ import {
 } from 'web-client/src/helpers/share'
 import {
   useCapabilityFilesSharingResharing,
+  useCapabilityFilesSharingResharingDefault,
   useCapabilityShareJailEnabled
 } from 'web-pkg/src/composables'
 
@@ -118,6 +120,7 @@ export default defineComponent({
   setup() {
     return {
       hasResharing: useCapabilityFilesSharingResharing(),
+      resharingDefault: useCapabilityFilesSharingResharingDefault(),
       hasShareJail: useCapabilityShareJailEnabled()
     }
   },
@@ -290,7 +293,9 @@ export default defineComponent({
             const bitmask = this.selectedRole.hasCustomPermissions
               ? SharePermissions.permissionsToBitmask(this.customPermissions)
               : SharePermissions.permissionsToBitmask(
-                  this.selectedRole.permissions(this.hasResharing || this.resourceIsSpace)
+                  this.selectedRole.permissions(
+                    (this.hasResharing && this.resharingDefault) || this.resourceIsSpace
+                  )
                 )
 
             let path = this.highlightedFile.path

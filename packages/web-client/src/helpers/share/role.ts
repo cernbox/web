@@ -359,7 +359,6 @@ export abstract class LinkShareRoles {
   static readonly all = [
     linkRoleViewerFile,
     linkRoleViewerFolder,
-    linkRoleContributorFolder,
     linkRoleEditorFolder,
     linkRoleUploaderFolder
   ]
@@ -367,18 +366,26 @@ export abstract class LinkShareRoles {
   static list(
     isFolder: boolean,
     canEditFile = false,
+    canContribute = true,
     hasAliasLinks = false,
     hasPassword = false
   ): ShareRole[] {
     return [
       ...(hasAliasLinks && !hasPassword ? [linkRoleInternalFile, linkRoleInternalFolder] : []),
       ...this.all,
-      ...(canEditFile ? [linkRoleEditorFile] : [])
+      ...(canEditFile ? [linkRoleEditorFile] : []),
+      ...(canContribute ? [linkRoleContributorFolder] : [])
     ].filter((r) => r.folder === isFolder)
   }
 
   static getByBitmask(bitmask: number, isFolder: boolean): ShareRole {
-    return [...this.all, linkRoleEditorFile, linkRoleInternalFile, linkRoleInternalFolder] // Always return all roles
+    return [
+      ...this.all,
+      linkRoleEditorFile,
+      linkRoleContributorFolder,
+      linkRoleInternalFile,
+      linkRoleInternalFolder
+    ] // Always return all roles
       .find((r) => r.folder === isFolder && r.bitmask(false) === bitmask)
   }
 
@@ -387,6 +394,7 @@ export abstract class LinkShareRoles {
    * @param bitmask
    * @param isFolder
    * @param canEditFile
+   * @param canContribute
    * @param hasAliasLinks
    * @param hasPassword
    */
@@ -394,13 +402,15 @@ export abstract class LinkShareRoles {
     bitmask: number,
     isFolder: boolean,
     canEditFile = false,
+    canContribute = false,
     hasAliasLinks = false,
     hasPassword = false
   ): ShareRole[] {
     return [
       ...(hasAliasLinks && !hasPassword ? [linkRoleInternalFile, linkRoleInternalFolder] : []),
       ...this.all,
-      ...(canEditFile ? [linkRoleEditorFile] : [])
+      ...(canEditFile ? [linkRoleEditorFile] : []),
+      ...(canContribute ? [linkRoleContributorFolder] : [])
     ].filter((r) => {
       return r.folder === isFolder && bitmask === (bitmask | r.bitmask(false))
     })

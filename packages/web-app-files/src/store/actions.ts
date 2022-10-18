@@ -17,7 +17,10 @@ import { WebDAV } from 'web-client/src/webdav'
 import { ClientService } from 'web-pkg/src/services'
 
 const allowSharePermissions = (getters) => {
-  return get(getters, `capabilities.files_sharing.resharing`, true)
+  return (
+    get(getters, `capabilities.files_sharing.resharing`, true) &&
+    get(getters, `capabilities.files_sharing.resharing_default`, true)
+  )
 }
 
 export default {

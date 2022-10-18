@@ -42,7 +42,10 @@
           >
             <span class="oc-flex oc-flex-middle">
               <oc-icon :name="role.icon" class="oc-pl-s oc-pr-m" />
-              <role-item :role="role" :allow-share-permission="allowSharePermission" />
+              <role-item
+                :role="role"
+                :allow-share-permission="allowSharePermission && sharePermissionDefault"
+              />
             </span>
             <span class="oc-flex">
               <oc-icon v-if="isSelectedRole(role)" name="check" />
@@ -143,6 +146,10 @@ export default defineComponent({
     allowSharePermission: {
       type: Boolean,
       required: true
+    },
+    sharePermissionDefault: {
+      type: Boolean,
+      required: true
     }
   },
   data() {
@@ -193,7 +200,7 @@ export default defineComponent({
         return PeopleShareRoles.filterByBitmask(
           parseInt(this.incomingParentShare.value.permissions),
           this.resource.isFolder,
-          this.allowSharePermission,
+          this.allowSharePermission && this.sharePermissionDefault,
           this.allowCustomSharing !== false
         )
       }
@@ -246,7 +253,9 @@ export default defineComponent({
       if (this.selectedRole.hasCustomPermissions) {
         this.customPermissions = this.existingPermissions
       } else {
-        this.customPermissions = [...this.selectedRole.permissions(this.allowSharePermission)]
+        this.customPermissions = [
+          ...this.selectedRole.permissions(this.allowSharePermission && this.sharePermissionDefault)
+        ]
       }
     },
 
@@ -263,7 +272,9 @@ export default defineComponent({
         return
       }
       this.selectedRole = role
-      this.customPermissions = role.permissions(this.allowSharePermission)
+      this.customPermissions = role.permissions(
+        this.allowSharePermission && this.sharePermissionDefault
+      )
       this.publishChange()
     },
 
@@ -281,7 +292,7 @@ export default defineComponent({
       this.selectedRole = PeopleShareRoles.getByBitmask(
         bitmask,
         this.resource.isFolder,
-        this.allowSharePermission
+        this.allowSharePermission && this.sharePermissionDefault
       )
       this.publishChange()
     },

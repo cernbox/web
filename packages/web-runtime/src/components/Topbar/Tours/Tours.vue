@@ -5,13 +5,15 @@
       id="toursButton"
       v-oc-tooltip="tours[0].tooltip"
       @click.stop="startTour(0)"
+      variation="active"
+      :ariaLabel="tours[0].tooltip"
     >
       <oc-icon name="map" />
       <span class="hide-below-1280">{{ tours[0].tourName }}</span>
     </oc-button>
 
     <div v-else>
-      <oc-button id="toursButton" v-oc-tooltip="toursTooltip" size="small">
+      <oc-button id="toursButton" v-oc-tooltip="toursTooltip" size="small" ariaLabel="toursTooltip">
         <oc-icon name="map" />
         <translate>Tours</translate> </oc-button
       ><oc-drop
@@ -30,7 +32,7 @@
             class="user-menu-list"
             @click.stop="startTour(id)"
           >
-            <oc-button v-oc-tooltip="tour.tooltip" appearance="raw">
+            <oc-button v-oc-tooltip="tour.tooltip" appearance="raw" :ariaLabel="tour.tooltip">
               <span class="profile-info-wrapper" :class="'oc-py-xs'">
                 {{ tour.tourName }}
               </span></oc-button

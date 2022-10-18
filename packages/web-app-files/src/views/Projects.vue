@@ -65,6 +65,7 @@
                     :is="space.disabled ? 'oc-button' : 'router-link'"
                     v-bind="getSpaceLinkProps(space)"
                     v-on="getSpaceLinkListeners(space)"
+                    :aria-label="spaceLabel"
                   >
                     <oc-tag
                       v-if="space.disabled"
@@ -77,7 +78,7 @@
                       v-if="imageContentObject[space.id]"
                       class="space-image oc-rounded-top"
                       :src="imageContentObject[space.id]['data']"
-                      alt=""
+                      alt="Project logo"
                     />
                     <oc-icon
                       v-else
@@ -192,33 +193,33 @@ export default defineComponent({
     const loadResourcesTask = useTask(function* (signal, ref) {
       ref.CLEAR_CURRENT_FILES_LIST()
 
-      const headers = new Headers()
-      headers.append('Authorization', 'Bearer ' + ref.accessToken)
-      headers.append('X-Requested-With', 'XMLHttpRequest')
-      const response = yield fetch('api/v0/projects', {
-        method: 'GET',
-        headers
-      })
-      if (!response.ok) {
-        const message = `An error has occured: ${response.status}`
-        throw new Error(message)
-      }
-      const data = yield response.json()
-
-      // const data = {
-      //   projects: [
-      //     {
-      //       name: 'cboxmacwin',
-      //       path: '/eos/project/c/cboxmacwin',
-      //       permissions: 'admin'
-      //     },
-      //     {
-      //       name: 'cern-organization',
-      //       path: '/eos/project/c/cern-organization',
-      //       permissions: 'admin'
-      //     }
-      //   ]
+      // const headers = new Headers()
+      // headers.append('Authorization', 'Bearer ' + ref.accessToken)
+      // headers.append('X-Requested-With', 'XMLHttpRequest')
+      // const response = yield fetch('api/v0/projects', {
+      //   method: 'GET',
+      //   headers
+      // })
+      // if (!response.ok) {
+      //   const message = `An error has occured: ${response.status}`
+      //   throw new Error(message)
       // }
+      // const data = yield response.json()
+
+      const data = {
+        projects: [
+          {
+            name: 'cboxmacwin',
+            path: '/eos/project/c/cboxmacwin',
+            permissions: 'admin'
+          },
+          {
+            name: 'cern-organization',
+            path: '/eos/project/c/cern-organization',
+            permissions: 'admin'
+          }
+        ]
+      }
 
       const recievedResources = []
       if (data && data.projects) {
@@ -317,6 +318,11 @@ export default defineComponent({
     ...mapGetters(['isOcis', 'configuration', 'getToken']),
     breadcrumbs() {
       return [{ text: this.$gettext('Projects') }]
+    },
+    spaceLabel(){
+      return this.$gettext(
+        'Open project'
+      )
     },
     spacesHint() {
       return this.$gettext(

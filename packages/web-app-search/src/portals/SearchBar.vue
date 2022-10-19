@@ -56,15 +56,7 @@
             <oc-list>
               <li class="oc-text-truncate oc-flex oc-flex-between oc-text-muted provider-details">
                 <span class="display-name">{{ provider.displayName }}</span>
-                <span>
-                  <router-link
-                    class="more-results"
-                    :to="getMoreResultsLinkForProvider(provider)"
-                    @click.native="$refs.optionsDrop.hide()"
-                  >
-                    <span>{{ getMoreResultsDetailsTextForProvider(provider) }}</span>
-                  </router-link>
-                </span>
+                <span>{{ getMoreResultsDetailsTextForProvider(provider) }}</span>
               </li>
               <li
                 v-for="providerSearchResultValue in getSearchResultForProvider(provider).values"
@@ -245,6 +237,7 @@ export default defineComponent({
       this.$refs.optionsDrop.hide()
     },
     onKeyUpEnter() {
+      return // Do not show the results page for local filter provider
       this.$refs.optionsDrop.hide()
 
       if (this.term && this.activePreviewIndex === null) {
@@ -331,8 +324,8 @@ export default defineComponent({
       }
 
       const translated = this.$ngettext(
-        'Show %{totalResults} result',
-        'Show %{totalResults} results',
+        '%{totalResults} result',
+        '%{totalResults} results',
         searchResult.totalResults
       )
 

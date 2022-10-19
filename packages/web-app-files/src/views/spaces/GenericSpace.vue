@@ -149,6 +149,8 @@ import omit from 'lodash-es/omit'
 import { useDocumentTitle } from 'web-pkg/src/composables/appDefaults/useDocumentTitle'
 import { basename } from 'path'
 
+import MixinFilesListFilter from '../../mixins/filesListFilter'
+
 const visibilityObserver = new VisibilityObserver()
 
 export default defineComponent({
@@ -173,7 +175,7 @@ export default defineComponent({
     Home
   },
 
-  mixins: [MixinAccessibleBreadcrumb, MixinFileActions],
+  mixins: [MixinAccessibleBreadcrumb, MixinFileActions, MixinFilesListFilter],
 
   props: {
     space: {

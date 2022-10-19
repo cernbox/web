@@ -27,6 +27,7 @@ const appInfo = {
   extensions: [
     {
       extension: 'pdf',
+      newTab: true,
       routeName: 'pdf-viewer',
       canBeDefault: true
     }

@@ -1,5 +1,6 @@
 <template>
-  <div class="oc-flex oc-width-1-1" :class="{ 'space-frontpage': isSpaceFrontpage }">
+  <home v-if="showWelcome" />
+  <div v-else class="oc-flex oc-width-1-1" :class="{ 'space-frontpage': isSpaceFrontpage }">
     <keyboard-actions :paginated-resources="paginatedResources" :space="space" />
     <files-view-wrapper>
       <app-bar
@@ -121,6 +122,7 @@ import SpaceHeader from '../../components/Spaces/SpaceHeader.vue'
 import AppLoadingSpinner from 'web-pkg/src/components/AppLoadingSpinner.vue'
 import NoContentMessage from 'web-pkg/src/components/NoContentMessage.vue'
 import SingleSharedFile from './SingleSharedFile.vue'
+import Home from './Home.vue'
 
 import { VisibilityObserver } from 'web-pkg/src/observer'
 import { ImageDimension, ImageType } from '../../constants'
@@ -167,7 +169,8 @@ export default defineComponent({
     ResourceTable,
     SideBar,
     SpaceHeader,
-    SingleSharedFile
+    SingleSharedFile,
+    Home
   },
 
   mixins: [MixinAccessibleBreadcrumb, MixinFileActions],
@@ -305,7 +308,13 @@ export default defineComponent({
       'totalFilesSize'
     ]),
     ...mapGetters(['user', 'configuration']),
+    ...mapGetters(['homeFolder']),
 
+    showWelcome() {
+      return (
+        this.user.isLightweight && this.homeFolder === `/${this.$route.params.driveAliasAndItem}`
+      )
+    },
     isSingleFile() {
       if (
         this.paginatedResources.length === 1 &&

@@ -218,7 +218,7 @@ export default defineComponent({
       ]
     },
     hasCreatePermission() {
-      return true
+      return !this.user.isLightweight
     }
   },
   watch: {

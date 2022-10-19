@@ -5,6 +5,7 @@ const state = {
   uuid: '',
   displayname: '',
   email: '',
+  isLightweight: false,
   capabilities: [],
   version: {},
   groups: [],
@@ -45,6 +46,7 @@ const mutations = {
     state.groups = user.groups
     state.language = user.language
     state.role = user.role
+    state.isLightweight = user.isLightweight
     sentrySetUser({ username: user.id })
   },
   SET_CAPABILITIES(state, data) {

@@ -3,12 +3,14 @@
     <keyboard-actions :paginated-resources="paginatedResources" :space="space" />
     <files-view-wrapper>
       <app-bar
-        :has-bulk-actions="true"
+        :has-bulk-actions="!isSingleFile"
         :breadcrumbs="breadcrumbs"
         :breadcrumbs-context-actions-items="[currentFolder]"
-        :show-actions-on-selection="true"
+        :show-actions-on-selection="!isSingleFile"
         :side-bar-open="sideBarOpen"
         :space="space"
+        :has-sidebar-toggle="!isSingleFile"
+        :has-view-options="!isSingleFile"
       >
         <template #actions="{ limitedScreenSpace }">
           <create-and-upload
@@ -43,6 +45,9 @@
             </span>
           </template>
         </no-content-message>
+        <div v-else-if="isSingleFile">
+          <single-shared-file :space="space" />
+        </div>
         <resource-table
           v-else
           id="files-space-table"
@@ -115,6 +120,7 @@ import SideBar from '../../components/SideBar/SideBar.vue'
 import SpaceHeader from '../../components/Spaces/SpaceHeader.vue'
 import AppLoadingSpinner from 'web-pkg/src/components/AppLoadingSpinner.vue'
 import NoContentMessage from 'web-pkg/src/components/NoContentMessage.vue'
+import SingleSharedFile from './SingleSharedFile.vue'
 
 import { VisibilityObserver } from 'web-pkg/src/observer'
 import { ImageDimension, ImageType } from '../../constants'
@@ -160,7 +166,8 @@ export default defineComponent({
     QuickActions,
     ResourceTable,
     SideBar,
-    SpaceHeader
+    SpaceHeader,
+    SingleSharedFile
   },
 
   mixins: [MixinAccessibleBreadcrumb, MixinFileActions],
@@ -295,6 +302,15 @@ export default defineComponent({
     ]),
     ...mapGetters(['user', 'configuration']),
 
+    isSingleFile() {
+      if (
+        this.paginatedResources.length === 1 &&
+        (!this.currentFolder.fileId || this.currentFolder.path === this.paginatedResources[0].path)
+      ) {
+        return true
+      }
+      return false
+    },
     isEmpty() {
       return this.paginatedResources.length < 1
     },
@@ -322,6 +338,13 @@ export default defineComponent({
 
   mounted() {
     this.performLoaderTask(false)
+
+    this.$watch('paginatedResources', (to) => {
+      if (this.isSingleFile) {
+        this.SET_FILE_SELECTION(this.paginatedResources)
+      }
+    })
+
     const loadResourcesEventToken = eventBus.subscribe(
       'app.files.list.load',
       (path?: string, fileId?: string | number) => {
@@ -343,7 +366,8 @@ export default defineComponent({
     ...mapMutations('Files', [
       'REMOVE_FILES',
       'REMOVE_FILES_FROM_SEARCHED',
-      'REMOVE_FILE_SELECTION'
+      'REMOVE_FILE_SELECTION',
+      'SET_FILE_SELECTION'
     ]),
 
     async performLoaderTask(sameRoute: boolean, path?: string, fileId?: string | number) {

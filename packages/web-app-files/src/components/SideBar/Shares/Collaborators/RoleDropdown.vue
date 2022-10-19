@@ -196,6 +196,7 @@ export default defineComponent({
         return SpacePeopleShareRoles.list()
       }
 
+      /*
       if (this.incomingParentShare.value && this.resourceIsSharable) {
         return PeopleShareRoles.filterByBitmask(
           parseInt(this.incomingParentShare.value.permissions),
@@ -204,6 +205,7 @@ export default defineComponent({
           this.allowCustomSharing !== false
         )
       }
+      */
 
       return PeopleShareRoles.list(
         this.resource.isFolder,

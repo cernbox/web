@@ -582,6 +582,7 @@ export default defineComponent({
     },
 
     getAvailableRoleOptions(link) {
+      /*
       if (this.share?.incoming && this.canCreatePublicLinks) {
         return LinkShareRoles.filterByBitmask(
           parseInt(this.share.permissions),
@@ -592,6 +593,7 @@ export default defineComponent({
           !!link.password
         )
       }
+      */
 
       return LinkShareRoles.list(
         this.highlightedFile.isFolder,

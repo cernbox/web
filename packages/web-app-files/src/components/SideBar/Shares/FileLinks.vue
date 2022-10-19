@@ -36,7 +36,6 @@
         v-if="canCreatePublicLinks"
         id="files-file-link-add"
         variation="primary"
-        appearance="raw"
         data-testid="files-link-add-btn"
         @click="addNewLink"
         v-text="addButtonLabel"
@@ -278,10 +277,7 @@ export default defineComponent({
     },
 
     linksHeading() {
-      if (this.hasSpaces) {
-        return this.$gettext('Share via link')
-      }
-      return this.$gettext('Share via public link')
+      return this.$gettext('Share publicly')
     },
 
     indirectLinksHeading() {

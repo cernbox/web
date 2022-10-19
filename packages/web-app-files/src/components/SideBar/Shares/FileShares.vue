@@ -19,6 +19,7 @@
       <h4 class="oc-text-bold oc-my-rm" v-text="sharedWithLabel" />
     </div>
     <template v-if="hasSharees">
+      <name-and-copy :link="shareLink" />
       <ul
         id="files-collaborators-list"
         class="oc-list oc-list-divider oc-overflow-hidden"
@@ -85,12 +86,15 @@ import {
 import { computed, defineComponent, PropType } from 'vue'
 import { isProjectSpaceResource, SpaceResource } from 'web-client/src/helpers'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
+import NameAndCopy from './Links/NameAndCopy.vue'
+import { encodePath } from 'web-pkg/src/utils'
 
 export default defineComponent({
   name: 'FileShares',
   components: {
     InviteCollaboratorForm,
-    CollaboratorListItem
+    CollaboratorListItem,
+    NameAndCopy
   },
   props: {
     space: {
@@ -127,6 +131,14 @@ export default defineComponent({
     ...mapState('Files', ['incomingShares', 'sharesTree']),
     ...mapState(['user']),
 
+    shareLink() {
+      return {
+        path: `${this.configuration.server}files/spaces/eos${encodePath(
+          this.highlightedFile.path
+        )}`,
+        url: `${this.configuration.server}files/spaces/eos${encodePath(this.highlightedFile.path)}`
+      }
+    },
     inviteCollaboratorHelp() {
       const cernFeatures = !!this.configuration?.options?.cernFeatures
 

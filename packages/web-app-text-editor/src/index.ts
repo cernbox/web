@@ -95,6 +95,7 @@ const appInfo = {
   extensions: fileExtensions().map((extensionItem) => {
     return {
       extension: extensionItem.extension,
+      newTab: true,
       ...(Object.prototype.hasOwnProperty.call(extensionItem, 'newFileMenu') && {
         newFileMenu: extensionItem.newFileMenu
       }),

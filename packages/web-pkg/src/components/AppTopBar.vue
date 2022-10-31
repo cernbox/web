@@ -6,7 +6,7 @@
       :is-thumbnail-displayed="false"
       :resource="resource"
     />
-    <div v-else />
+    <div v-if="message" class="app-top-bar-message">{{message}}</div>
     <div>
       <slot name="right" />
       <oc-button
@@ -30,6 +30,10 @@ export default defineComponent({
     resource: {
       type: Object,
       default: null
+    },
+    message: {
+      type: String,
+      default: null
     }
   },
   emits: ['close']
@@ -40,5 +44,9 @@ export default defineComponent({
 .app-top-bar {
   align-items: center;
   justify-content: space-between;
+}
+
+.app-top-bar-message {
+  color: var(--oc-color-swatch-success-default);
 }
 </style>

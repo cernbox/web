@@ -82,9 +82,10 @@ import {
   useCapabilitySpacesEnabled,
   useTranslations
 } from 'web-pkg/src/composables'
-import { createLocationTrash } from '../../router'
+import { createLocationTrash, createLocationSpaces } from '../../router'
 import { isProjectSpaceResource, SpaceResource } from 'web-client/src/helpers'
 import { useDocumentTitle } from 'web-pkg/src/composables/appDefaults/useDocumentTitle'
+import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
 
 export default defineComponent({
   name: 'GenericTrash',
@@ -117,9 +118,7 @@ export default defineComponent({
   setup(props) {
     const { $gettext } = useTranslations()
     const noContentMessage = computed(() => {
-      return props.space.driveType === 'personal'
-        ? $gettext('You have no deleted files')
-        : $gettext('Space has no deleted files')
+      return $gettext('There are no deleted files')
     })
 
     const hasSpaces = useCapabilitySpacesEnabled()
@@ -148,7 +147,15 @@ export default defineComponent({
       return this.paginatedResources.length < 1
     },
 
+    projectName() {
+      const path = this.$router.currentRoute.params.driveAliasAndItem || ''
+      const re = /eos\/project\/[a-z]\/([a-z0-9\-]+)/i
+      const found = path.match(re)
+      return found ? found[1] : undefined
+    },
+
     breadcrumbs() {
+      /*
       let allowContextActions = true
       let currentNodeName = this.space?.name
       if (this.space.driveType === 'personal') {
@@ -166,14 +173,36 @@ export default defineComponent({
           onClick: () => eventBus.publish('app.files.list.load')
         }
       ]
+      */
+
+        return [
+          {
+            text: this.$gettext('Deleted files'),
+            to: createLocationTrash('files-trash-generic', createFileRouteOptions(this.space, {
+            path: '/eos'
+          }))
+          },
+        ...(this.projectName
+          ? [
+              {
+            text: this.$gettext('Projects'),
+            to: createLocationSpaces('files-spaces-projects')
+          },
+          {
+            text: this.projectName,
+            onClick: () => eventBus.publish('app.files.list.load')
+          }] : [
+          {
+          text: this.$gettext('Personal'),
+          onClick: () => eventBus.publish('app.files.list.load')
+        }
+          ])
+        ]
     },
 
     showActions() {
-      return (
-        !isProjectSpaceResource(this.space) ||
-        this.space.isEditor(this.user.uuid) ||
-        this.space.isManager(this.user.uuid)
-      )
+      // TODO only admins can restore?
+      return true
     }
   },
 
@@ -190,7 +219,7 @@ export default defineComponent({
 
   methods: {
     async performLoaderTask() {
-      await this.loadResourcesTask.perform(this.space)
+      await this.loadResourcesTask.perform({ user: this.user, projectName: this.projectName })
       this.refreshFileListHeaderPosition()
       this.scrollToResourceFromRoute(this.paginatedResources)
     }

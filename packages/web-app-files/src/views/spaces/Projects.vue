@@ -21,7 +21,7 @@
           icon="layout-grid"
         >
           <template #message>
-            <span v-translate>You don't have access to any spaces</span>
+            <span v-translate>You don't have access to any Project</span>
           </template>
         </no-content-message>
         <div v-else class="spaces-list oc-px-m oc-mt-l">
@@ -152,6 +152,7 @@ import { WebDAV } from 'web-client/src/webdav'
 import { createLocationSpaces } from '../../router'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
 import { useScrollTo } from 'web-app-files/src/composables/scrollTo'
+import { buildSpace } from 'web-client/src/helpers'
 
 export default defineComponent({
   components: {
@@ -165,22 +166,25 @@ export default defineComponent({
   },
   setup() {
     const store = useStore()
-    const spaces = computed(
-      () =>
-        store.getters['runtime/spaces/spaces']
-          .filter((s) => isProjectSpaceResource(s))
-          .sort((a, b) => a.name.localeCompare(b.name)) || []
-    )
+    const spaces = computed(() => store.getters['Files/activeFiles'] || [])
     const accessToken = useAccessToken({ store })
     const { graphClient } = useGraphClient()
 
-    const loadResourcesTask = useTask(function* () {
+    const loadResourcesTask = useTask(function* (signal, ref) {
       store.commit('Files/CLEAR_FILES_SEARCHED')
       store.commit('Files/CLEAR_CURRENT_FILES_LIST')
+      /*
       yield store.dispatch('runtime/spaces/reloadProjectSpaces', {
         graphClient: unref(graphClient)
       })
-      store.commit('Files/LOAD_FILES', { currentFolder: null, files: unref(spaces) })
+      */
+      let loadedSpaces = yield ref.getProjects(accessToken.value)
+
+      loadedSpaces = loadedSpaces.map((s) =>
+        buildSpace({ ...s, serverUrl: configurationManager.serverUrl })
+      )
+      store.commit('CLEAR_PROJECT_SPACES')
+      store.commit('Files/LOAD_FILES', { currentFolder: null, files: loadedSpaces })
     })
 
     const areResourcesLoading = computed(() => {
@@ -208,13 +212,13 @@ export default defineComponent({
     breadcrumbs() {
       return [
         {
-          text: this.$gettext('Spaces'),
-          onClick: () => this.loadResourcesTask.perform()
+          text: this.$gettext('Projects'),
+          onClick: () => this.loadResourcesTask.perform(this)
         }
       ]
     },
     hasCreatePermission() {
-      return this.$permissionManager.hasSpaceManagement()
+      return true
     }
   },
   watch: {
@@ -264,12 +268,49 @@ export default defineComponent({
     }
   },
   async created() {
-    await this.loadResourcesTask.perform()
+    await this.loadResourcesTask.perform(this)
     this.scrollToResourceFromRoute(this.spaces)
   },
   methods: {
     ...mapActions(['showMessage']),
     ...mapMutations('Files', ['SET_CURRENT_FOLDER', 'SET_FILE_SELECTION']),
+
+    async getProjects(accessToken) {
+      const headers = new Headers()
+      headers.append('Authorization', 'Bearer ' + accessToken)
+      headers.append('X-Requested-With', 'XMLHttpRequest')
+      const response = await fetch('api/v0/projects', {
+        method: 'GET',
+        headers
+      })
+      if (!response.ok) {
+        const message = `An error has occured: ${response.status}`
+        throw new Error(message)
+      }
+      const data = await response.json()
+
+      // const data = {
+      //   projects: [
+      //     {
+      //       name: 'cernbox',
+      //       path: '/eos/project/c/cernbox',
+      //       permissions: 'admin'
+      //     }
+      //   ]
+      // }
+
+      let projects = []
+      data.projects.forEach((project) => {
+        projects.push({
+          name: project.name,
+          id: project.name,
+          driveType: 'project',
+          driveAlias: project.path,
+          quota: { remaining: 1, state: 'normal', total: 2, used: 1 }
+        })
+      })
+      return projects
+    },
 
     showSpaceContextDrop(event, space) {
       event.preventDefault()

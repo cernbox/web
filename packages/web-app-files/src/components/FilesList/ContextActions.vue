@@ -11,6 +11,7 @@ import Copy from '../../mixins/actions/copy'
 import CreateQuicklink from '../../mixins/actions/createQuicklink'
 import DeclineShare from '../../mixins/actions/declineShare'
 import Delete from '../../mixins/actions/delete'
+import DeletedFiles from '../../mixins/spaces/actions/deletedFiles'
 import DownloadArchive from '../../mixins/actions/downloadArchive'
 import DownloadFile from '../../mixins/actions/downloadFile'
 import EmptyTrashBin from '../../mixins/actions/emptyTrashBin'
@@ -40,6 +41,7 @@ export default {
     CreateQuicklink,
     DeclineShare,
     Delete,
+    DeletedFiles,
     DownloadArchive,
     DownloadFile,
     EmptyTrashBin,
@@ -176,6 +178,7 @@ export default {
           return action
         }),
         ...fileHandlers,
+        ...this.$_deletedFiles_items_generic,
         ...this.$_showDetails_items
       ].filter((item) => item.isEnabled(this.filterParams))
     }

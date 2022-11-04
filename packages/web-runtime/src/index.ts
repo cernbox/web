@@ -122,9 +122,9 @@ export const renderSuccess = (): void => {
       const user = store.getters.user
       const space = buildSpace({
         id: user.id,
-        driveAlias: `personal/${user.id}`,
+        driveAlias: `/`,
         driveType: 'personal',
-        name: instance.$gettext('All files'),
+        name: instance.$gettext('CERNBox'),
         webDavPath: `/files/${user.id}`,
         webDavTrashPath: `/trash-bin/${user.id}`,
         serverUrl: configurationManager.serverUrl

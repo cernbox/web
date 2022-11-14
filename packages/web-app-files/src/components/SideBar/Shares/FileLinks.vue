@@ -122,6 +122,7 @@ import {
   useCapabilityShareJailEnabled,
   useCapabilityFilesSharingResharing,
   useCapabilityFilesSharingPublicCanEdit,
+  useCapabilityFilesSharingPublicCanContribute,
   useCapabilityFilesSharingPublicAlias
 } from 'web-pkg/src/composables'
 import { shareViaLinkHelp, shareViaIndirectLinkHelp } from '../../../helpers/contextualHelpers'
@@ -165,6 +166,7 @@ export default defineComponent({
       hasShareJail: useCapabilityShareJailEnabled(),
       hasResharing: useCapabilityFilesSharingResharing(),
       hasPublicLinkEditing: useCapabilityFilesSharingPublicCanEdit(),
+      hasPublicLinkContribute: useCapabilityFilesSharingPublicCanContribute(),
       hasPublicLinkAliasSupport: useCapabilityFilesSharingPublicAlias(),
       indirectLinkListCollapsed,
       linkListCollapsed
@@ -584,6 +586,7 @@ export default defineComponent({
           this.incomingParentShare.permissions,
           this.highlightedFile.isFolder,
           this.hasPublicLinkEditing,
+          this.hasPublicLinkContribute,
           this.hasPublicLinkAliasSupport,
           !!link.password
         )
@@ -592,6 +595,7 @@ export default defineComponent({
       return LinkShareRoles.list(
         this.highlightedFile.isFolder,
         this.hasPublicLinkEditing,
+        this.hasPublicLinkContribute,
         this.hasPublicLinkAliasSupport,
         !!link.password
       )

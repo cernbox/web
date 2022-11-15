@@ -28,4 +28,6 @@ export interface RouteComponents {
   Home: ComponentOptions<Vue>
   Projects: ComponentOptions<Vue>
   ProjectsTrashbin: ComponentOptions<Vue>
+  MyBackups: ComponentOptions<Vue>
+  ProjectBackups: ComponentOptions<Vue>
 }

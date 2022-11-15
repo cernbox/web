@@ -11,8 +11,8 @@
       <div
         class="oc-flex"
         :class="{
-          'oc-flex-between': breadcrumbs.length || hasSharesNavigation,
-          'oc-flex-right': !breadcrumbs.length && !hasSharesNavigation
+          'oc-flex-between': breadcrumbs.length || hasSharesNavigation || hasBackupsNavigation,
+          'oc-flex-right': !breadcrumbs.length && !hasSharesNavigation && !hasBackupsNavigation
         }"
       >
         <oc-breadcrumb
@@ -31,6 +31,7 @@
           </template>
         </oc-breadcrumb>
         <shares-navigation v-if="hasSharesNavigation" />
+        <backups-navigation v-if="hasBackupsNavigation" />
         <div v-if="hasViewOptions || hasSidebarToggle" class="oc-flex">
           <view-options v-if="hasViewOptions" />
           <sidebar-toggle v-if="hasSidebarToggle" :side-bar-open="sideBarOpen" />
@@ -60,6 +61,7 @@ import MixinFileActions from '../../mixins/fileActions'
 import BatchActions from './SelectedResources/BatchActions.vue'
 import ContextActions from '../FilesList/ContextActions.vue'
 import SharesNavigation from './SharesNavigation.vue'
+import BackupsNavigation from './BackupsNavigation.vue'
 import SidebarToggle from './SidebarToggle.vue'
 import ViewOptions from './ViewOptions.vue'
 
@@ -68,6 +70,7 @@ export default {
     BatchActions,
     ContextActions,
     SharesNavigation,
+    BackupsNavigation,
     SidebarToggle,
     ViewOptions
   },
@@ -77,6 +80,7 @@ export default {
     breadcrumbsContextActionsItems: { type: Array, default: () => [] },
     hasBulkActions: { type: Boolean, default: false },
     hasSharesNavigation: { type: Boolean, default: false },
+    hasBackupsNavigation: { type: Boolean, default: false },
     hasSidebarToggle: { type: Boolean, default: true },
     hasViewOptions: { type: Boolean, default: true },
     showActionsOnSelection: { type: Boolean, default: false },

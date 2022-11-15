@@ -20,6 +20,7 @@ import Paste from '../../mixins/actions/paste'
 import Navigate from '../../mixins/actions/navigate'
 import Rename from '../../mixins/actions/rename'
 import Restore from '../../mixins/actions/restore'
+import RestoreBackup from '../../mixins/actions/restoreBackup'
 import ShowActions from '../../mixins/actions/showActions'
 import ShowDetails from '../../mixins/actions/showDetails'
 import ShowShares from '../../mixins/actions/showShares'
@@ -56,6 +57,7 @@ export default {
     SetSpaceImage,
     SetSpaceReadme,
     SpaceNavigate,
+    RestoreBackup,
     ProjectTrashin
   ],
 

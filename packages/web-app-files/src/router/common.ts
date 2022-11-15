@@ -8,6 +8,8 @@ type commonTypes =
   | 'files-common-home'
   | 'files-common-projects'
   | 'files-common-projects-trash'
+  | 'files-common-backups-me'
+  | 'files-common-backups-projects'
 
 export const createLocationCommon = (name: commonTypes, location = {}): Location =>
   createLocation(name, location)
@@ -17,13 +19,17 @@ export const locationSearch = createLocationCommon('files-common-search')
 export const locationHome = createLocationCommon('files-common-home')
 export const locationProjects = createLocationCommon('files-common-projects')
 export const locationProjectsTrashbin = createLocationCommon('files-common-projects-trash')
+export const locationBackupsMe = createLocationCommon('files-common-backups-me')
+export const locationBackupsProjects = createLocationCommon('files-common-backups-projects')
 
 export const isLocationCommonActive = isLocationActiveDirector<commonTypes>(
   locationFavorites,
   locationSearch,
   locationHome,
   locationProjects,
-  locationProjectsTrashbin
+  locationProjectsTrashbin,
+  locationBackupsMe,
+  locationBackupsProjects
 )
 
 export const buildRoutes = (components: RouteComponents): RouteConfig[] => [
@@ -102,6 +108,29 @@ export const buildRoutes = (components: RouteComponents): RouteConfig[] => [
           hideFilelistActions: true,
           hasBulkActions: false,
           title: $gettext('Projects trashbin')
+        }
+      }
+    ]
+  },
+  {
+    path: '/backups',
+    component: components.App,
+    redirect: locationBackupsMe,
+    children: [
+      {
+        name: locationBackupsMe.name,
+        path: 'me',
+        component: components.MyBackups,
+        meta: {
+          title: $gettext('My backups')
+        }
+      },
+      {
+        name: locationBackupsProjects.name,
+        path: 'projects',
+        component: components.ProjectBackups,
+        meta: {
+          title: $gettext('Project backups')
         }
       }
     ]

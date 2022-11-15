@@ -15,7 +15,8 @@ import {
   FolderLoaderSharedWithMe,
   FolderLoaderSharedWithOthers,
   FolderLoaderTrashbin,
-  FolderLoaderSpacesPersonal
+  FolderLoaderSpacesPersonal,
+  FolderLoaderBackups
 } from './folder/'
 
 export * from './folder/util'
@@ -52,7 +53,8 @@ export class FolderService {
       new FolderLoaderSharedViaLink(),
       new FolderLoaderSharedWithMe(),
       new FolderLoaderSharedWithOthers(),
-      new FolderLoaderTrashbin()
+      new FolderLoaderTrashbin(),
+      new FolderLoaderBackups(),
     ]
   }
 

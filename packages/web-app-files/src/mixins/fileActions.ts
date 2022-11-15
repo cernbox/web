@@ -14,6 +14,7 @@ import Move from './actions/move'
 import Navigate from './actions/navigate'
 import Rename from './actions/rename'
 import Restore from './actions/restore'
+import RestoreBackup from './actions/restoreBackup'
 import ProjectTrashbin from './actions/projectTrashbin'
 import kebabCase from 'lodash-es/kebabCase'
 import { ShareStatus } from 'web-client/src/helpers/share'
@@ -30,6 +31,7 @@ const actionsMixins = [
   'delete',
   'unhideShare',
   'hideShare',
+  'restoreBackup',
   'projectTrashbin'
 ]
 
@@ -49,6 +51,7 @@ export default {
     Navigate,
     Rename,
     Restore,
+    RestoreBackup,
     ProjectTrashbin
   ],
   computed: {

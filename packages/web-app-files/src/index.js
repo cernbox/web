@@ -12,6 +12,8 @@ import SpaceProject from './views/spaces/Project.vue'
 import SpaceTrashbin from './views/spaces/Trashbin.vue'
 import SpaceProjects from './views/spaces/Projects.vue'
 import Trashbin from './views/Trashbin.vue'
+import MyBackups from './views/backups/MyBackups.vue'
+import ProjectBackups from './views/backups/ProjectBackups.vue'
 import Home from './views/Home.vue'
 import Projects from './views/Projects.vue'
 import translations from '../l10n/translations.json'
@@ -101,6 +103,13 @@ const navItems = [
     enabled(capabilities) {
       return capabilities.dav && capabilities.dav.trashbin === '1.0'
     }
+  },
+  {
+    name: $gettext('Backups'),
+    icon: 'arrow-go-back',
+    route: {
+      path: `/${appInfo.id}/backups/me`
+    }
   }
 ]
 
@@ -143,7 +152,9 @@ export default {
     },
     Trashbin,
     Home,
-    Projects
+    Projects,
+    MyBackups,
+    ProjectBackups
   }),
   navItems: navItemFirst,
   quickActions,

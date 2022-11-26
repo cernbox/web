@@ -67,6 +67,11 @@ export default {
     items: {
       type: Array as PropType<Resource[]>,
       required: true
+    },
+    deactivateApps: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
 
@@ -87,7 +92,7 @@ export default {
         return sections
       }
 
-      if (this.menuItemsContext.length) {
+      if (this.menuItemsContext.length && !this.deactivateApps) {
         sections.push({
           name: 'context',
           items: this.menuItemsContext

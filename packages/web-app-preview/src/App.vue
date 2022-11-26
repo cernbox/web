@@ -8,7 +8,8 @@
     @keydown.esc="closeApp"
   >
     <h1 class="oc-invisible-sr" v-text="pageTitle" />
-    <app-top-bar :resource="activeFilteredFile" @close="closeApp">
+    <open-file-bar :resource="activeFilteredFile" @close="closeApp"/>
+    <app-top-bar :resource="activeFilteredFile">
       <template #right>
         <oc-button
           v-if="!isFileContentError"
@@ -188,6 +189,7 @@ import {
 } from 'web-pkg/src/composables'
 import Preview from './index'
 import AppTopBar from 'web-pkg/src/components/AppTopBar.vue'
+import OpenFileBar from 'web-pkg/src/portals/OpenFileBar.vue'
 import { loadPreview } from 'web-pkg/src/helpers'
 import { configurationManager } from 'web-pkg/src/configuration'
 import { createFileRouteOptions, mergeFileRouteOptions } from 'web-pkg/src/helpers/router'
@@ -195,7 +197,8 @@ import { createFileRouteOptions, mergeFileRouteOptions } from 'web-pkg/src/helpe
 export default defineComponent({
   name: 'Preview',
   components: {
-    AppTopBar
+    AppTopBar,
+    OpenFileBar
   },
   setup() {
     const store = useStore()

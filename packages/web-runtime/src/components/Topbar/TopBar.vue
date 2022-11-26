@@ -9,8 +9,9 @@
       <router-link ref="navigationSidebarLogo" to="/">
         <oc-img :src="logoImage" :alt="sidebarLogoAlt" class="oc-logo-image" />
       </router-link>
+      <portal-target name="app.runtime.header.left" @change="updateLeftPortal"></portal-target>
     </div>
-    <div class="portal-wrapper">
+    <div v-if="showMiddleSlot" class="portal-wrapper">
       <portal-target name="app.runtime.header" multiple></portal-target>
     </div>
     <div class="oc-topbar-right oc-flex oc-flex-middle oc-flex-between">
@@ -78,7 +79,7 @@
         </oc-drop>
       </template>
       <feedback-link v-if="isFeedbackLinkEnabled" v-bind="feedbackLinkOptions" />
-      <notifications v-if="isNotificationBellEnabled" />
+      <notifications  />
       <user-menu v-if="isUserMenuEnabled" :applications-list="userMenuItems" />
     </div>
   </header>
@@ -117,11 +118,20 @@ export default {
       default: () => []
     }
   },
+  data: function () {
+    return {
+      contentOnLeftPortal: false
+    }
+  },
   computed: {
     ...mapGetters(['configuration', 'user']),
 
     cernFeatures() {
       return !!this.configuration?.options?.cernFeatures
+    },
+
+    showMiddleSlot() {
+      return !this.contentOnLeftPortal
     },
 
     activeRoutePath() {
@@ -170,6 +180,12 @@ export default {
 
     isUserMenuEnabled() {
       return this.user?.id
+    }
+  },
+
+  methods: {
+    updateLeftPortal(newContent, oldContent) {
+      this.contentOnLeftPortal = newContent
     }
   }
 }

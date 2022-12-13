@@ -1,5 +1,6 @@
 <template>
-  <div class="oc-flex oc-width-1-1" :class="{ 'space-frontpage': isSpaceFrontpage }">
+  <home v-if="isLightweightHome" />
+  <div v-else class="oc-flex oc-width-1-1" :class="{ 'space-frontpage': isSpaceFrontpage }">
     <keyboard-actions :paginated-resources="paginatedResources" :space="space" />
     <files-view-wrapper>
       <app-bar
@@ -191,6 +192,7 @@ import { FolderLoaderOptions } from '../../services/folder'
 import { CreateTargetRouteOptions } from 'web-app-files/src/helpers/folderLink/types'
 
 import SingleSharedFile from './SingleSharedFile.vue'
+import Home from './Home.vue'
 
 const visibilityObserver = new VisibilityObserver()
 
@@ -213,7 +215,8 @@ export default defineComponent({
     ResourceTiles,
     SideBar,
     SpaceHeader,
-    SingleSharedFile
+    SingleSharedFile,
+    Home
   },
 
   mixins: [MixinAccessibleBreadcrumb, MixinFileActions],
@@ -397,7 +400,13 @@ export default defineComponent({
     ...mapState('Files', ['files']),
     ...mapGetters('Files', ['currentFolder', 'totalFilesCount', 'totalFilesSize']),
     ...mapGetters(['user', 'configuration']),
+    ...mapGetters(['homeFolder']),
 
+    isLightweightHome() {
+      return (
+        this.user.isLightweight && this.homeFolder === `/${this.$route.params.driveAliasAndItem}`
+      )
+    },
     isSingleFile() {
       if (
         this.paginatedResources.length === 1 &&
@@ -427,12 +436,12 @@ export default defineComponent({
   watch: {
     item: {
       handler: function () {
-        this.performLoaderTask(true)
+        !this.isLightweightHome && this.performLoaderTask(true)
       }
     },
     space: {
       handler: function () {
-        this.performLoaderTask(true)
+        !this.isLightweightHome && this.performLoaderTask(true)
       }
     },
     paginatedResources: function () {

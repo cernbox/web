@@ -5,16 +5,19 @@ import { buildResource } from 'web-client/src/helpers'
 import { Component } from 'vue'
 import { DavProperties } from 'web-client/src/webdav/constants'
 import { Store } from 'vuex'
+import VueRouter from 'vue-router'
 
 export const searchLimit = 200
 
 export default class List implements SearchList {
   public readonly component: Component
   private readonly store: Store<any>
+  private readonly router: VueRouter
 
-  constructor(store: Store<any>) {
+  constructor(store: Store<any>, router: VueRouter) {
     this.component = ListComponent
     this.store = store
+    this.router = router
   }
 
   async search(term: string): Promise<SearchResult> {
@@ -25,10 +28,12 @@ export default class List implements SearchList {
       }
     }
 
+    const path = this.router?.currentRoute?.query?.dir
     const { range, results } = await clientService.owncloudSdk.files.search(
       term,
       searchLimit,
-      DavProperties.Default
+      DavProperties.Default,
+      path && {path}
     )
 
     return {

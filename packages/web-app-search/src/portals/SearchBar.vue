@@ -55,10 +55,26 @@
           <li v-for="provider in displayProviders" :key="provider.id" class="provider">
             <oc-list>
               <li class="oc-text-truncate oc-flex oc-flex-between oc-text-muted provider-details">
-                <span class="display-name">{{ provider.displayName }}</span>
-                <span>{{ getMoreResultsDetailsTextForProvider(provider) }}</span>
+                <template v-if="provider.id === 'files.filter'">
+                  <span class="display-name">{{ provider.displayName }}</span>
+                  <span>{{ getMoreResultsDetailsTextForProvider(provider) }}</span>
+                </template>
+                
+                <template v-else>
+                  <div class="oc-flex oc-flex-center" style="width:100%;">
+                  <router-link
+                    class="more-results"
+                    :to="getMoreResultsLinkForProvider(provider)"
+                    @click="$refs.optionsDrop.hide()"
+                  >
+                    <oc-button appearance="raw">
+                      <oc-icon name="search" fill-type="line"/>
+                      <span>Search in subfolders</span></oc-button>
+                  </router-link></div>
+                </template>
               </li>
-              <li
+              <template v-if="provider.id === 'files.filter'">
+              <li            
                 v-for="providerSearchResultValue in getSearchResultForProvider(provider).values"
                 :key="providerSearchResultValue.id"
                 :data-search-id="providerSearchResultValue.id"
@@ -75,6 +91,7 @@
                   @click="hideOptionsDrop"
                 />
               </li>
+              </template>
             </oc-list>
           </li>
         </template>
@@ -134,8 +151,14 @@ export default defineComponent({
        * Computed to filter and sort providers that will be displayed
        * Only show providers which actually hold results
        */
+       //console.log("display preview", this.availableProviders[0].previewSearch )
       return this.availableProviders.filter(
-        (provider) => this.getSearchResultForProvider(provider).values.length
+        (provider) => {
+          console.log("provider.previewSearch.available", provider.previewSearch.available)
+          return provider.previewSearch.available && this.getSearchResultForProvider(provider).values.length
+        }
+        
+        
       )
     },
     searchLabel() {
@@ -241,13 +264,13 @@ export default defineComponent({
     },
     onKeyUpEnter() {
       // Do not show the results page for local filter provider
-      return
+      //return
       this.$refs.optionsDrop.hide()
 
       if (this.term && this.activePreviewIndex === null) {
         this.$router.push(
           createLocationCommon('files-common-search', {
-            query: { term: this.term, provider: 'files.sdk' }
+            query: { term: this.term, provider: 'files.sdk', dir: this.$route.params.driveAliasAndItem }
           })
         )
       }
@@ -314,11 +337,12 @@ export default defineComponent({
       return this.$refs.optionsDrop.show()
     },
     getSearchResultForProvider(provider) {
+      console.log("getSearchResultForProvider", provider.id, this.searchResults)
       return this.searchResults.find(({ providerId }) => providerId === provider.id)?.result
     },
     getMoreResultsLinkForProvider(provider) {
       return createLocationCommon('files-common-search', {
-        query: { term: this.term, provider: provider.id }
+        query: { term: this.term, provider: provider.id, dir: this.$route.params.driveAliasAndItem  }
       })
     },
     getMoreResultsDetailsTextForProvider(provider) {
@@ -328,8 +352,8 @@ export default defineComponent({
       }
 
       const translated = this.$ngettext(
-        '%{totalResults} result',
-        '%{totalResults} results',
+        `${provider.id==="files.sdk" ? "Show " : ""} %{totalResults} result`,
+        `${provider.id==="files.sdk" ? "Show " : ""} %{totalResults} results`,
         searchResult.totalResults
       )
 

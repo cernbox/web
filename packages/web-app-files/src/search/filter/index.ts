@@ -45,9 +45,9 @@ export default class Provider extends EventBus implements SearchProvider {
   }
 
   public get available(): boolean {
-    return (
-      isLocationSpacesActive(this.router, 'files-spaces-generic') &&
-      !isLocationSpacesActive(this.router, 'files-spaces-projects')
-    )
+    return true
+      // isLocationSpacesActive(this.router, 'files-spaces-generic') &&
+      // !isLocationSpacesActive(this.router, 'files-spaces-projects')
+    
   }
 }

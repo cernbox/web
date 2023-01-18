@@ -25,44 +25,53 @@ export default class Preview implements SearchPreview {
   }
 
   public async search(term: string): Promise<SearchResult> {
-    if (!term) {
-      return {
-        totalResults: null,
-        values: []
-      }
+    // if (!term) {
+    //   return {
+    //     totalResults: null,
+    //     values: []
+    //   }
+    // }
+
+    // if (this.cache.has(term)) {
+    //   return this.cache.get(term)
+    // }
+
+    // const areHiddenFilesShown = this.store.state.Files?.areHiddenFilesShown
+    // const { range, results } = await clientService.owncloudSdk.files.search(
+    //   term,
+    //   previewSearchLimit, // todo: add configuration option, other places need that too... needs consolidation
+    //   DavProperties.Default
+    // )
+    // const resources = results.reduce((acc, result) => {
+    //   const resource = buildResource(result)
+    //   // info: in oc10 we have no storageId in resources. All resources are mounted into the personal space.
+    //   if (!resource.storageId) {
+    //     resource.storageId = this.store.getters.user.id
+    //   }
+
+    //   // filter results if hidden files shouldn't be shown due to settings
+    //   if (!resource.name.startsWith('.') || areHiddenFilesShown) {
+    //     acc.push({ id: resource.id, data: { ...resource } })
+    //   }
+
+    //   return acc
+    // }, [])
+    // return this.cache.set(term, {
+    //   totalResults: range ? parseInt(range?.split('/')[1]) : null,
+    //   values: resources
+    // })
+
+    return {
+      totalResults: 1,
+      values: [{id: 'df0b', data: {}}]
     }
-
-    if (this.cache.has(term)) {
-      return this.cache.get(term)
-    }
-
-    const areHiddenFilesShown = this.store.state.Files?.areHiddenFilesShown
-    const { range, results } = await clientService.owncloudSdk.files.search(
-      term,
-      previewSearchLimit, // todo: add configuration option, other places need that too... needs consolidation
-      DavProperties.Default
-    )
-    const resources = results.reduce((acc, result) => {
-      const resource = buildResource(result)
-      // info: in oc10 we have no storageId in resources. All resources are mounted into the personal space.
-      if (!resource.storageId) {
-        resource.storageId = this.store.getters.user.id
-      }
-
-      // filter results if hidden files shouldn't be shown due to settings
-      if (!resource.name.startsWith('.') || areHiddenFilesShown) {
-        acc.push({ id: resource.id, data: { ...resource } })
-      }
-
-      return acc
-    }, [])
-    return this.cache.set(term, {
-      totalResults: range ? parseInt(range?.split('/')[1]) : null,
-      values: resources
-    })
   }
 
   public get available(): boolean {
-    return unref(this.router.currentRoute).name !== 'search-provider-list'
+    const projects = ["awesomeproject"] //future: get list of projects, where search is allowed
+    function projectSearchActivated(p){
+      return window.location.href.includes("/f/fcc") || window.location.href.includes(`/${p[0]}/${p}`)
+      }
+    return unref(this.router.currentRoute).name !== 'search-provider-list' && ("/eos/project/") && projects.some(p=>projectSearchActivated(p))
   }
 }

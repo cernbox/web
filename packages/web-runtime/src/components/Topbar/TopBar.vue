@@ -9,6 +9,7 @@
       <router-link ref="navigationSidebarLogo" to="/">
         <oc-img :src="logoImage" :alt="sidebarLogoAlt" class="oc-logo-image" />
       </router-link>
+      <open-file-bar v-if="openResource" :resource="openResource" @close="closeAppFile" />
       <portal-target name="app.runtime.header.left" @change="updateLeftPortal"></portal-target>
     </div>
     <div v-if="showMiddleSlot" class="portal-wrapper">
@@ -29,7 +30,7 @@
 </template>
 
 <script lang="ts">
-import { mapGetters } from 'vuex'
+import { mapActions, mapGetters } from 'vuex'
 import NavigationMixin from '../../mixins/navigationMixin'
 
 import ApplicationsMenu from './ApplicationsMenu.vue'
@@ -37,6 +38,13 @@ import UserMenu from './UserMenu.vue'
 import Notifications from './Notifications.vue'
 import FeedbackLink from './FeedbackLink.vue'
 import ThemeSwitcher from './ThemeSwitcher.vue'
+import OpenFileBar from './OpenFileBar.vue'
+import { useAppDefaults } from 'web-pkg/src/composables'
+import {
+  isLocationTrashActive,
+  isLocationPublicActive,
+  isLocationSpacesActive
+} from 'web-app-files/src/router'
 
 export default {
   components: {
@@ -44,7 +52,8 @@ export default {
     FeedbackLink,
     Notifications,
     ThemeSwitcher,
-    UserMenu
+    UserMenu,
+    OpenFileBar
   },
   mixins: [NavigationMixin],
   props: {
@@ -59,13 +68,22 @@ export default {
       default: () => []
     }
   },
+  setup() {
+    return {
+      ...useAppDefaults({
+        applicationId: 'files'
+      })
+    }
+  },
   data: function () {
     return {
-      contentOnLeftPortal: false
+      contentOnLeftPortal: false,
+      openResource: null
     }
   },
   computed: {
     ...mapGetters(['configuration', 'user']),
+    ...mapGetters('Files', ['currentFolder']),
 
     showMiddleSlot() {
       return !this.contentOnLeftPortal
@@ -119,10 +137,54 @@ export default {
       return this.user?.id
     }
   },
+  created() {
+    this.checkFileOpen()
+  },
+  mounted() {
+    this.$watch('$route', (to, from) => {
+      if (to.name !== from.name){
+        this.checkFileOpen()
+      }
+    })
+
+    this.$watch('currentFileContext', (to, from) => {
+        if (to.path !== from.path) {
+          this.checkFileOpen()
+        }
+    })
+  },
 
   methods: {
+    ...mapActions('Files', ['setOpenedFile']),
     updateLeftPortal(newContent, oldContent) {
       this.contentOnLeftPortal = newContent
+    },
+    closeAppFile() {
+      this.openResource = null
+      this.closeApp()
+    },
+    checkFileOpen(){
+      this.openResource = null
+          if (this.currentFileContext?.path &&
+            !(
+              isLocationTrashActive(this.$router, 'files-trash-generic') ||
+              isLocationPublicActive(this.$router, 'files-public-link') ||
+              isLocationSpacesActive(this.$router, 'files-spaces-generic')
+            )
+          ) {
+            this.getOpenResource()
+          }
+    },
+    async getOpenResource() {
+      if (this.currentFileContext.path === '/' || this.currentFileContext.item ==='/' ) { 
+        return
+      }
+      try {
+        this.loading = true
+        this.openResource = await this.getFileInfo(this.currentFileContext)
+      } catch (error) {
+        console.error(error)
+      }
     }
   }
 }

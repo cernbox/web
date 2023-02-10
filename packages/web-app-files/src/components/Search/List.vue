@@ -2,6 +2,7 @@
   <div class="files-search-result oc-flex">
     <files-view-wrapper>
       <app-bar :has-bulk-actions="false" :side-bar-open="sideBarOpen" />
+      <h2 v-if="$route?.query?.dir">Search in {{ $route?.query?.dir }}</h2>
       <app-loading-spinner v-if="loading" />
       <template v-else>
         <no-content-message

@@ -25,6 +25,7 @@
           :resources="paginatedResources"
           :are-paths-displayed="true"
           :are-thumbnails-displayed="displayThumbnails"
+          :target-route-callback="resourceTargetRouteCallback"
           :has-actions="true"
           :is-selectable="false"
           :sort-by="sortBy"
@@ -77,7 +78,7 @@ import ContextActions from '../FilesList/ContextActions.vue'
 import { debounce } from 'lodash-es'
 import { mapMutations, mapGetters, mapActions } from 'vuex'
 import AppBar from '../AppBar/AppBar.vue'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, unref } from 'vue'
 import ListInfo from '../FilesList/ListInfo.vue'
 import Pagination from '../FilesList/Pagination.vue'
 import MixinFileActions from '../../mixins/fileActions'
@@ -89,6 +90,11 @@ import { buildShareSpaceResource, SpaceResource } from 'web-client/src/helpers'
 import { useStore } from 'web-pkg/src/composables'
 import { configurationManager } from 'web-pkg/src/configuration'
 import { basename } from 'path'
+import { CreateTargetRouteOptions } from 'web-app-files/src/helpers/folderLink'
+import { createLocationSpaces } from 'web-app-files/src/router'
+import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
+import { Location } from 'vue-router'
+import { useCapabilityShareJailEnabled, useCapabilityProjectSpacesEnabled, useStore } from 'web-pkg/src/composables'
 
 const visibilityObserver = new VisibilityObserver()
 
@@ -119,6 +125,7 @@ export default defineComponent({
   },
   setup() {
     const store = useStore()
+    const hasShareJail = useCapabilityShareJailEnabled()
     const getSpace = (resource: Resource): SpaceResource => {
       if (resource.shareId) {
         return buildShareSpaceResource({
@@ -129,7 +136,34 @@ export default defineComponent({
       }
       return store.getters['runtime/spaces/spaces'].find((space) => space.id === resource.storageId)
     }
+
+    const resourceTargetRouteCallback = ({
+      path,
+      fileId,
+      resource
+    }: CreateTargetRouteOptions): Location => {
+      if (unref(hasShareJail)) {
+        const space = buildShareSpaceResource({
+          shareId: resource.id,
+          shareName: resource.name,
+          serverUrl: configurationManager.serverUrl
+        })
+        return createLocationSpaces(
+          'files-spaces-generic',
+          createFileRouteOptions(space, { path, fileId })
+        )
+      }
+      const personalSpace = store.getters['runtime/spaces/spaces'].find(
+        (space) => space.driveType === 'personal'
+      )
+      return createLocationSpaces(
+        'files-spaces-generic',
+        createFileRouteOptions(personalSpace, { path, fileId })
+      )
+    }
+
     return {
+      resourceTargetRouteCallback,
       ...useResourcesViewDefaults<Resource, any, any[]>(),
       getSpace
     }

@@ -1,8 +1,10 @@
 <template>
   <div class="files-search-result oc-flex">
     <files-view-wrapper>
+      <div class="files-search-topbar">
       <app-bar :has-bulk-actions="false" :side-bar-open="sideBarOpen" />
       <h2 v-if="$route?.query?.dir">Search in {{ $route?.query?.dir }}</h2>
+      </div>
       <app-loading-spinner v-if="loading" />
       <template v-else>
         <no-content-message
@@ -249,3 +251,11 @@ export default defineComponent({
   }
 })
 </script>
+
+<style lang="scss" scoped>
+  
+.files-search-topbar{
+  padding: 0 var(--oc-space-medium);
+}
+
+</style>

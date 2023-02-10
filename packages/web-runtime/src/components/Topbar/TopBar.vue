@@ -142,15 +142,15 @@ export default {
   },
   mounted() {
     this.$watch('$route', (to, from) => {
-      if (to.name !== from.name){
+      if (to.name !== from.name) {
         this.checkFileOpen()
       }
     })
 
     this.$watch('currentFileContext', (to, from) => {
-        if (to.path !== from.path) {
-          this.checkFileOpen()
-        }
+      if (to.path !== from.path) {
+        this.checkFileOpen()
+      }
     })
   },
 
@@ -163,20 +163,22 @@ export default {
       this.openResource = null
       this.closeApp()
     },
-    checkFileOpen(){
+    checkFileOpen() {
       this.openResource = null
-          if (this.currentFileContext?.path &&
-            !(
-              isLocationTrashActive(this.$router, 'files-trash-generic') ||
-              isLocationPublicActive(this.$router, 'files-public-link') ||
-              isLocationSpacesActive(this.$router, 'files-spaces-generic')
-            )
-          ) {
-            this.getOpenResource()
-          }
+      if (
+        this.currentFileContext?.path &&
+        !(
+          isLocationTrashActive(this.$router, 'files-trash-generic') ||
+          isLocationPublicActive(this.$router, 'files-public-link') ||
+          isLocationSpacesActive(this.$router, 'files-spaces-generic')
+        ) &&
+        this.$route.name !== 'files-common-search'
+      ) {
+        this.getOpenResource()
+      }
     },
     async getOpenResource() {
-      if (this.currentFileContext.path === '/' || this.currentFileContext.item ==='/' ) { 
+      if (this.currentFileContext.path === '/' || this.currentFileContext.item === '/') {
         return
       }
       try {

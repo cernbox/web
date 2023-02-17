@@ -93,9 +93,10 @@ const appInfo = {
       ...(Object.prototype.hasOwnProperty.call(extensionItem, 'newFileMenu') && {
         newFileMenu: extensionItem.newFileMenu
       }),
-      ...(Object.prototype.hasOwnProperty.call(extensionItem, 'canBeDefault') && {
-        canBeDefault: extensionItem.canBeDefault
-      })
+      canBeDefault: true
+      // ...(Object.prototype.hasOwnProperty.call(extensionItem, 'canBeDefault') && {
+      //   canBeDefault: extensionItem.canBeDefault
+      // })
     }
   })
 }

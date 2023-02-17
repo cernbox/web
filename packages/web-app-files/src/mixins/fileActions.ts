@@ -210,28 +210,33 @@ export default {
 
     $_fileActions_getDefaultAction(options: FileActionOptions) {
       const filterCallback = (action) =>
-        action.canBeDefault &&
+        //action.canBeDefault &&
         action.isEnabled({
           ...options,
           parent: this.currentFolder
         })
+      const canBeDefaultCallback = (action) => action.canBeDefault
 
       // first priority: handlers from config
       const defaultEditorActions = this.$_fileActions_editorActions.filter(filterCallback)
-      if (defaultEditorActions.length) {
-        return defaultEditorActions[0]
-      }
 
       // second priority: `/app/open` endpoint of app provider if available
       // FIXME: files app should not know anything about the `external apps` app
       const externalAppsActions =
         this.$_fileActions_loadExternalAppActions(options).filter(filterCallback)
-      if (externalAppsActions.length) {
-        return externalAppsActions[0]
+
+
+      //sort by hasPriority
+      const allAppsActions = [
+        ...this.$_fileActions_editorActions,
+        ...this.$_fileActions_loadExternalAppActions(options)
+      ].sort((a, b) => b.hasPriority - a.hasPriority)
+      if (allAppsActions.length) {
+        return allAppsActions[0]
       }
 
       // fallback: system actions
-      return this.$_fileActions_systemActions.filter(filterCallback)[0]
+      return this.$_fileActions_systemActions.filter(filterCallback).filter(canBeDefaultCallback)[0]
     },
 
     $_fileActions_getAllAvailableActions(options: FileActionOptions) {

@@ -130,6 +130,7 @@ export default {
               return false
             },
             canBeDefault: editor.canBeDefault,
+            hasPriority: editor.hasPriority,
             componentType: 'button',
             class: `oc-files-actions-${kebabCase(
               this.apps.meta[editor.app].name
@@ -218,16 +219,17 @@ export default {
 
       // first priority: handlers from config
       const defaultEditorActions = this.$_fileActions_editorActions.filter(filterCallback)
-      if (defaultEditorActions.length) {
-        return defaultEditorActions[0]
-      }
 
       // second priority: `/app/open` endpoint of app provider if available
       // FIXME: files app should not know anything about the `external apps` app
       const externalAppsActions =
         this.$_fileActions_loadExternalAppActions(options).filter(filterCallback)
-      if (externalAppsActions.length) {
-        return externalAppsActions[0]
+
+      const appActions = [...defaultEditorActions, ...externalAppsActions].sort(
+        (a, b) => b.hasPriority - a.hasPriority
+      )
+      if (appActions.length) {
+        return appActions[0]
       }
 
       // fallback: system actions
@@ -286,6 +288,7 @@ export default {
           class: `oc-files-actions-${app.name}-trigger`,
           isEnabled: () => true,
           canBeDefault: defaultApplication === app.name,
+          hasPriority: defaultApplication === app.name,
           handler: () =>
             this.$_fileActions_openExternalApp(
               app.name,

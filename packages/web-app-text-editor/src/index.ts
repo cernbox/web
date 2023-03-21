@@ -26,6 +26,7 @@ const fileExtensions = () => {
     extension: string
     label: string
     canBeDefault?: boolean
+    hasPriority?: boolean
     newFileMenu?: any
   }[] = [
     {
@@ -95,6 +96,9 @@ const appInfo = {
       }),
       ...(Object.prototype.hasOwnProperty.call(extensionItem, 'canBeDefault') && {
         canBeDefault: extensionItem.canBeDefault
+      }),
+      ...(Object.prototype.hasOwnProperty.call(extensionItem, 'hasPriority') && {
+        hasPriority: extensionItem.hasPriority
       })
     }
   })

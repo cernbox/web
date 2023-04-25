@@ -87,7 +87,7 @@
           @expiration-date-changed="shareExpirationChanged"
           @remove-share="removeShare"
           @show-access-details="showAccessDetails"
-          @notify="notify"
+          @notify-share="$_ocCollaborators_notifyShare_trigger"
         />
         <oc-info-drop
           ref="accessDetailsDrop"
@@ -138,7 +138,6 @@ export default defineComponent({
       default: null
     }
   },
-  emits: ['onDelete'],
   setup() {
     return {
       hasResharing: useCapabilityFilesSharingResharing(),
@@ -319,46 +318,54 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions(['showMessage']),
-    ...mapActions('Files', ['changeShare']),
+    ...mapActions(['createModal', 'hideModal', 'showMessage']),
+    ...mapActions('Files', ['changeShare', 'notifyShare']),
     ...mapActions('runtime/spaces', ['changeSpaceMember']),
 
     removeShare() {
       this.$emit('onDelete', this.share)
     },
 
-    async notify() {
-      const url = `/mailer`
-      const accessToken = this.$store.getters['runtime/auth/accessToken']
-      const headers = new Headers()
-      headers.append('Authorization', 'Bearer ' + accessToken)
-      headers.append('X-Requested-With', 'XMLHttpRequest')
-      headers.append('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+    $_ocCollaborators_notifyShare_trigger() {
+      const modal = {
+        variation: 'warning',
+        icon: 'mail-send',
+        title: this.$gettext('Send a reminder'),
+        cancelText: this.$gettext('Cancel'),
+        confirmText: this.$gettext('Send'),
+        message: this.$gettext('Are you sure you want to send a reminder about this share?'),
+        hasInput: false,
+        onCancel: this.hideModal,
+        onConfirm: () => this.$_ocCollaborators_notifyShare()
+      }
 
-      const formData = new URLSearchParams()
+      this.createModal(modal)
+    },
 
-      formData.append('id', this.share.id)
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData.toString()
-      })
-      if (!response.ok) {
+    async $_ocCollaborators_notifyShare() {
+      try {
+        const response = await this.notifyShare({
+          client: this.$client,
+          share: this.share,
+        })
+
+        this.showMessage({
+          title: this.$gettext('Success'),
+          desc: `${this.$gettext('Email reminder sent to')} ${response[0]}`,
+          status: 'success'
+        })
+      } catch (error) {
+        console.error(error)
         this.showMessage({
           title: this.$gettext('An error occurred'),
           desc: this.$gettext('Email notification could not be sent'),
           status: 'danger'
         })
-      } else {
-        const recipients = await response.json()
-        if (recipients.recipients)
-          this.showMessage({
-            title: this.$gettext('Success'),
-            desc: this.$gettext(`Email notification was sent to ${recipients.recipients[0]}`),
-            status: 'success'
-          })
+      } finally {
+        this.hideModal()
       }
     },
+
     showAccessDetails() {
       this.$refs.accessDetailsDrop.$refs.drop.show()
     },

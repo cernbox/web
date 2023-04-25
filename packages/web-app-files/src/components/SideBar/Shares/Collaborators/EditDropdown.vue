@@ -106,7 +106,7 @@ export default defineComponent({
         ...result,
         {
           title: this.$gettext('Notify via mail'),
-          method: this.notifyUser,
+          method: this.notifyShare,
           enabled: true,
           icon: 'mail',
           class: 'notify-via-mail'
@@ -256,8 +256,8 @@ export default defineComponent({
     showAccessDetails() {
       this.$emit('showAccessDetails')
     },
-    notifyUser() {
-      this.$emit('notify')
+    notifyShare() {
+      this.$emit('notifyShare')
     }
   }
 })

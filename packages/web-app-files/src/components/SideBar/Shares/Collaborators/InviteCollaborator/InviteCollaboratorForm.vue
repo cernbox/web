@@ -332,15 +332,8 @@ export default defineComponent({
               permissions: bitmask,
               role: this.selectedRole,
               expirationDate: this.expirationDate,
-              storageId: this.resource.fileId || this.resource.id
-            }).then((share) => {
-              if (this.notifyEnabled && share?.shareInfo?.id) {
-                this.formData.append('id', share.shareInfo.id)
-                if (Array.from(this.formData.keys()).length === collaborators.length) {
-                  this.notify()
-                  this.formData = new URLSearchParams()
-                }
-              }
+              storageId: this.resource.fileId || this.resource.id,
+              notify: this.notifyEnabled
             })
           })
         )
@@ -349,40 +342,6 @@ export default defineComponent({
       await Promise.all(savePromises)
       this.selectedCollaborators = []
       this.saving = false
-    },
-
-    async notify() {
-      const url = `/mailer`
-      const accessToken = this.$store.getters['runtime/auth/accessToken']
-      const headers = new Headers()
-      headers.append('Authorization', 'Bearer ' + accessToken)
-      headers.append('X-Requested-With', 'XMLHttpRequest')
-      headers.append('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: this.formData.toString()
-      })
-      if (!response.ok) {
-        this.showMessage({
-          title: this.$gettext('An error occurred'),
-          desc: this.$gettext('Email notification could not be sent '),
-          status: 'danger'
-        })
-      } else {
-        const recipients = await response.json()
-        if (recipients.recipients)
-          this.showMessage({
-            title: this.$gettext('Success'),
-            desc: this.$gettext(
-              `Email notification was sent to ${JSON.stringify(recipients.recipients)
-                .replace(/[[\]]/g, '')
-                .replaceAll('"', '')}`
-            ),
-            status: 'success'
-          })
-      }
     },
 
     resetFocusOnInvite(event) {

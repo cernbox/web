@@ -25,4 +25,5 @@ export interface Share {
   quicklink?: boolean
   outgoing?: boolean
   notifyUploads?: boolean
+  notifyUploadsExtraRecipients?: string
 }

@@ -103,6 +103,13 @@
         name="calendar-event"
         fill-type="line"
       />
+      <oc-icon
+        v-if="currentLinkNotifyUploadsExtraRecipients"
+        v-oc-tooltip="notifyUploadsExtraRecipientsTooltip"
+        :aria-label="notifyUploadsExtraRecipientsTooltip"
+        name="mail-add"
+        fill-type="line"
+      />
       <div v-if="isModifiable">
         <oc-button
           :id="`edit-public-link-dropdown-toggl-${link.id}`"
@@ -179,6 +186,7 @@
 </template>
 
 <script lang="ts">
+import * as EmailValidator from 'email-validator'
 import { basename } from 'path'
 import { DateTime } from 'luxon'
 import { mapActions, mapGetters } from 'vuex'
@@ -331,6 +339,30 @@ export default defineComponent({
         })
       }
 
+      if (this.isCurrentLinkRoleUploader && this.currentLinkNotifyUploads) {
+        result.push({
+          id: 'add-notify-uploads-extra-recipients',
+          title: this.notifyUploadsExtraRecipientsMenuEntry,
+          icon: 'mail-add',
+          method: this.showNotifyUploadsExtraRecipientsModal
+        })
+      }
+
+      if (this.currentLinkNotifyUploadsExtraRecipients) {
+        result.push({
+          id: 'remove-notify-uploads-extra-recipients',
+          title: this.$gettext('Remove third party notification'),
+          icon: 'mail-close',
+          method: () =>
+            this.updateLink({
+              link: {
+                ...this.link,
+                notifyUploadsExtraRecipients: ''
+              }
+            })
+        })
+      }
+
       return result
     },
 
@@ -404,8 +436,20 @@ export default defineComponent({
     currentLinkNotifyUploads() {
       return  this.link.notifyUploads
     },
+    currentLinkNotifyUploadsExtraRecipients() {
+      return this.link.notifyUploadsExtraRecipients
+    },
     notifyUploadsLabel() {
       return this.$gettext('Notify me about uploads')
+    },
+    notifyUploadsExtraRecipientsTooltip() {
+      return this.$gettext('Uploads will be notified to a third party')
+    },
+    notifyUploadsExtraRecipientsMenuEntry() {
+      if (this.currentLinkNotifyUploadsExtraRecipients) {
+        return this.$gettext('Edit third party notification')
+      }
+      return this.$gettext('Notify a third party about uploads')
     }
   },
   watch: {
@@ -431,7 +475,7 @@ export default defineComponent({
     },
     toggleNotifyUploads() {
       if (this.currentLinkNotifyUploads) {
-        this.$emit('updateLink', { link: { ...this.link, notifyUploads: false } })
+        this.$emit('updateLink', { link: { ...this.link, notifyUploads: false, notifyUploadsExtraRecipients: "" } })
       } else {
         this.$emit('updateLink', { link: { ...this.link, notifyUploads: true } })
       }
@@ -504,6 +548,48 @@ export default defineComponent({
       }
 
       this.createModal(modal)
+    },
+
+    showNotifyUploadsExtraRecipientsModal() {
+      const modal = {
+        variation: 'passive',
+        icon: 'mail-add',
+        title: this.$gettext('Notify a third party about uploads'),
+        cancelText: this.$gettext('Cancel'),
+        confirmText: this.$gettext('Apply'),
+        hasInput: true,
+        inputDescription: this.$gettext("This address will receive the same notification you do whenever somebody uploads a file."),
+        inputValue: this.currentLinkNotifyUploadsExtraRecipients,
+        inputLabel: this.$gettext('Email address'),
+        inputType: 'email',
+        onCancel: this.hideModal,
+        onInput: (value) => this.checkEmailValid(value),
+        onConfirm: (value) => {
+          this.updateLink({
+            link: {
+              ...this.link,
+              notifyUploadsExtraRecipients: value,
+            },
+            onSuccess: () => {
+              this.hideModal()
+            }
+          })
+        }
+      }
+
+      this.createModal(modal)
+    },
+
+    checkEmailValid(email) {
+      if (!EmailValidator.validate(email)) {
+        return this.setModalInputErrorMessage(this.$gettext("Email is invalid"))
+      }
+
+      if (email === '') {
+        return this.setModalInputErrorMessage(this.$gettext("Email can't be empty"))
+      }
+
+      return this.setModalInputErrorMessage(null)
     }
   }
 })

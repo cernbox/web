@@ -79,7 +79,7 @@ export default defineComponent({
       required: true
     }
   },
-  emits: ['expirationDateChanged', 'removeShare', 'showAccessDetails'],
+  emits: ['expirationDateChanged', 'notifyShare', 'removeShare', 'showAccessDetails'],
   data: function () {
     return {
       enteredExpirationDate: null

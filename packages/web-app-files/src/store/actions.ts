@@ -312,6 +312,10 @@ export default {
       }
     })
   },
+  notifyShare(_, { client, share }) {
+    return client.shares.notifyShare(share.id)
+  },
+
   /**
    * Prune all branches of the shares tree that are
    * unrelated to the given path

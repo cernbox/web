@@ -69,6 +69,12 @@
         v-text="$gettext(currentLinkRoleLabel)"
       />
     </p>
+    <oc-checkbox
+      v-if="this.hasNotifications && isCurrentLinkRoleUploader()"
+      :model-value="currentLinkNotifyUploads"
+      :label="notifyUploadsLabel"
+      @input="toggleNotifyUploads()"
+    />
     <div :class="{ 'oc-pr-s': !isModifiable }" class="details-buttons">
       <oc-button
         v-if="link.indirect"
@@ -180,12 +186,14 @@ import { createLocationSpaces } from '../../../../router'
 import {
   linkRoleInternalFile,
   linkRoleInternalFolder,
+  linkRoleUploaderFolder,
   LinkShareRoles,
   ShareRole
 } from 'web-client/src/helpers/share'
 import { defineComponent, inject, PropType } from 'vue'
 import { formatDateFromDateTime, formatRelativeDateFromDateTime } from 'web-pkg/src/helpers'
 import { Resource, SpaceResource } from 'web-client/src/helpers'
+import { useCapabilityGroupBasedCapabilities } from 'web-pkg/src/composables'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
 
 export default defineComponent({
@@ -223,7 +231,11 @@ export default defineComponent({
   },
   emits: ['removePublicLink', 'updateLink'],
   setup() {
-    return { space: inject<Resource>('space'), resource: inject<Resource>('resource') }
+    return {
+      space: inject<Resource>('space'),
+      resource: inject<Resource>('resource'),
+      hasNotifications: useCapabilityGroupBasedCapabilities().value.includes('notifications')
+    }
   },
   data() {
     return {
@@ -387,6 +399,13 @@ export default defineComponent({
 
     isAliasLink() {
       return [linkRoleInternalFolder, linkRoleInternalFile].includes(this.currentLinkRole)
+    },
+
+    currentLinkNotifyUploads() {
+      return  this.link.notifyUploads
+    },
+    notifyUploadsLabel() {
+      return this.$gettext('Notify me about uploads')
     }
   },
   watch: {
@@ -409,6 +428,19 @@ export default defineComponent({
     }) {
       this.$emit('updateLink', { link, onSuccess })
       dropRef.hide()
+    },
+    toggleNotifyUploads() {
+      if (this.currentLinkNotifyUploads) {
+        this.$emit('updateLink', { link: { ...this.link, notifyUploads: false } })
+      } else {
+        this.$emit('updateLink', { link: { ...this.link, notifyUploads: true } })
+      }
+
+    },
+    isCurrentLinkRoleUploader() {
+      return LinkShareRoles.getByBitmask(
+        parseInt(this.link.permissions), this.isFolderShare
+      ).bitmask(false) === linkRoleUploaderFolder.bitmask(false)
     },
     deleteLink() {
       this.$emit('removePublicLink', { link: this.link })

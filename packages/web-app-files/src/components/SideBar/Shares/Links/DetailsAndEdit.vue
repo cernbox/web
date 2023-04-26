@@ -70,7 +70,7 @@
       />
     </p>
     <oc-checkbox
-      v-if="this.hasNotifications && isCurrentLinkRoleUploader()"
+      v-if="hasNotifications && isCurrentLinkRoleUploader()"
       :model-value="currentLinkNotifyUploads"
       :label="notifyUploadsLabel"
       @input="toggleNotifyUploads()"
@@ -434,7 +434,7 @@ export default defineComponent({
     },
 
     currentLinkNotifyUploads() {
-      return  this.link.notifyUploads
+      return this.link.notifyUploads
     },
     currentLinkNotifyUploadsExtraRecipients() {
       return this.link.notifyUploadsExtraRecipients
@@ -475,16 +475,19 @@ export default defineComponent({
     },
     toggleNotifyUploads() {
       if (this.currentLinkNotifyUploads) {
-        this.$emit('updateLink', { link: { ...this.link, notifyUploads: false, notifyUploadsExtraRecipients: "" } })
+        this.$emit('updateLink', {
+          link: { ...this.link, notifyUploads: false, notifyUploadsExtraRecipients: '' }
+        })
       } else {
         this.$emit('updateLink', { link: { ...this.link, notifyUploads: true } })
       }
-
     },
     isCurrentLinkRoleUploader() {
-      return LinkShareRoles.getByBitmask(
-        parseInt(this.link.permissions), this.isFolderShare
-      ).bitmask(false) === linkRoleUploaderFolder.bitmask(false)
+      return (
+        LinkShareRoles.getByBitmask(parseInt(this.link.permissions), this.isFolderShare).bitmask(
+          false
+        ) === linkRoleUploaderFolder.bitmask(false)
+      )
     },
     deleteLink() {
       this.$emit('removePublicLink', { link: this.link })
@@ -558,7 +561,9 @@ export default defineComponent({
         cancelText: this.$gettext('Cancel'),
         confirmText: this.$gettext('Apply'),
         hasInput: true,
-        inputDescription: this.$gettext("This address will receive the same notification you do whenever somebody uploads a file."),
+        inputDescription: this.$gettext(
+          'This address will receive the same notification you do whenever somebody uploads a file.'
+        ),
         inputValue: this.currentLinkNotifyUploadsExtraRecipients,
         inputLabel: this.$gettext('Email address'),
         inputType: 'email',
@@ -568,7 +573,7 @@ export default defineComponent({
           this.updateLink({
             link: {
               ...this.link,
-              notifyUploadsExtraRecipients: value,
+              notifyUploadsExtraRecipients: value
             },
             onSuccess: () => {
               this.hideModal()
@@ -582,7 +587,7 @@ export default defineComponent({
 
     checkEmailValid(email) {
       if (!EmailValidator.validate(email)) {
-        return this.setModalInputErrorMessage(this.$gettext("Email is invalid"))
+        return this.setModalInputErrorMessage(this.$gettext('Email is invalid'))
       }
 
       if (email === '') {

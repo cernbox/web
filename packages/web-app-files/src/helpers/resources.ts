@@ -289,7 +289,7 @@ function _buildLink(link): Share {
     notifyUploadsExtraRecipients:
       typeof link.notify_uploads_extra_recipients === 'string'
         ? link.notify_uploads_extra_recipients
-        : null,
+        : null
   }
 }
 

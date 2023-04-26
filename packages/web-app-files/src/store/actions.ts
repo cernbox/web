@@ -257,7 +257,18 @@ export default {
   },
   addShare(
     context,
-    { $gettext, client, path, shareWith, shareType, permissions, role, expirationDate, storageId, notify }
+    {
+      $gettext,
+      client,
+      path,
+      shareWith,
+      shareType,
+      permissions,
+      role,
+      expirationDate,
+      storageId,
+      notify
+    }
   ) {
     const isGroupShare = shareType === ShareTypes.group.value
     const options = {

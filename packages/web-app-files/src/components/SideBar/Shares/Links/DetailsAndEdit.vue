@@ -562,7 +562,7 @@ export default defineComponent({
         confirmText: this.$gettext('Apply'),
         hasInput: true,
         inputDescription: this.$gettext(
-          'This address will receive the same notification you do whenever somebody uploads a file.'
+          'When a file is uploaded, this address will be notified as well.'
         ),
         inputValue: this.currentLinkNotifyUploadsExtraRecipients,
         inputLabel: this.$gettext('Email address'),

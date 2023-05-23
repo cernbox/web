@@ -28,7 +28,7 @@ const mutations = {
       extension: extension.extension,
       mimeType: extension.mimeType,
       handler: extension.handler,
-      canBeDefault: extension.canBeDefault !== false,
+      hasPriority: extension.hasPriority !== false,
       config: (state.fileEditorConfigs || {})[app],
       ...(extension.label && { label: extension.label })
     }

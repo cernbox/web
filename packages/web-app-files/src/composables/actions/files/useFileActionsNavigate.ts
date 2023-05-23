@@ -84,7 +84,7 @@ export const useFileActionsNavigate = ({ store }: { store?: Store<any> } = {}) =
 
         return true
       },
-      canBeDefault: true,
+      // hasPriority: true,
       componentType: 'router-link',
       route: ({ space, resources }) => {
         if (

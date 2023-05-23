@@ -51,7 +51,7 @@ export const useFileActionsDownloadFile = () => {
         }
         return resources[0].canDownload()
       },
-      canBeDefault: true,
+      // hasPriority: true,
       componentType: 'button',
       class: 'oc-files-actions-download-file-trigger'
     }

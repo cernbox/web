@@ -25,7 +25,7 @@ const fileExtensions = () => {
   const extensions: {
     extension: string
     label: string
-    canBeDefault?: boolean
+    hasPriority?: boolean
     newFileMenu?: any
   }[] = [
     {
@@ -69,7 +69,7 @@ const fileExtensions = () => {
   }
   return extensions.reduce((acc, extensionItem) => {
     const isPrimary = primaryExtensions.includes(extensionItem.extension)
-    extensionItem.canBeDefault = isPrimary
+    extensionItem.hasPriority = isPrimary
     if (isPrimary) {
       extensionItem.newFileMenu = {
         menuTitle($gettext) {
@@ -93,8 +93,8 @@ const appInfo = {
       ...(Object.prototype.hasOwnProperty.call(extensionItem, 'newFileMenu') && {
         newFileMenu: extensionItem.newFileMenu
       }),
-      ...(Object.prototype.hasOwnProperty.call(extensionItem, 'canBeDefault') && {
-        canBeDefault: extensionItem.canBeDefault
+      ...(Object.prototype.hasOwnProperty.call(extensionItem, 'hasPriority') && {
+        hasPriority: extensionItem.hasPriority
       })
     }
   })

@@ -221,7 +221,7 @@ export const useFileActionsCreateNewFile = ({
         isEnabled: () => {
           return unref(currentFolder)?.canUpload({ user: store.getters.user })
         },
-        canBeDefault: true,
+        hasPriority: true,
         componentType: 'button',
         class: 'oc-files-actions-create-new-file',
         ext: newFileHandler.ext
@@ -237,7 +237,7 @@ export const useFileActionsCreateNewFile = ({
         isEnabled: () => {
           return unref(currentFolder)?.canUpload({ user: store.getters.user })
         },
-        canBeDefault: true,
+        hasPriority: true,
         componentType: 'button',
         class: 'oc-files-actions-create-new-file',
         ext: mimeType.ext

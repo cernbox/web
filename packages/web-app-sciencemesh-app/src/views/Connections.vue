@@ -43,6 +43,17 @@
           </template>
         </no-content-message>
         <oc-table v-else :fields="fields" :data="connections" :highlighted="highlightedConnections">
+          <template #actions="rowData">
+            <oc-button
+              id="oc-sciencemesh-remove-connection"
+              v-oc-tooltip="'Delete connection'"
+              :aria-label="'Delete connection'"
+              appearance="raw"
+              @click="deleteConnection(rowData)"
+            >
+              <oc-icon name="delete-bin" />
+            </oc-button>
+          </template>
         </oc-table>
       </template>
     </div>
@@ -51,6 +62,7 @@
     
     <script lang="ts">
 import { defineComponent } from 'vue'
+import { mapActions } from 'vuex'
 import NoContentMessage from 'web-pkg/src/components/NoContentMessage.vue'
 import AppLoadingSpinner from 'web-pkg/src/components/AppLoadingSpinner.vue'
 
@@ -85,6 +97,7 @@ export default defineComponent({
       default: () => true
     }
   },
+  emits: ['renewAcceptedUsers'],
   setup() {
     return {}
   },
@@ -113,6 +126,12 @@ export default defineComponent({
           name: 'institution',
           title: 'Institution',
           alignH: 'right'
+        },
+        {
+          name: 'actions',
+          title: 'Actions',
+          alignH: 'right',
+          type: 'slot'
         }
       ]
     },
@@ -123,11 +142,41 @@ export default defineComponent({
     }
   },
   methods: {
+    ...mapActions(['showMessage']),
+    errorPopup() {
+      this.showMessage({
+        title: 'Error',
+        desc: 'An error occurred by removing the connection',
+        status: 'danger'
+      })
+    },
     toSharedWithMe() {
       this.$router.push({ name: 'files-shares-with-me', query: { filterSM: 'true' } })
     },
     toSharedWithOthers() {
       this.$router.push({ name: 'files-shares-with-others', query: { filterSM: 'true' } })
+    },
+    async deleteConnection(rawData) {
+      const url = '/sciencemesh/delete-accepted-user'
+
+      const accessToken = this.$store.getters['runtime/auth/accessToken']
+      const headers = new Headers()
+      headers.append('Authorization', 'Bearer ' + accessToken)
+      headers.append('X-Requested-With', 'XMLHttpRequest')
+      headers.append('Content-type', 'application/json')
+
+      const body = JSON.stringify({ idp: rawData.item.institution, user_id: rawData.item.user_id })
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers,
+        body
+      })
+      if (!response.ok) {
+        this.errorPopup()
+      } else {
+        this.$emit('renewAcceptedUsers')
+      }
     }
   }
 })

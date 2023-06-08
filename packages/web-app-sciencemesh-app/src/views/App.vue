@@ -14,6 +14,7 @@
           :connections="connections"
           :highlighted-connections="highlightedConnections.map((c) => c.id)"
           :loading="loadingConnections"
+          @renewAcceptedUsers="findAcceptedUsers"
         />
       </div>
     </div>
@@ -104,7 +105,7 @@ export default defineComponent({
       headers.append('Authorization', 'Bearer ' + accessToken)
       headers.append('X-Requested-With', 'XMLHttpRequest')
 
-      //local test
+      //// local test
       // let random = Math.random()
       // this.connections.push({
       //   id: 'Bob Doe' + random,
@@ -125,10 +126,11 @@ export default defineComponent({
         this.acceptedUsers = await response.json()
         this.acceptedUsers.forEach((u) => {
           this.newConnections.push({
-            id: u.mail + u.id.idp,
+            id: u.mail + u.id,
             user: u.display_name,
             mail: u.mail,
-            institution: u.id.idp
+            institution: u.idp,
+            user_id: u.user_id
           })
         })
         this.connections = [...this.newConnections]

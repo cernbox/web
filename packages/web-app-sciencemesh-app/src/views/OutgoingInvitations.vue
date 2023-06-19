@@ -268,10 +268,10 @@ export default defineComponent({
             link: `https://sciencemesh.cesnet.cz/iop/meshdir?token=${tokenInfo.token}&providerDomain=${window.location.host}`,
             token: tokenInfo.token,
             ...(tokenInfo.expiration?.seconds && {
-              expiration: this.toDateTime(tokenInfo.expiration.seconds)
+              expiration: this.toDateTime(tokenInfo.expiration)
             }),
             ...(tokenInfo.expiration?.seconds && {
-              expirationSeconds: tokenInfo.expiration.seconds
+              expirationSeconds: tokenInfo.expiration
             }),
             ...(tokenInfo.description && { description: tokenInfo.description })
           })
@@ -319,11 +319,11 @@ export default defineComponent({
           this.tokens.push({
             id: t.token,
             token: t.token,
-            ...(t.expiration?.seconds && {
-              expiration: this.toDateTime(t.expiration.seconds)
+            ...(t.expiration && {
+              expiration: this.toDateTime(t.expiration)
             }),
-            ...(t.expiration?.seconds && {
-              expirationSeconds: t.expiration.seconds
+            ...(t.expiration && {
+              expirationSeconds: t.expiration
             }),
             ...(t.description && { description: t.description })
           })

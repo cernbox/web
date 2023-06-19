@@ -72,6 +72,7 @@
           v-if="hasRenameAction(item)"
           class="resource-table-edit-name"
           appearance="raw"
+          :aria-label="getAriaLabelRename(item)"
           @click="openRenameDialog(item)"
         >
           <oc-icon name="edit-2" fill-type="line" size="small" />
@@ -891,6 +892,10 @@ export default defineComponent({
       }
 
       return this.$gettext('Personal')
+    },
+    getAriaLabelRename(item) {
+      const resourceType = item.isFolder ? 'folder' : 'file'
+      return this.$gettext(`Rename ${resourceType}`) + ' ' + item.name
     }
   }
 })
@@ -959,13 +964,15 @@ export default defineComponent({
     tr:not([class*='oc-table-highlighted']) {
       .resource-table-edit-name,
       .resource-table-actions div:first-child {
-        visibility: hidden;
+        //visibility: hidden;
+        display: none;
       }
     }
     tr:not([class*='oc-table-highlighted']):hover {
       .resource-table-edit-name,
       .resource-table-actions div:first-child {
         visibility: visible;
+        display: inline-flex;
       }
     }
   }

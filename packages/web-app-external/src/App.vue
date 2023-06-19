@@ -135,6 +135,7 @@ export default defineComponent({
         let defaultApplication = undefined
         let fileId
         let filePath
+        let filePathSet
 
         if (this.$route.name !== 'external-apps-remote') {
           if (!editMode)
@@ -148,6 +149,7 @@ export default defineComponent({
           sessionStorage.setItem('ocmToken', this.$route.params.token)
 
           filePath = this.$route.params.remote_path
+          filePathSet = true
         }
 
         // fetch iframe params for app and file
@@ -158,14 +160,14 @@ export default defineComponent({
 
         const viewMode = editMode
           ? 'write'
-          : this.fileInfo.isReceivedShare() ||
+          : filePathSet || this.fileInfo.isReceivedShare() ||
             window.location.pathname.startsWith('/external/public/')
           ? 'preview'
           : false
 
         const query = stringify({
           ...(fileId && { file_id: fileId }),
-          ...(filePath && { path: '/ocm/' + this.$route.params.token + '/' + filePath }),
+          ...(filePathSet && { path: '/ocm/' + this.$route.params.token + '/' + filePath }),
           lang: this.$language.current,
           ...(this.applicationName && { app_name: this.applicationName }),
           ...(viewMode && { view_mode: viewMode })

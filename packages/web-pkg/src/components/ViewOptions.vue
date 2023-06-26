@@ -1,5 +1,6 @@
 <template>
   <div class="oc-flex oc-flex-middle">
+    <filter-options />
     <div
       v-if="viewModes.length > 1"
       class="viewmode-switch-buttons oc-button-group oc-visible@s oc-mr-s"
@@ -103,8 +104,12 @@ import {
   useRouteName
 } from 'web-pkg/src/composables'
 import { ViewMode } from 'web-pkg/src/ui/types'
+import FilterOptions from './FilterOptions.vue'
 
 export default defineComponent({
+  components: {
+    FilterOptions
+  },
   props: {
     hasHiddenFiles: { type: Boolean, default: true },
     hasFileExtensions: { type: Boolean, default: true },

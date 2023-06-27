@@ -5,6 +5,7 @@
   "description": "ownCloud web files",
   "license": "AGPL-3.0",
   "dependencies": {
+    "email-validator": "^2.0.4",
     "mark.js": "^8.11.1"
   },
   "devDependencies": {
@@ -25,14 +26,14 @@
     "semver": "^7.3.8",
     "uuid": "^9.0.0",
     "vue-concurrency": "4.0.0",
-    "vue3-gettext": "^2.3.3",
     "vue-router": "4.1.6",
+    "vue3-gettext": "^2.3.3",
     "vuex": "4.1.0",
     "web-app-files": "workspace:*",
     "web-app-search": "workspace:*",
     "web-client": "workspace:@ownclouders/web-client@*",
     "web-pkg": "workspace:@ownclouders/web-pkg@*",
-    "web-runtime": "workspace:*",
-    "web-pocs": "workspace:*"
+    "web-pocs": "workspace:*",
+    "web-runtime": "workspace:*"
   }
 }

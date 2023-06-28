@@ -4,8 +4,7 @@ import {
   useRouteName,
   useRouter,
   useRouteQueryPersisted,
-  QueryValue,
-  useFilter
+  QueryValue
 } from 'web-pkg/src/composables'
 import { SortConstants } from './constants'
 import get from 'lodash-es/get'
@@ -62,7 +61,7 @@ export function useSort<T extends SortableItem>(options: SortOptions<T>): SortRe
 
   const items = computed<Array<T>>((): T[] => {
     // cast to T[] to avoid: Type 'T[] | readonly T[]' is not assignable to type 'T[]'.
-    const { items: sortItems } = useFilter({ items: unref(options.items) as T[] })
+    const sortItems = unref(options.items) as T[]
 
     if (!unref(sortBy)) {
       return sortItems

@@ -213,6 +213,18 @@ export default {
     window.localStorage.setItem('oc_fileExtensionsShown', value)
   },
 
+  SET_ACTIVE_RESOURCE_FILTER(state, value: string) {
+    state.activeResourceFilter = value
+
+    window.localStorage.setItem('oc_activeResourceFilter', value)
+  },
+
+  SET_ACTIVE_FILE_TYPE(state, value: string) {
+    state.activeFileType = value
+
+    window.localStorage.setItem('oc_activeFileType', value)
+  },
+
   SET_ANCESTOR_META_DATA(state, value) {
     state.ancestorMetaData = value
   },

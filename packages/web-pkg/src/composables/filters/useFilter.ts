@@ -1,72 +1,66 @@
 import { Resource } from 'web-client/src'
 import { ResourceFilterConstants } from './constants'
 
-interface FilterProps<T> {
-  items?: T[]
-}
-
-export function useFilter<T>({ items = [] }: FilterProps<T>): {
-  items: T[]
-  resetFilter: VoidFunction
-  setFilter: (filter: string) => void
-} {
-  let filteredItems = items as Resource[]
-
-  let filter = 'IMAGES'
-  function resetFilter() {
-    filter = 'ALL'
-  }
-
-  function setFilter(newFilter: string) {
-    if (ResourceFilterConstants.resourceOptions.includes(newFilter)) {
-      filter = newFilter
-    }
-  }
+export function useFilter(files: any[], filter: string, fileType: string) {
+  let filteredItems = files as Resource[]
+  const filters = ResourceFilterConstants.resourceOptions
 
   switch (filter) {
-    case 'IMAGES':
-      const imageTypes = [
-        'JPEG',
-        'JPG',
-        'PNG',
-        'BMP',
-        'GIF',
-        'TIFF',
-        'SVG',
-        'RAW',
-        'WEBP',
-        'HEIF',
-        'ICO',
-        'PSD'
-      ]
-
+    case filters[1]:
       filteredItems = filteredItems.filter((item) =>
-        imageTypes.includes(item.extension.toUpperCase())
+        ResourceFilterConstants.mediaFileTypes.includes(item.extension)
       )
       break
-    case 'TEXTFILES':
-      const textfileTypes = ['TXT', 'DOCX', 'DOC', 'MD', 'XML', 'HTML', 'YAML', 'YML']
+    case filters[2]:
       filteredItems = filteredItems.filter((item) =>
-        textfileTypes.includes(item.extension.toUpperCase())
+        ResourceFilterConstants.textfileTypes.includes(item.extension)
       )
       break
-    case 'FOLDERS':
+    case filters[3]:
       filteredItems = filteredItems.filter((item) => item.isFolder)
       break
-    case 'SPREADSHEETS':
-      const spreadsheetFiles = ['CSV', 'GSEET', 'GSHEETS', 'XLS', 'XLSX']
+    case filters[4]:
       filteredItems = filteredItems.filter((item) =>
-        spreadsheetFiles.includes(item.extension.toUpperCase())
+        ResourceFilterConstants.scriptTypes.includes(item.extension)
       )
-      break
-    case 'MEDIA FILES':
-      const mediaFileTypes = ['MP3', 'WAV', 'FLAC', 'AAC', 'MP4', 'AVI', 'MOV', 'WMV']
-      filteredItems = filteredItems.filter((item) =>
-        mediaFileTypes.includes(item.extension.toUpperCase())
-      )
-      break
     default:
       break
   }
-  return { items: filteredItems as T[], resetFilter: resetFilter, setFilter: setFilter }
+  if (fileType && fileType !== '') {
+    const fileTypeFilter = getFileTypeFilter(fileType.toLowerCase())
+    filteredItems = filteredItems.filter((item) => new RegExp(fileTypeFilter).test(item.extension))
+  }
+  return filteredItems
+}
+
+//Checks for filetypes which can have multiple extensions and returns all versions
+const getFileTypeFilter = (fileType: string) => {
+  let fileFilter = fileType.replace('.', '')
+  switch (fileType) {
+    case 'jpg':
+      fileFilter = 'jpe?g'
+      break
+    case 'jpeg':
+      fileFilter = 'jpe?g'
+      break
+    case 'yaml':
+      fileFilter = 'ya?ml'
+      break
+    case 'yml':
+      fileFilter = 'ya?ml'
+      break
+    case 'docx':
+      fileFilter = 'docx?'
+      break
+    case 'doc':
+      fileFilter = 'docx?'
+      break
+    case 'xlsx':
+      fileFilter = 'xlsx?'
+      break
+    case 'xls':
+      fileFilter = 'xlsx?'
+      break
+  }
+  return fileFilter
 }

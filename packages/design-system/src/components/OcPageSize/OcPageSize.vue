@@ -1,5 +1,5 @@
 <template>
-  <div class="oc-page-size">
+  <div class="oc-page-size" :style="{ justifyContent: alignment }">
     <label
       class="oc-page-size-label"
       :for="selectId"
@@ -67,6 +67,12 @@ export default defineComponent({
       type: String,
       required: false,
       default: () => uniqueId('oc-page-size-')
+    },
+
+    alignment: {
+      type: String,
+      required: false,
+      default: ''
     }
   },
   emits: ['change'],

@@ -1,6 +1,5 @@
 <template>
   <div class="oc-flex oc-flex-middle">
-    <filter-options />
     <div
       v-if="viewModes.length > 1"
       class="viewmode-switch-buttons oc-button-group oc-visible@s oc-mr-s"
@@ -84,6 +83,29 @@
             @input="setTilesViewSize"
           />
         </li>
+        <li class="files-view-options-list-item">
+          <oc-page-size
+            v-model="filteredResourcesModel"
+            :options="resourceTypes"
+            label="Filetype"
+            :selected="filteredResourcesModel ?? 'No filter'"
+            alignment="space-between"
+            @change="updateSelectedResourceTypeModel"
+          />
+        </li>
+        <li
+          v-if="
+            filteredResourcesModel &&
+            filteredResourcesModel !== 'No filter' &&
+            filteredResourcesModel !== 'Folders'
+          "
+        >
+          <oc-text-input
+            v-model="activeFileTypeModel"
+            :default-value="'Filter ' + filteredResourcesModel"
+            @change="updateActiveFileTypeModel"
+          />
+        </li>
       </oc-list>
     </oc-drop>
   </div>
@@ -104,12 +126,9 @@ import {
   useRouteName
 } from 'web-pkg/src/composables'
 import { ViewMode } from 'web-pkg/src/ui/types'
-import FilterOptions from './FilterOptions.vue'
+import { ResourceFilterConstants } from 'web-pkg/src/composables'
 
 export default defineComponent({
-  components: {
-    FilterOptions
-  },
   props: {
     hasHiddenFiles: { type: Boolean, default: true },
     hasFileExtensions: { type: Boolean, default: true },
@@ -171,6 +190,8 @@ export default defineComponent({
       defaultValue: ViewModeConstants.tilesSizeDefault.toString()
     })
 
+    const resourceTypes: string[] = ResourceFilterConstants.resourceOptions
+
     const setTilesViewSize = () => {
       const rootStyle = (document.querySelector(':root') as HTMLElement).style
       const currentSize = rootStyle.getPropertyValue('--oc-size-tiles-resize-step')
@@ -221,11 +242,17 @@ export default defineComponent({
       setTilesViewSize,
       setItemsPerPage,
       setViewMode,
-      viewOptionsButtonLabel: $gettext('Display customization options of the files list')
+      viewOptionsButtonLabel: $gettext('Display customization options of the files list'),
+      resourceTypes
     }
   },
   computed: {
-    ...mapState('Files', ['areHiddenFilesShown', 'areFileExtensionsShown']),
+    ...mapState('Files', [
+      'areHiddenFilesShown',
+      'areFileExtensionsShown',
+      'activeResourceFilter',
+      'activeFileType'
+    ]),
 
     hiddenFilesShownModel: {
       get() {
@@ -244,17 +271,47 @@ export default defineComponent({
       set(value) {
         this.SET_FILE_EXTENSIONS_VISIBILITY(value)
       }
+    },
+    filteredResourcesModel: {
+      get() {
+        return this.activeResourceFilter
+      },
+
+      set(value: string) {
+        this.SET_ACTIVE_RESOURCE_FILTER(value)
+      }
+    },
+    activeFileTypeModel: {
+      get() {
+        return this.activeFileType
+      },
+
+      set(value: string) {
+        this.SET_ACTIVE_FILE_TYPE(value)
+      }
     }
   },
   methods: {
     queryItemAsString,
-    ...mapMutations('Files', ['SET_HIDDEN_FILES_VISIBILITY', 'SET_FILE_EXTENSIONS_VISIBILITY']),
+    ...mapMutations('Files', [
+      'SET_HIDDEN_FILES_VISIBILITY',
+      'SET_FILE_EXTENSIONS_VISIBILITY',
+      'SET_ACTIVE_RESOURCE_FILTER',
+      'SET_ACTIVE_FILE_TYPE'
+    ]),
 
     updateHiddenFilesShownModel(event) {
       this.hiddenFilesShownModel = event
     },
     updateFileExtensionsShownModel(event) {
       this.fileExtensionsShownModel = event
+    },
+    updateSelectedResourceTypeModel(resourceType: string) {
+      this.filteredResourcesModel = resourceType
+      this.activeFileTypeModel = ''
+    },
+    updateActiveFileTypeModel(fileType: string) {
+      this.activeFileTypeModel = fileType
     }
   }
 })

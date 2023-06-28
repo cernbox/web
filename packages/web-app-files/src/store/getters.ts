@@ -1,5 +1,6 @@
 import { isProjectSpaceResource } from 'web-client/src/helpers'
 import { ShareTypes } from 'web-client/src/helpers/share'
+import { useFilter } from 'web-pkg/src'
 
 export default {
   selectedFiles: (state, getters) => {
@@ -22,7 +23,11 @@ export default {
     return state.clipboardAction
   },
   activeFiles: (state, getters) => {
-    let files = [].concat(getters.filesAll)
+    let files = useFilter(
+      [].concat(getters.filesAll),
+      state.activeResourceFilter,
+      state.activeFileType
+    )
 
     if (!state.areHiddenFilesShown) {
       files = files.filter((file) => !file.name.startsWith('.'))

@@ -5,6 +5,7 @@
       :resource="resource"
       :is-resource-clickable="isResourceClickable"
       :folder-link="folderLink"
+      :aria-label="ariaLabel"
       @click="emitClick"
     >
       <oc-img
@@ -23,6 +24,7 @@
         :resource="resource"
         :is-resource-clickable="isResourceClickable"
         :folder-link="folderLink"
+        :aria-label="ariaLabel"
         class="oc-text-overflow"
         @click="emitClick"
       >
@@ -156,6 +158,11 @@ export default defineComponent({
       type: Boolean,
       required: false,
       default: true
+    },
+    ariaLabel: {
+      type: String,
+      required: false,
+      default: null
     }
   },
   emits: ['click', 'parentFolderClicked'],

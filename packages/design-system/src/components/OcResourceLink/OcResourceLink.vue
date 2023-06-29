@@ -5,6 +5,7 @@
     v-if="isResourceClickable"
     :target="linkTargetBlank"
     :aria-describedby="opensInNewWindowDescriptionId"
+    :aria-label="ariaLabel"
     :draggable="false"
     @dragstart.prevent.stop
     @click.stop="emitClick"
@@ -49,6 +50,11 @@ export default {
       type: Boolean,
       required: false,
       default: true
+    },
+    ariaLabel: {
+      type: String,
+      required: false,
+      default: null
     }
   },
   emits: ['click'],

@@ -65,6 +65,7 @@
           :is-resource-clickable="isResourceClickable(item.id)"
           :folder-link="folderLink(item)"
           :parent-folder-link="parentFolderLink(item)"
+          :aria-label="getAriaLabelResource(item)"
           :class="{ 'resource-table-resource-cut': isResourceCut(item) }"
           @click="emitFileClick(item)"
         />
@@ -896,6 +897,11 @@ export default defineComponent({
     getAriaLabelRename(item) {
       const resourceType = item.isFolder ? 'folder' : 'file'
       return this.$gettext(`Rename ${resourceType}`) + ' ' + item.name
+    },
+    getAriaLabelResource(item) {
+      return item.isFolder
+        ? this.$gettext('Open folder') + ' ' + item.name
+        : this.$gettext('Execute default action on file') + ' ' + item.name
     }
   }
 })

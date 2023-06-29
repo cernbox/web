@@ -1,15 +1,44 @@
 <template>
   <oc-button
+    v-if="!moreThemes"
     v-oc-tooltip="buttonLabel"
     class="themeswitcher-btn"
     :aria-label="buttonLabel"
-    appearance="raw-inverse"
-    variation="brand"
+    appearance="raw"
+    variation="inverse"
     @click="toggleTheme"
   >
     <span class="oc-visible@s" :aria-label="switchLabel" />
-    <oc-icon :name="switchIcon" fill-type="line" variation="inherit" />
+    <oc-icon :name="switchIcon" fill-type="line" />
   </oc-button>
+  <div v-else class="oc-flex oc-flex-middle">
+    <oc-button
+      id="my_filter"
+      class="oc-mr-s"
+      appearance="raw"
+      variation="inverse"
+      :aria-label="buttonLabel"
+    >
+      <oc-icon name="paint" accessible-label="Select theme" class="oc-pr-xs" />
+    </oc-button>
+
+    <oc-drop drop-id="oc-drop" toggle="#my_filter" mode="click" close-on-click>
+      <div slot="special" class="oc-card">
+        <div class="oc-card-header">
+          <h3 class="oc-card-title">Theme Switcher</h3>
+        </div>
+        <div class="oc-card-body theme-switcher-list">
+          <oc-list>
+            <li v-for="themeOption in themeOptions" :key="themeOption">
+              <oc-button appearance="raw" class="oc-p-s" @click="selectTheme(themeOption)">{{
+                themeOption
+              }}</oc-button>
+            </li>
+          </oc-list>
+        </div>
+      </div>
+    </oc-drop>
+  </div>
 </template>
 <script lang="ts">
 import { computed, unref, watch, defineComponent } from 'vue'
@@ -36,7 +65,7 @@ export default defineComponent({
       applyTheme(unref(currentTheme))
     })
 
-    return { currentThemeName, currentTheme }
+    return { currentThemeName, currentTheme, storep }
   },
   computed: {
     ...mapGetters(['configuration']),
@@ -51,12 +80,44 @@ export default defineComponent({
     },
     switchLabel() {
       return this.$gettext('Currently used theme')
+    },
+    moreThemes() {
+      return Object.keys(this.store.getters.configuration.themes).length > 2
+    },
+    themeOptions() {
+      return Object.keys(this.store.getters.configuration.themes)
     }
   },
   methods: {
     toggleTheme() {
       this.currentThemeName = this.isLightTheme ? themeNameDark : themeNameLight
+    },
+    selectTheme(themeOption) {
+      this.currentThemeName = themeOption
     }
   }
 })
 </script>
+
+<style lang="scss">
+.theme-switcher-list {
+  .oc-card {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+  text-align: left;
+  white-space: normal;
+
+  a,
+  button,
+  span {
+    display: inline-flex;
+    font-weight: normal !important;
+    gap: 10px;
+    justify-content: flex-start;
+    vertical-align: top;
+    width: 100%;
+    text-align: left;
+  }
+}
+</style>

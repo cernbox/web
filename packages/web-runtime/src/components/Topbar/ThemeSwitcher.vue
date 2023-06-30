@@ -4,8 +4,8 @@
     v-oc-tooltip="buttonLabel"
     class="themeswitcher-btn"
     :aria-label="buttonLabel"
-    appearance="raw"
-    variation="inverse"
+    appearance="raw-inverse"
+    variation="brand"
     @click="toggleTheme"
   >
     <span class="oc-visible@s" :aria-label="switchLabel" />
@@ -65,7 +65,7 @@ export default defineComponent({
       applyTheme(unref(currentTheme))
     })
 
-    return { currentThemeName, currentTheme, storep }
+    return { currentThemeName, currentTheme, store }
   },
   computed: {
     ...mapGetters(['configuration']),

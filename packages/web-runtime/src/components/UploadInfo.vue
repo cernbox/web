@@ -134,6 +134,28 @@
         </li>
       </ul>
     </div>
+    <div v-if="imageUploaded">
+      <oc-modal
+        :title="'Add accessible caption (ALT) for file `' + imageUploaded.name + '`'"
+        button-cancel-text="Cancel"
+        button-confirm-text="Add caption"
+        input-value="Caption for image"
+        input-label="Accessible caption"
+        input-description="Enter accessible caption"
+        input-error="Something went wrong"
+        class="oc-mb-l"
+        @cancel="$emit('cancel')"
+        @confirm="confirmImageCaption(input)"
+      >
+        <template #content>
+          <oc-text-input
+            v-model="currentImageCaption"
+            :label="$gettext('Accessible image caption')"
+            :fix-message-line="true"
+          />
+        </template>
+      </oc-modal>
+    </div>
   </div>
 </template>
 
@@ -173,7 +195,9 @@ export default defineComponent({
     uploadSpeed: 0,
     filesInEstimation: {},
     timeStarted: null,
-    remainingTime: undefined
+    remainingTime: undefined,
+    imageUploaded: undefined,
+    currentImageCaption: ''
   }),
   computed: {
     ...mapGetters(['configuration']),
@@ -394,9 +418,16 @@ export default defineComponent({
         this.successful.push(file.meta.uploadId)
         this.filesInProgressCount -= 1
       }
+      if (this.successful.length === 1 && !file.isFolder && file.data.type.startsWith('image')) {
+        console.log('add file caption', file)
+        this.imageUploaded = file
+      }
     })
   },
   methods: {
+    confirmImageCaption(caption) {
+      console.log('ocfirmed caption', caption)
+    },
     getRemainingTime(remainingMilliseconds) {
       const roundedRemainingMinutes = Math.round(remainingMilliseconds / 1000 / 60)
       if (roundedRemainingMinutes >= 1 && roundedRemainingMinutes < 60) {

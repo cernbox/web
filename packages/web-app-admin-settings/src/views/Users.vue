@@ -534,7 +534,8 @@ export default defineComponent({
         })
         updateLocalUsers(usersResponse.map((r) => r.data))
         await store.dispatch('showMessage', {
-          title: $gettext('Users were added to groups successfully')
+          title: $gettext('Users were added to groups successfully'),
+          status: 'success'
         })
         addToGroupsModalIsOpen.value = false
       } catch (e) {
@@ -568,7 +569,8 @@ export default defineComponent({
         })
         updateLocalUsers(usersResponse.map((r) => r.data))
         await store.dispatch('showMessage', {
-          title: $gettext('Users were removed from groups successfully')
+          title: $gettext('Users were removed from groups successfully'),
+          status: 'success'
         })
         removeFromGroupsModalIsOpen.value = false
       } catch (e) {
@@ -598,7 +600,10 @@ export default defineComponent({
           return Promise.all(affectedUsers.map((u) => client.users.getUser(u.id)))
         })
         updateLocalUsers(usersResponse.map((r) => r.data))
-        await store.dispatch('showMessage', { title: $gettext('Login was edited successfully') })
+        await store.dispatch('showMessage', {
+          title: $gettext('Login was edited successfully'),
+          status: 'success'
+        })
         editLoginModalIsOpen.value = false
       } catch (e) {
         console.error(e)
@@ -728,7 +733,8 @@ export default defineComponent({
 
         this.toggleCreateUserModal()
         this.showMessage({
-          title: this.$gettext('User was created successfully')
+          title: this.$gettext('User was created successfully'),
+          status: 'success'
         })
       } catch (error) {
         console.error(error)

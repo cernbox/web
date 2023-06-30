@@ -130,7 +130,8 @@ export const useFileActionsDeleteResources = ({ store }: { store?: Store<any> })
         store.dispatch('Files/removeFilesFromTrashbin', [resource])
         const translated = $gettext('"%{file}" was deleted successfully')
         store.dispatch('showMessage', {
-          title: $gettextInterpolate(translated, { file: resource.name }, true)
+          title: $gettextInterpolate(translated, { file: resource.name }, true),
+          status: 'success'
         })
       })
       .catch((error) => {

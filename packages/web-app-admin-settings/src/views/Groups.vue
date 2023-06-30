@@ -243,7 +243,8 @@ export default defineComponent({
         const response = await client.groups.createGroup(group)
         this.toggleCreateGroupModal()
         this.showMessage({
-          title: this.$gettext('Group was created successfully')
+          title: this.$gettext('Group was created successfully'),
+          status: 'success'
         })
         this.groups.push({ ...response?.data, members: [] })
       } catch (error) {

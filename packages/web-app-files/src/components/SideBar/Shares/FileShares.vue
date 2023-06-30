@@ -372,7 +372,8 @@ export default defineComponent({
             storageId: this.resource.id
           })
           this.showMessage({
-            title: this.$gettext('Access was denied successfully')
+            title: this.$gettext('Access was denied successfully'),
+            status: 'success'
           })
         } catch (e) {
           console.error(e)
@@ -394,7 +395,8 @@ export default defineComponent({
             loadIndicators: false
           })
           this.showMessage({
-            title: this.$gettext('Access was granted successfully')
+            title: this.$gettext('Access was granted successfully'),
+            status: 'success'
           })
         } catch (e) {
           console.error(e)
@@ -442,7 +444,8 @@ export default defineComponent({
 
         this.hideModal()
         this.showMessage({
-          title: this.$gettext('Share was removed successfully')
+          title: this.$gettext('Share was removed successfully'),
+          status: 'success'
         })
         if (lastShareId && isLocationSharesActive(this.$router, 'files-shares-with-others')) {
           this.REMOVE_FILES([{ id: lastShareId }])

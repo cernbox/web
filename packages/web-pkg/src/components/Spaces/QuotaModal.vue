@@ -184,7 +184,10 @@ export default defineComponent({
       const results = await Promise.allSettled<Array<unknown>>(requests)
       const succeeded = results.filter((r) => r.status === 'fulfilled')
       if (succeeded.length) {
-        store.dispatch('showMessage', { title: getSuccessMessage(succeeded.length) })
+        store.dispatch('showMessage', {
+          title: getSuccessMessage(succeeded.length),
+          status: 'success'
+        })
       }
       const errors = results.filter((r) => r.status === 'rejected')
       if (errors.length) {

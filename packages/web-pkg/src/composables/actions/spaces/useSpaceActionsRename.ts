@@ -30,7 +30,8 @@ export const useSpaceActionsRename = ({ store }: { store?: Store<any> } = {}) =>
           value: name
         })
         store.dispatch('showMessage', {
-          title: $gettext('Space name was changed successfully')
+          title: $gettext('Space name was changed successfully'),
+          status: 'success'
         })
       })
       .catch((error) => {

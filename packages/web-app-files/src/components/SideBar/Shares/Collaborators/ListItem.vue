@@ -434,7 +434,7 @@ export default defineComponent({
           expirationDate: expirationDate || '',
           role
         })
-        this.showMessage({ title: this.$gettext('Share successfully changed') })
+        this.showMessage({ title: this.$gettext('Share successfully changed'), status: 'success' })
       } catch (e) {
         console.error(e)
         this.showMessage({

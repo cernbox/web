@@ -43,7 +43,8 @@ export const useFileActionsCreateSpaceFromResource = ({ store }: { store?: Store
       await Promise.all(copyOps)
       store.dispatch('Files/resetFileSelection')
       store.dispatch('showMessage', {
-        title: $gettext('Space was created successfully')
+        title: $gettext('Space was created successfully'),
+        status: 'success'
       })
     } catch (error) {
       console.error(error)

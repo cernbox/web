@@ -42,7 +42,8 @@ export const useGeneralActionsUploadLogo = ({
         }
       })
       store.dispatch('showMessage', {
-        title: $gettext('Logo was uploaded successfully')
+        title: $gettext('Logo was uploaded successfully'),
+        status: 'success'
       })
       setTimeout(() => {
         router.go(0)

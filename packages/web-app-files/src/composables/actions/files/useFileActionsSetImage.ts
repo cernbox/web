@@ -69,7 +69,8 @@ export const useFileActionsSetImage = ({ store }: { store?: Store<any> } = {}) =
       })
 
       store.dispatch('showMessage', {
-        title: $gettext('Space image was set successfully')
+        title: $gettext('Space image was set successfully'),
+        status: 'success'
       })
     } catch (error) {
       console.error(error)

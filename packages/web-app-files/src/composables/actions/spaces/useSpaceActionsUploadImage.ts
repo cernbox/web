@@ -86,7 +86,8 @@ export const useSpaceActionsUploadImage = ({
                 value: data.special.find((special) => special.specialFolder.name === 'image')
               })
               store.dispatch('showMessage', {
-                title: $gettext('Space image was uploaded successfully')
+                title: $gettext('Space image was uploaded successfully'),
+                status: 'success'
               })
               eventBus.publish('app.files.list.load')
             })

@@ -29,7 +29,8 @@ export const useSpaceActionsEditDescription = ({ store }: { store?: Store<any> }
           space.description = description
         }
         store.dispatch('showMessage', {
-          title: $gettext('Space subtitle was changed successfully')
+          title: $gettext('Space subtitle was changed successfully'),
+          status: 'success'
         })
       })
       .catch((error) => {

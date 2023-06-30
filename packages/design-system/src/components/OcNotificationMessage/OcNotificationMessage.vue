@@ -5,7 +5,7 @@
   >
     <div class="oc-flex oc-flex-wrap oc-flex-middle oc-flex-1" :role="role" :aria-live="ariaLive">
       <div class="oc-flex oc-flex-middle">
-        <oc-icon :variation="iconVariation" name="information" fill-type="line" class="oc-mr-s" />
+        <oc-icon :variation="iconVariation" :name="iconName" fill-type="line" class="oc-mr-s" />
         <div class="oc-notification-message-title">
           {{ title }}
         </div>
@@ -76,7 +76,7 @@ export default defineComponent({
   emits: ['close'],
   computed: {
     classes() {
-      return `oc-notification-message-${this.status}`
+      return `oc-notification-message-${this.status}` + ' ' + this.borderColor
     },
     iconVariation() {
       return this.status
@@ -89,6 +89,25 @@ export default defineComponent({
     },
     ariaLive() {
       return this.isStatusDanger ? 'assertive' : 'polite'
+    },
+    iconName() {
+      console.log('status, icon', this.status)
+      return this.status === 'success' ? 'checkbox-circle' : 'information'
+    },
+    borderColor() {
+      return this.status === 'success'
+        ? 'oc-border-success'
+        : this.status === 'primary'
+        ? 'oc-border-primary'
+        : this.status === 'passive'
+        ? 'oc-border-passive'
+        : this.status === 'warning'
+        ? 'oc-border-warning'
+        : this.status === 'danger'
+        ? 'oc-border-danger'
+        : this.status === 'brand'
+        ? 'oc-border-brand'
+        : 'oc-border-primary'
     }
   },
   mounted() {
@@ -122,6 +141,30 @@ export default defineComponent({
   &-title {
     font-size: 1.15rem;
   }
+}
+
+.oc-border-primary {
+  border-left: 5px solid var(--oc-color-swatch-primary-default);
+}
+
+.oc-border-passive {
+  border-left: 5px solid var(--oc-color-swatch-passive-default);
+}
+
+.oc-border-warning {
+  border-left: 5px solid var(--oc-color-swatch-warning-default);
+}
+
+.oc-border-success {
+  border-left: 5px solid var(--oc-color-swatch-success-default);
+}
+
+.oc-border-danger {
+  border-left: 5px solid var(--oc-color-swatch-danger-default);
+}
+
+.oc-border-brand {
+  border-left: 5px solid var(--oc-color-swatch-brand-default);
 }
 </style>
 

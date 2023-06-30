@@ -46,7 +46,8 @@ export const useFileActionsSetReadme = ({ store }: { store?: Store<any> } = {}) 
         value: buildSpace(updatedDriveData).spaceReadmeData
       })
       store.dispatch('showMessage', {
-        title: $gettext('Space description was set successfully')
+        title: $gettext('Space description was set successfully'),
+        status: 'success'
       })
     } catch (error) {
       console.error(error)

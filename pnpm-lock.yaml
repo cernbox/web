@@ -21,10 +21,6 @@ overrides:
   '@uppy/webdav': https://github.com/owncloud/uppy/releases/download/v3.12.13-owncloud/uppy-webdav.tgz
   '@uppy/xhr-upload': https://github.com/owncloud/uppy/releases/download/v3.12.13-owncloud/uppy-xhr-upload.tgz
 
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false
-
 packageExtensionsChecksum: e5e8993047f00ffc73fd28e87ccaecb8
 
 patchedDependencies:

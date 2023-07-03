@@ -23,11 +23,7 @@ export default {
     return state.clipboardAction
   },
   activeFiles: (state, getters) => {
-    let files = useFilter(
-      [].concat(getters.filesAll),
-      state.activeResourceFilter,
-      state.activeFileType
-    )
+    let files = useFilter([].concat(getters.filesAll), state.activeResourceFilter)
 
     if (!state.areHiddenFilesShown) {
       files = files.filter((file) => !file.name.startsWith('.'))

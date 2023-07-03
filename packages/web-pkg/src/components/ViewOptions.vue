@@ -89,21 +89,8 @@
             :options="resourceTypes"
             label="Filetype"
             :selected="filteredResourcesModel ?? 'No filter'"
-            alignment="space-between"
+            is-space-between
             @change="updateSelectedResourceTypeModel"
-          />
-        </li>
-        <li
-          v-if="
-            filteredResourcesModel &&
-            filteredResourcesModel !== 'No filter' &&
-            filteredResourcesModel !== 'Folders'
-          "
-        >
-          <oc-text-input
-            v-model="activeFileTypeModel"
-            :default-value="'Filter ' + filteredResourcesModel"
-            @change="updateActiveFileTypeModel"
           />
         </li>
       </oc-list>
@@ -190,7 +177,9 @@ export default defineComponent({
       defaultValue: ViewModeConstants.tilesSizeDefault.toString()
     })
 
-    const resourceTypes: string[] = ResourceFilterConstants.resourceOptions
+    const resourceTypes: string[] = ResourceFilterConstants.resourceOptions.map((filter) => {
+      return $gettext(filter)
+    })
 
     const setTilesViewSize = () => {
       const rootStyle = (document.querySelector(':root') as HTMLElement).style
@@ -280,15 +269,6 @@ export default defineComponent({
       set(value: string) {
         this.SET_ACTIVE_RESOURCE_FILTER(value)
       }
-    },
-    activeFileTypeModel: {
-      get() {
-        return this.activeFileType
-      },
-
-      set(value: string) {
-        this.SET_ACTIVE_FILE_TYPE(value)
-      }
     }
   },
   methods: {
@@ -296,8 +276,7 @@ export default defineComponent({
     ...mapMutations('Files', [
       'SET_HIDDEN_FILES_VISIBILITY',
       'SET_FILE_EXTENSIONS_VISIBILITY',
-      'SET_ACTIVE_RESOURCE_FILTER',
-      'SET_ACTIVE_FILE_TYPE'
+      'SET_ACTIVE_RESOURCE_FILTER'
     ]),
 
     updateHiddenFilesShownModel(event) {
@@ -308,10 +287,6 @@ export default defineComponent({
     },
     updateSelectedResourceTypeModel(resourceType: string) {
       this.filteredResourcesModel = resourceType
-      this.activeFileTypeModel = ''
-    },
-    updateActiveFileTypeModel(fileType: string) {
-      this.activeFileTypeModel = fileType
     }
   }
 })

@@ -1,5 +1,11 @@
 export abstract class ResourceFilterConstants {
-  static readonly resourceOptions = ['No filter', 'Images', 'Textfiles', 'Folders', 'Scripts']
+  static readonly resourceOptions: string[] = [
+    'No filter',
+    'Images',
+    'Textfiles',
+    'Script files',
+    'Folders'
+  ]
 
   static readonly mediaFileTypes = [
     'jpg',

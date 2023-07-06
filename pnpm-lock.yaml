@@ -660,7 +660,7 @@ importers:
       luxon: ^2.4.0
       marked: ^4.0.12
       oidc-client-ts: ^2.1.0
-      owncloud-sdk: ~3.1.0-alpha.3
+      owncloud-sdk: github:cernbox/owncloud-sdk#notifications
       p-queue: ^6.6.2
       portal-vue: 3.0.0
       postcss-import: ^12.0.1
@@ -708,7 +708,7 @@ importers:
       luxon: 2.4.0
       marked: 4.0.12
       oidc-client-ts: 2.1.0
-      owncloud-sdk: 3.1.0-alpha.3_qgpf6seimtkgc6dfu7oqfstxh4
+      owncloud-sdk: github.com/cernbox/owncloud-sdk/7a9a3ecbf23ab9d8e538baa61dc47b75d084a189_qgpf6seimtkgc6dfu7oqfstxh4
       p-queue: 6.6.2
       portal-vue: 3.0.0_vue@3.2.45
       postcss-import: 12.0.1
@@ -23365,6 +23365,31 @@ packages:
       pug: 3.0.2
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  github.com/cernbox/owncloud-sdk/7a9a3ecbf23ab9d8e538baa61dc47b75d084a189_qgpf6seimtkgc6dfu7oqfstxh4:
+    resolution: {tarball: https://codeload.github.com/cernbox/owncloud-sdk/tar.gz/7a9a3ecbf23ab9d8e538baa61dc47b75d084a189}
+    id: github.com/cernbox/owncloud-sdk/7a9a3ecbf23ab9d8e538baa61dc47b75d084a189
+    name: owncloud-sdk
+    version: 3.0.0
+    peerDependencies:
+      axios: ^0.27.2
+      cross-fetch: ^3.0.6
+      promise: ^8.1.0
+      qs: ^6.10.3
+      utf8: ^3.0.0
+      uuid: ^8.2.0
+      webdav: 4.10.0
+      xml-js: ^1.6.11
+    dependencies:
+      axios: 0.27.2
+      cross-fetch: 3.1.4
+      promise: 8.1.0
+      qs: 6.10.3
+      utf8: 3.0.0
+      uuid: 9.0.0
+      webdav: 4.10.0
+      xml-js: 1.6.11
     dev: false
 
   github.com/dschmidt/v-calendar/3ce6e3b8afd5491cb53ee811281d5fa8a45b044d_vue@3.2.45:

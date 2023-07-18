@@ -3,90 +3,117 @@
     id="preview"
     ref="preview"
     tabindex="-1"
-    @keydown.left="prev"
-    @keydown.right="next"
-    @keydown.esc="closeApp"
+    @keydown.left="handleSetActiveMediaFile(activeIndex - 1)"
+    @keydown.right="handleSetActiveMediaFile(activeIndex + 1)"
+    @keydown.esc="closePreview"
   >
-    <h1 class="oc-invisible-sr" v-text="pageTitle" />
-    <app-top-bar
-      v-if="!isFileContentError"
-      :resource="activeFilteredFile"
-      :main-actions="fileActions"
-      @close="closeApp"
-    />
-
-    <div v-if="isFolderLoading || isFileContentLoading" class="oc-position-center">
-      <oc-spinner :aria-label="$gettext('Loading media file')" size="xlarge" />
-    </div>
-    <oc-icon
-      v-else-if="isFileContentError"
-      name="file-damage"
-      variation="danger"
-      size="xlarge"
-      class="oc-position-center"
-      :accessible-label="$gettext('Failed to load media file')"
-    />
-    <template v-else>
-      <div
-        v-show="activeMediaFileCached"
-        class="oc-width-1-1 oc-flex oc-flex-center oc-flex-middle oc-p-s oc-box-shadow-medium preview-player"
-        :class="{ lightbox: isFullScreenModeActivated }"
-      >
-        <media-image
-          v-if="activeMediaFileCached.isImage"
-          :file="activeMediaFileCached"
-          :current-image-rotation="currentImageRotation"
-          :current-image-zoom="currentImageZoom"
-        />
-        <media-video
-          v-else-if="activeMediaFileCached.isVideo"
-          :file="activeMediaFileCached"
-          :is-auto-play-enabled="isAutoPlayEnabled"
-        />
-        <media-audio
-          v-else-if="activeMediaFileCached.isAudio"
-          :file="activeMediaFileCached"
-          :is-auto-play-enabled="isAutoPlayEnabled"
-        />
+    <div class="preview-body">
+      <media-settings
+        v-if="activeMediaFileCached.isImage"
+        @download="triggerActiveFileDownload"
+        @save-cropped-image="save"
+      />
+      <div class="image-container">
+        <div
+          v-if="isFolderLoading || isFileContentLoading"
+          class="oc-width-1-1 oc-flex oc-flex-center oc-flex-middle oc-p-s oc-box-shadow-medium preview-player"
+        >
+          <oc-spinner :aria-label="$gettext('Loading media file')" size="xlarge" />
+        </div>
+        <div v-else-if="isFileContentError" class="preview-player">
+          <oc-icon
+            name="file-damage"
+            variation="danger"
+            size="xlarge"
+            class="oc-position-center"
+            :accessible-label="$gettext('Failed to load media file')"
+          />
+        </div>
+        <div
+          v-else
+          v-show="activeMediaFileCached"
+          class="oc-width-1-1 oc-flex oc-flex-center oc-flex-middle oc-p-s oc-box-shadow-medium preview-player"
+          :class="{ lightbox: isFullScreenModeActivated }"
+        >
+          <media-image
+            v-if="activeMediaFileCached.isImage"
+            :file="activeMediaFileCached"
+            :current-image-rotation="currentImageRotation"
+            :current-image-zoom="currentImageZoom"
+          />
+          <media-video
+            v-else-if="activeMediaFileCached.isVideo"
+            :file="activeMediaFileCached"
+            :is-auto-play-enabled="isAutoPlayEnabled"
+          />
+          <media-audio
+            v-else-if="activeMediaFileCached.isAudio"
+            :file="activeMediaFileCached"
+            :is-auto-play-enabled="isAutoPlayEnabled"
+          />
+        </div>
+        <div class="image-gallery">
+          <media-gallery
+            :media-files="mediaGalleryFiles"
+            :active-index="activeIndex"
+            :zoom-level="currentImageZoom"
+            @update-active-media-file="handleSetActiveMediaFile"
+            @handle-go-next="handleSetActiveMediaFile(activeIndex + 1)"
+            @handle-go-prev="handleSetActiveMediaFile(activeIndex - 1)"
+            @change-active-zoom-level="currentImageZoom = $event"
+          />
+        </div>
       </div>
-    </template>
-    <media-controls
-      :files="filteredFiles"
-      :active-index="activeIndex"
-      :is-full-screen-mode-activated="isFullScreenModeActivated"
-      :is-folder-loading="isFolderLoading"
-      :is-image="activeMediaFileCached?.isImage"
-      :current-image-rotation="currentImageRotation"
-      :current-image-zoom="currentImageZoom"
-      @set-rotation="currentImageRotation = $event"
-      @set-zoom="currentImageZoom = $event"
-      @toggle-full-screen="toggleFullscreenMode"
-      @toggle-previous="prev"
-      @toggle-next="next"
-    />
+      <quick-commands
+        :current-image-zoom="currentImageZoom"
+        :is-image="activeMediaFileCached.isImage"
+        :is-saveable="isSaveable"
+        @close="closePreview"
+        @set-zoom="currentImageZoom = $event"
+        @toggle-full-screen="toggleFullscreenMode"
+        @save="save"
+      />
+    </div>
   </main>
 </template>
+
 <script lang="ts">
-import { computed, defineComponent, ref, unref } from 'vue'
-import { RouteLocationRaw } from 'vue-router'
-import { Resource } from 'web-client/src'
-import AppTopBar from 'web-pkg/src/components/AppTopBar.vue'
+import { computed, defineComponent, ref, unref, watch } from 'vue'
 import {
   queryItemAsString,
   sortHelper,
   useAppDefaults,
+  usePreviewService,
   useRoute,
   useRouteQuery,
-  useRouter
+  useRouter,
+  useStore
 } from 'web-pkg/src/composables'
 import { Action, ActionOptions } from 'web-pkg/src/composables/actions/types'
-import { useDownloadFile } from 'web-pkg/src/composables/download/useDownloadFile'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
-import MediaControls from './components/MediaControls.vue'
+import { useDownloadFile } from 'web-pkg/src/composables/download/useDownloadFile'
+import { RouteLocationRaw } from 'vue-router'
+import { Resource } from 'web-client/src'
+import { useTask } from 'vue-concurrency'
 import MediaAudio from './components/Sources/MediaAudio.vue'
 import MediaImage from './components/Sources/MediaImage.vue'
 import MediaVideo from './components/Sources/MediaVideo.vue'
-import { CachedFile } from './helpers/types'
+import MediaSettings from './components/MediaSettings.vue'
+import QuickCommands from './components/QuickCommands.vue'
+import { CachedFile, MediaGalleryFile, AdjustmentParametersCategoryType } from './helpers/types'
+import applyAdjustmentParams from './composables/saveFunctions/applyAdjustmentParams'
+import {
+  useSaveUnsavedChangesModal,
+  useCancelUnsavedChangesModal
+} from './composables/saveFunctions/useUnsavedChangesModal'
+import { mapActions, mapGetters } from 'vuex'
+import { useGettext } from 'vue3-gettext'
+import { Ref } from 'vue'
+import { isProjectSpaceResource } from 'web-client/src/helpers'
+import { DavProperty } from 'web-client/src/webdav/constants'
+import { CropVariantEnum, ProcessingToolsEnum } from './helpers'
+import applyCropping from './composables/saveFunctions/applyCropping'
+import MediaGallery from './components/MediaGallery.vue'
 
 export const appId = 'preview'
 
@@ -108,23 +135,88 @@ export const mimeTypes = () => {
 }
 
 export default defineComponent({
+  // eslint-disable-next-line vue/multi-word-component-names
   name: 'Preview',
   components: {
-    AppTopBar,
-    MediaControls,
     MediaAudio,
     MediaImage,
-    MediaVideo
+    MediaVideo,
+    MediaSettings,
+    QuickCommands,
+    MediaGallery
   },
   setup() {
     const router = useRouter()
     const route = useRoute()
-    const appDefaults = useAppDefaults({ applicationId: 'preview' })
-    const contextRouteQuery = useRouteQuery('contextRouteQuery')
+    const store = useStore()
     const { downloadFile } = useDownloadFile()
+    const previewService = usePreviewService()
+    const contextRouteQuery = computed(() => useRouteQuery('contextRouteQuery'))
+    const appDefaults = useAppDefaults({ applicationId: 'preview' })
+
+    const processingTool = computed(() => store.getters['Preview/getSelectedProcessingTool'])
+    const activeAdjustmentParameters = computed(() => store.getters['Preview/allParameters'])
+
+    const currentETag = ref()
+    const serverVersion = ref()
+    const resource: Ref<Resource> = ref()
 
     const activeIndex = ref()
     const cachedFiles = ref<CachedFile[]>([])
+    const isFileContentError = ref(false)
+    const isFileContentLoading = ref(true)
+    const appliedAdjustmentParameters = ref<AdjustmentParametersCategoryType[]>()
+    const toPreloadImageIds = ref([])
+    const isAutoPlayEnabled = ref(true)
+    const currentImageZoom = ref(1)
+    const currentImageRotation = ref(0)
+
+    const preloadImageCount = 10
+
+    const {
+      activeFiles,
+      currentFileContext,
+      getFileContents,
+      putFileContents,
+      getFileInfo,
+      closeApp,
+      getUrlForResource
+    } = appDefaults
+
+    const { $gettext, interpolate: $gettextInterpolate } = useGettext()
+
+    const isSaveable = computed(
+      () => unref(appliedAdjustmentParameters) !== unref(activeAdjustmentParameters)
+    )
+
+    const thumbDimensions = computed(() => {
+      switch (true) {
+        case window.innerWidth <= 1024:
+          return 1024
+        case window.innerWidth <= 1280:
+          return 1280
+        case window.innerWidth <= 1920:
+          return 1920
+        case window.innerWidth <= 2160:
+          return 2160
+        default:
+          return 3840
+      }
+    })
+
+    const errorPopup = (error) => {
+      store.dispatch('showMessage', {
+        title: $gettext('An error occurred'),
+        desc: error,
+        status: 'danger'
+      })
+    }
+
+    const imageSavedPopup = () => {
+      store.dispatch('showMessage', {
+        title: $gettext('Image is saved')
+      })
+    }
 
     const sortBy = computed(() => {
       if (!unref(contextRouteQuery)) {
@@ -139,7 +231,289 @@ export default defineComponent({
       return unref(contextRouteQuery)['sort-dir'] ?? 'asc'
     })
 
-    const { activeFiles, currentFileContext } = appDefaults
+    const filteredFiles = computed<Resource[]>(() => {
+      if (!unref(activeFiles)) {
+        return []
+      }
+
+      const files = unref(activeFiles).filter((file) => {
+        return mimeTypes().includes(file.mimeType?.toLowerCase())
+      })
+      return sortHelper(files, [{ name: unref(sortBy) }], unref(sortBy), unref(sortDir))
+    })
+
+    const mediaGalleryFiles = computed<MediaGalleryFile[]>(() =>
+      sortHelper(
+        unref(cachedFiles).reduce(
+          (acc, file) => {
+            if (!acc.addedFiles.has(file.id)) {
+              acc.addedFiles.add(file.id)
+              acc.result.push(file)
+            }
+            return acc
+          },
+          { addedFiles: new Set(), result: [] }
+        ).result,
+        [{ name: unref(sortBy) }],
+        unref(sortBy),
+        unref(sortDir)
+      )
+    )
+
+    async function getMediaFileUrl(file: Resource) {
+      try {
+        const loadRawFile = isFileTypeImage(file)
+        let mediaUrl: string
+        if (loadRawFile) {
+          mediaUrl = await getUrlForResource(unref(unref(currentFileContext).space), file)
+        } else {
+          mediaUrl = await loadPreview(file)
+        }
+        return mediaUrl
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    const activeFilteredFile = computed(() => {
+      return unref(filteredFiles)[unref(activeIndex)]
+    })
+
+    const activeMediaFileCached = computed(() => {
+      return unref(cachedFiles).find((i) => i.id === unref(activeFilteredFile).id)
+    })
+
+    const getUpdatedBlob = async () => {
+      let newVersion = null
+      switch (processingTool.value) {
+        case ProcessingToolsEnum.Customize:
+          newVersion = await applyAdjustmentParams({
+            imageBlob: serverVersion,
+            adjustmentParams: unref(activeAdjustmentParameters)
+          })
+          appliedAdjustmentParameters.value = unref(activeAdjustmentParameters)
+          break
+        case ProcessingToolsEnum.Crop:
+          const croppedCanvas = store.getters['Preview/getCroppedCanvas']
+          const cropType: CropVariantEnum = store.getters['Preview/getCropVariant']
+          const croppedVersion = await applyCropping(croppedCanvas, cropType)
+          newVersion = await applyAdjustmentParams({
+            imageBlob: croppedVersion,
+            adjustmentParams: unref(activeAdjustmentParameters)
+          })
+          break
+      }
+      return newVersion
+    }
+
+    function handleResetAfterSave() {
+      switch (processingTool.value) {
+        case ProcessingToolsEnum.Crop:
+          store.commit('Preview/RESET_SELECTED_PROCESSING_TOOL')
+          break
+        case ProcessingToolsEnum.Customize:
+          store.commit('Preview/RESET_SELECTED_PROCESSING_TOOL')
+          store.commit('Preview/RESET_ADJUSTMENT_PARAMETERS')
+          appliedAdjustmentParameters.value = unref(activeAdjustmentParameters)
+          break
+      }
+    }
+
+    const loadImageTask = useTask(function* () {
+      resource.value = yield getFileInfo(currentFileContext, {
+        davProperties: [DavProperty.FileId, DavProperty.Permissions, DavProperty.Name]
+      })
+
+      const savedImageVersion = yield getFileContents(currentFileContext, { responseType: 'blob' })
+      serverVersion.value = savedImageVersion.body
+      currentETag.value = savedImageVersion.headers['OC-ETag']
+    })
+
+    function* getNewEditedFileName() {
+      try {
+        const contextFileName = unref(unref(currentFileContext).fileName).split('.')
+        let duplicates = 0
+        while (true) {
+          yield `${contextFileName[0]} [${$gettext('Edited')}${
+            duplicates === 0 ? '' : ' (' + duplicates + ')'
+          }].${contextFileName[1]}`
+          duplicates += 1
+        }
+      } catch (e) {
+        errorPopup($gettext(e.message || e))
+      }
+    }
+
+    const saveImageTask = (duplicate: boolean) =>
+      useTask(function* () {
+        const newVersion = yield getUpdatedBlob()
+
+        if (duplicate) {
+          try {
+            const nameGenerator = getNewEditedFileName()
+            let newName: string = nameGenerator.next().value as string
+
+            while (unref(filteredFiles).find((file) => file.name === newName)) {
+              newName = nameGenerator.next().value as string
+            }
+
+            const currentFolder = (
+              unref(unref(currentFileContext).routeParams).driveAliasAndItem as string
+            )
+              .split('/')
+              .slice(2)
+              .toString()
+              .replaceAll(',', '/')
+
+            const newPath = `${currentFolder}/${newName}`
+
+            const putFileContentsResponse = yield putFileContents(currentFileContext, {
+              content: newVersion,
+              path: newPath
+            })
+
+            const { params, query } = createFileRouteOptions(
+              unref(unref(currentFileContext).space),
+              putFileContentsResponse
+            )
+
+            const newUrl = router.resolve({
+              ...unref(route),
+              params: { ...unref(route).params, ...params },
+              query: { ...unref(route).query, ...query }
+            })
+
+            window.open(newUrl.fullPath, '_blank')?.focus()
+
+            imageSavedPopup()
+            handleResetAfterSave()
+          } catch (e) {
+            switch (e.statusCode) {
+              case 412:
+                errorPopup(
+                  $gettext(
+                    'This file was updated outside this window. Please refresh the page (all changes will be lost).'
+                  )
+                )
+                break
+              case 500:
+                errorPopup($gettext('Error when contacting the server'))
+                break
+              case 507:
+                const space = store.getters['runtime/spaces/spaces'].find(
+                  (space) => space.id === unref(resource).storageId && isProjectSpaceResource(space)
+                )
+                if (space) {
+                  errorPopup(
+                    $gettextInterpolate(
+                      $gettext('There is not enough quota on "%{spaceName}" to save this file'),
+                      { spaceName: space.name }
+                    )
+                  )
+                  break
+                }
+                errorPopup($gettext('There is not enough quota to save this file'))
+                break
+              case 401:
+                errorPopup($gettext("You're not authorized to save this file"))
+                break
+              default:
+                errorPopup(e.message || e)
+            }
+          }
+        } else {
+          try {
+            const putFileContentsResponse = yield putFileContents(currentFileContext, {
+              content: newVersion,
+              previousEntityTag: unref(currentETag)
+            })
+            const mediaUrl = yield getMediaFileUrl(putFileContentsResponse)
+            removeActivePreviewFromCache()
+            addPreviewToCache(unref(activeFilteredFile), mediaUrl)
+
+            const newActiveIndex = unref(filteredFiles).findIndex(
+              (file) => file.id === putFileContentsResponse.id
+            )
+            handleSetNewActiveIndex(newActiveIndex)
+            updateLocalHistory()
+
+            console.log(cachedFiles)
+
+            serverVersion.value = newVersion
+            currentETag.value = putFileContentsResponse.etag
+            imageSavedPopup()
+            handleResetAfterSave()
+          } catch (e) {
+            switch (e.statusCode) {
+              case 412:
+                errorPopup(
+                  $gettext(
+                    'This file was updated outside this window. Please refresh the page (all changes will be lost).'
+                  )
+                )
+                break
+              case 500:
+                errorPopup($gettext('Error when contacting the server'))
+                break
+              case 507:
+                const space = store.getters['runtime/spaces/spaces'].find(
+                  (space) => space.id === unref(resource).storageId && isProjectSpaceResource(space)
+                )
+                if (space) {
+                  errorPopup(
+                    $gettextInterpolate(
+                      $gettext('There is not enough quota on "%{spaceName}" to save this file'),
+                      { spaceName: space.name }
+                    )
+                  )
+                  break
+                }
+                errorPopup($gettext('There is not enough quota to save this file'))
+                break
+              case 401:
+                errorPopup($gettext("You're not authorized to save this file"))
+                break
+              default:
+                errorPopup(e.message || e)
+            }
+          }
+        }
+      }).restartable()
+
+    function removeActivePreviewFromCache() {
+      cachedFiles.value = unref(cachedFiles).filter(
+        (file) => file.id !== unref(activeMediaFileCached).id
+      )
+    }
+
+    function save() {
+      const modal = {
+        variation: 'danger',
+        icon: 'warning',
+        title: $gettext('Duplicate modal'),
+        message: $gettext('Do you want to save the changes in a duplicate file?'),
+        cancelText: $gettext('Save original'),
+        confirmText: $gettext('Create duplicate'),
+        onCancel: async () => {
+          store.dispatch('hideModal')
+          await saveImageTask(false).perform()
+        },
+        onConfirm: async () => {
+          store.dispatch('hideModal')
+          await saveImageTask(true).perform()
+        }
+      }
+      store.dispatch('createModal', modal)
+    }
+
+    watch(activeMediaFileCached, () => {
+      if (activeMediaFileCached.value && activeMediaFileCached.value.isImage) {
+        loadImageTask.perform()
+        store.commit('Preview/RESET_ADJUSTMENT_PARAMETERS')
+        store.commit('Preview/RESET_SELECTED_PROCESSING_TOOL')
+        appliedAdjustmentParameters.value = unref(activeAdjustmentParameters)
+      }
+    })
 
     const isFullScreenModeActivated = ref(false)
     const toggleFullscreenMode = () => {
@@ -156,24 +530,6 @@ export default defineComponent({
       }
     }
 
-    const filteredFiles = computed<Resource[]>(() => {
-      if (!unref(activeFiles)) {
-        return []
-      }
-
-      const files = unref(activeFiles).filter((file) => {
-        return mimeTypes().includes(file.mimeType?.toLowerCase())
-      })
-
-      return sortHelper(files, [{ name: unref(sortBy) }], unref(sortBy), unref(sortDir))
-    })
-    const activeFilteredFile = computed(() => {
-      return unref(filteredFiles)[unref(activeIndex)]
-    })
-    const activeMediaFileCached = computed(() => {
-      return unref(cachedFiles).find((i) => i.id === unref(activeFilteredFile).id)
-    })
-
     const updateLocalHistory = () => {
       const { params, query } = createFileRouteOptions(
         unref(unref(currentFileContext).space),
@@ -185,13 +541,22 @@ export default defineComponent({
         query: { ...unref(route).query, ...query }
       })
     }
-    const isFileContentLoading = ref(true)
 
     const triggerActiveFileDownload = () => {
       if (isFileContentLoading.value) {
         return
       }
-      downloadFile(activeFilteredFile.value)
+
+      if (unref(activeAdjustmentParameters) !== unref(appliedAdjustmentParameters)) {
+        const onConfirm: Array<(...args: any[]) => Promise<any> | any> = [
+          () => save(),
+          () => downloadFile(unref(activeFilteredFile))
+        ]
+
+        useCancelUnsavedChangesModal([], onConfirm, store)
+      } else {
+        downloadFile(unref(activeFilteredFile))
+      }
     }
 
     const fileActions: Action<ActionOptions>[] = [
@@ -208,6 +573,227 @@ export default defineComponent({
       }
     ]
 
+    function isFileTypeImage(file: Resource) {
+      return !isFileTypeAudio(file) && !isFileTypeVideo(file)
+    }
+    function isFileTypeAudio(file: Resource) {
+      return file.mimeType.toLowerCase().startsWith('audio')
+    }
+    function isFileTypeVideo(file: Resource) {
+      return file.mimeType.toLowerCase().startsWith('video')
+    }
+
+    const isActiveFileTypeAudio = computed(() => isFileTypeAudio(activeFilteredFile.value))
+    const isActiveFileTypeVideo = computed(() => isFileTypeVideo(activeFilteredFile.value))
+    const isActiveFileTypeImage = computed(() => isFileTypeImage(activeFilteredFile.value))
+
+    function handleResetValues() {
+      store.commit('RESET_ADJUSTMENT_PARAMETERS')
+      store.commit('RESET_SELECTED_PROCESSING_TOOL')
+    }
+
+    function handleSetNewActiveIndex(newActiveIndex: number) {
+      isFileContentLoading.value = true
+      if (newActiveIndex >= unref(filteredFiles).length) {
+        activeIndex.value = 0
+      } else if (newActiveIndex < 0) {
+        activeIndex.value = unref(filteredFiles).length - 1
+      } else {
+        activeIndex.value = newActiveIndex
+      }
+      isFileContentLoading.value = false
+    }
+
+    function handleSetActiveMediaFile(newActiveIndex: number) {
+      if (unref(isFileContentLoading)) {
+        return
+      }
+
+      isFileContentError.value = false
+
+      if (unref(isSaveable)) {
+        const onConfirm: Array<(...args: any[]) => Promise<any> | any> = [
+          () => save(),
+          () => handleSetNewActiveIndex(newActiveIndex),
+          () => updateLocalHistory()
+        ]
+        const onCancel: Array<(...args: any[]) => Promise<any> | any> = [
+          () => handleSetNewActiveIndex(newActiveIndex),
+          () => updateLocalHistory()
+        ]
+        useSaveUnsavedChangesModal(onCancel, onConfirm, store)
+      } else {
+        handleSetNewActiveIndex(newActiveIndex)
+        updateLocalHistory()
+      }
+    }
+
+    function closePreview() {
+      if (unref(isSaveable)) {
+        const onCancel: Array<(...args: any[]) => Promise<any> | any> = [
+          () => handleResetValues(),
+          () => closeApp()
+        ]
+        const onConfirm: Array<(...args: any[]) => Promise<any> | any> = [
+          () => save(),
+          () => handleResetValues(),
+          () => closeApp()
+        ]
+        useSaveUnsavedChangesModal(onCancel, onConfirm, store)
+      } else {
+        handleResetValues()
+        closeApp()
+      }
+    }
+
+    function loadPreview(file: Resource) {
+      return previewService.loadPreview({
+        space: unref(currentFileContext.value.space),
+        resource: file,
+        dimensions: [thumbDimensions.value, thumbDimensions.value] as [number, number]
+      })
+    }
+
+    function mountActiveFile(driveAliasAndItem: string) {
+      for (let i = 0; i < unref(filteredFiles).length; i++) {
+        if (
+          unref(unref(currentFileContext).space)?.getDriveAliasAndItem(unref(filteredFiles)[i]) ===
+          driveAliasAndItem
+        ) {
+          activeIndex.value = i
+          return
+        }
+      }
+
+      isFileContentLoading.value = false
+      isFileContentError.value = true
+    }
+
+    function handleLocalHistoryEvent() {
+      const result = router.resolve(document.location as unknown as RouteLocationRaw)
+      mountActiveFile(queryItemAsString(result.params.driveAliasAndItem))
+    }
+
+    function loadMedium() {
+      isFileContentLoading.value = true
+
+      // Don't bother loading if file is already loaded and cached
+      if (unref(activeMediaFileCached)) {
+        setTimeout(
+          () => {
+            isFileContentLoading.value = false
+          },
+          // Delay to animate
+          50
+        )
+        return
+      }
+
+      loadActiveFileIntoCache()
+    }
+
+    async function loadActiveFileIntoCache() {
+      try {
+        const loadRawFile = !unref(isActiveFileTypeImage)
+        let mediaUrl
+        if (loadRawFile) {
+          mediaUrl = await getUrlForResource(
+            unref(unref(currentFileContext).space),
+            unref(activeFilteredFile)
+          )
+        } else {
+          mediaUrl = await loadPreview(unref(activeFilteredFile))
+        }
+        addPreviewToCache(unref(activeFilteredFile), mediaUrl)
+        isFileContentLoading.value = false
+        isFileContentError.value = false
+      } catch (e) {
+        isFileContentLoading.value = false
+        isFileContentError.value = true
+        console.error(e)
+      }
+    }
+
+    function addPreviewToCache(file, url) {
+      cachedFiles.value.push({
+        id: file.id,
+        name: file.name,
+        url,
+        ext: file.extension,
+        mimeType: file.mimeType,
+        isVideo: isFileTypeVideo(file),
+        isImage: isFileTypeImage(file),
+        isAudio: isFileTypeAudio(file)
+      })
+    }
+
+    function preloadImages() {
+      const loadPreviewAsync = (file) => {
+        toPreloadImageIds.value.push(file.id)
+        loadPreview(file)
+          .then((mediaUrl) => {
+            addPreviewToCache(file, mediaUrl)
+          })
+          .catch((e) => {
+            console.error(e)
+            toPreloadImageIds.value = unref(toPreloadImageIds).filter(
+              (fileId) => fileId !== file.id
+            )
+          })
+      }
+
+      const preloadFile = (preloadFileIndex) => {
+        let cycleIndex =
+          (((unref(activeIndex) + preloadFileIndex) % unref(filteredFiles).length) +
+            unref(filteredFiles).length) %
+          unref(filteredFiles).length
+
+        const file = unref(filteredFiles)[cycleIndex]
+
+        if (!isFileTypeImage(file) || unref(toPreloadImageIds).includes(file.id)) {
+          return
+        }
+
+        loadPreviewAsync(file)
+      }
+
+      for (
+        let followingFileIndex = 1;
+        followingFileIndex <= unref(preloadImageCount);
+        followingFileIndex++
+      ) {
+        preloadFile(followingFileIndex)
+      }
+
+      for (
+        let previousFileIndex = -1;
+        previousFileIndex >= preloadImageCount * -1;
+        previousFileIndex--
+      ) {
+        preloadFile(previousFileIndex)
+      }
+    }
+
+    function handleFullScreenChangeEvent() {
+      if (document.fullscreenElement === null) {
+        isFullScreenModeActivated.value = false
+      }
+    }
+
+    watch(activeIndex, (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        loadMedium()
+        preloadImages()
+      }
+
+      if (oldValue !== null) {
+        isAutoPlayEnabled.value = false
+      }
+
+      currentImageZoom.value = 1
+      currentImageRotation.value = 0
+    })
+
     return {
       ...appDefaults,
       activeFilteredFile,
@@ -217,22 +803,39 @@ export default defineComponent({
       filteredFiles,
       fileActions,
       isFileContentLoading,
+      isFileContentError,
       isFullScreenModeActivated,
+      thumbDimensions,
+      mediaGalleryFiles,
       toggleFullscreenMode,
-      updateLocalHistory
-    }
-  },
-  data() {
-    return {
-      isFileContentError: false,
-      isAutoPlayEnabled: true,
-
-      toPreloadImageIds: [],
-
-      currentImageZoom: 1,
-      currentImageRotation: 0,
-
-      preloadImageCount: 10
+      updateLocalHistory,
+      triggerActiveFileDownload,
+      useSaveUnsavedChangesModal,
+      saveImageTask,
+      serverVersion,
+      appliedAdjustmentParameters,
+      activeAdjustmentParameters,
+      save,
+      isFileTypeAudio,
+      isFileTypeImage,
+      isFileTypeVideo,
+      isActiveFileTypeAudio,
+      isActiveFileTypeImage,
+      isActiveFileTypeVideo,
+      handleSetActiveMediaFile,
+      closePreview,
+      loadPreview,
+      sortDir,
+      sortBy,
+      isSaveable,
+      mountActiveFile,
+      handleLocalHistoryEvent,
+      loadMedium,
+      preloadImages,
+      isAutoPlayEnabled,
+      currentImageZoom,
+      currentImageRotation,
+      handleFullScreenChangeEvent
     }
   },
 
@@ -242,53 +845,16 @@ export default defineComponent({
         currentMediumName: this.activeFilteredFile?.name
       })
     },
-    thumbDimensions() {
-      switch (true) {
-        case window.innerWidth <= 1024:
-          return 1024
-        case window.innerWidth <= 1280:
-          return 1280
-        case window.innerWidth <= 1920:
-          return 1920
-        case window.innerWidth <= 2160:
-          return 2160
-        default:
-          return 3840
-      }
-    },
-    isActiveFileTypeImage() {
-      return !this.isActiveFileTypeAudio && !this.isActiveFileTypeVideo
-    },
-    isActiveFileTypeAudio() {
-      return this.isFileTypeAudio(this.activeFilteredFile)
-    },
-    isActiveFileTypeVideo() {
-      return this.isFileTypeVideo(this.activeFilteredFile)
-    }
-  },
 
-  watch: {
-    activeIndex(newValue, oldValue) {
-      if (newValue !== oldValue) {
-        this.loadMedium()
-        this.preloadImages()
-      }
-
-      if (oldValue !== null) {
-        this.isAutoPlayEnabled = false
-      }
-
-      this.currentImageZoom = 1
-      this.currentImageRotation = 0
-    }
+    ...mapGetters('Preview', ['allParameters'])
   },
 
   async mounted() {
-    // keep a local history for this component
+    await this.loadFolderForFileContext(this.currentFileContext)
     window.addEventListener('popstate', this.handleLocalHistoryEvent)
     document.addEventListener('fullscreenchange', this.handleFullScreenChangeEvent)
-    await this.loadFolderForFileContext(this.currentFileContext)
-    this.setActiveFile(unref(this.currentFileContext.driveAliasAndItem))
+    this.mountActiveFile(unref(this.currentFileContext.driveAliasAndItem))
+    this.appliedAdjustmentParameters = this.activeAdjustmentParameters
     ;(this.$refs.preview as HTMLElement).focus()
   },
 
@@ -302,179 +868,23 @@ export default defineComponent({
   },
 
   methods: {
-    setActiveFile(driveAliasAndItem: string) {
-      for (let i = 0; i < this.filteredFiles.length; i++) {
-        if (
-          unref(this.currentFileContext.space)?.getDriveAliasAndItem(this.filteredFiles[i]) ===
-          driveAliasAndItem
-        ) {
-          this.activeIndex = i
-          return
-        }
-      }
-
-      this.isFileContentLoading = false
-      this.isFileContentError = true
-    },
-    // react to PopStateEvent ()
-    handleLocalHistoryEvent() {
-      const result = this.$router.resolve(document.location as unknown as RouteLocationRaw)
-      this.setActiveFile(queryItemAsString(result.params.driveAliasAndItem))
-    },
-    handleFullScreenChangeEvent() {
-      if (document.fullscreenElement === null) {
-        this.isFullScreenModeActivated = false
-      }
-    },
-    loadMedium() {
-      this.isFileContentLoading = true
-
-      // Don't bother loading if file is already loaded and cached
-      if (this.activeMediaFileCached) {
-        setTimeout(
-          () => {
-            this.isFileContentLoading = false
-          },
-          // Delay to animate
-          50
-        )
-        return
-      }
-
-      this.loadActiveFileIntoCache()
-    },
-    async loadActiveFileIntoCache() {
-      try {
-        const loadRawFile = !this.isActiveFileTypeImage
-        let mediaUrl
-        if (loadRawFile) {
-          mediaUrl = await this.getUrlForResource(
-            unref(this.currentFileContext.space),
-            this.activeFilteredFile
-          )
-        } else {
-          mediaUrl = await this.loadPreview(this.activeFilteredFile)
-        }
-
-        this.addPreviewToCache(this.activeFilteredFile, mediaUrl)
-        this.isFileContentLoading = false
-        this.isFileContentError = false
-      } catch (e) {
-        this.isFileContentLoading = false
-        this.isFileContentError = true
-        console.error(e)
-      }
-    },
-    next() {
-      if (this.isFileContentLoading) {
-        return
-      }
-      this.isFileContentError = false
-      if (this.activeIndex + 1 >= this.filteredFiles.length) {
-        this.activeIndex = 0
-        this.updateLocalHistory()
-        return
-      }
-      this.activeIndex++
-      this.updateLocalHistory()
-    },
-    prev() {
-      if (this.isFileContentLoading) {
-        return
-      }
-      this.isFileContentError = false
-      if (this.activeIndex === 0) {
-        this.activeIndex = this.filteredFiles.length - 1
-        this.updateLocalHistory()
-        return
-      }
-      this.activeIndex--
-      this.updateLocalHistory()
-    },
-    isFileTypeImage(file) {
-      return !this.isFileTypeAudio(file) && !this.isFileTypeVideo(file)
-    },
-    isFileTypeAudio(file) {
-      return file.mimeType.toLowerCase().startsWith('audio')
-    },
-
-    isFileTypeVideo(file) {
-      return file.mimeType.toLowerCase().startsWith('video')
-    },
-    addPreviewToCache(file, url) {
-      this.cachedFiles.push({
-        id: file.id,
-        name: file.name,
-        url,
-        ext: file.extension,
-        mimeType: file.mimeType,
-        isVideo: this.isFileTypeVideo(file),
-        isImage: this.isFileTypeImage(file),
-        isAudio: this.isFileTypeAudio(file)
-      })
-    },
-    loadPreview(file) {
-      return this.$previewService.loadPreview({
-        space: unref(this.currentFileContext.space),
-        resource: file,
-        dimensions: [this.thumbDimensions, this.thumbDimensions] as [number, number]
-      })
-    },
-    preloadImages() {
-      const loadPreviewAsync = (file) => {
-        this.toPreloadImageIds.push(file.id)
-        this.loadPreview(file)
-
-          .then((mediaUrl) => {
-            this.addPreviewToCache(file, mediaUrl)
-          })
-          .catch((e) => {
-            console.error(e)
-            this.toPreloadImageIds = this.toPreloadImageIds.filter((fileId) => fileId !== file.id)
-          })
-      }
-
-      const preloadFile = (preloadFileIndex) => {
-        let cycleIndex =
-          (((this.activeIndex + preloadFileIndex) % this.filteredFiles.length) +
-            this.filteredFiles.length) %
-          this.filteredFiles.length
-
-        const file = this.filteredFiles[cycleIndex]
-
-        if (!this.isFileTypeImage(file) || this.toPreloadImageIds.includes(file.id)) {
-          return
-        }
-
-        loadPreviewAsync(file)
-      }
-
-      for (
-        let followingFileIndex = 1;
-        followingFileIndex <= this.preloadImageCount;
-        followingFileIndex++
-      ) {
-        preloadFile(followingFileIndex)
-      }
-
-      for (
-        let previousFileIndex = -1;
-        previousFileIndex >= this.preloadImageCount * -1;
-        previousFileIndex--
-      ) {
-        preloadFile(previousFileIndex)
-      }
-    }
+    ...mapActions(['createModal', 'hideModal'])
   }
 })
 </script>
 
 <style lang="scss" scoped>
+.image-container {
+  padding: $oc-space-medium;
+  flex: 1;
+  min-width: 0;
+}
+.image-gallery {
+  margin-top: 1rem;
+}
 .preview-player {
   overflow: auto;
-  max-width: 90vw;
   height: 70vh;
-  margin: 10px auto;
   object-fit: contain;
 
   img,
@@ -509,5 +919,10 @@ export default defineComponent({
   .preview-player {
     max-width: 100vw;
   }
+}
+
+.preview-body {
+  display: flex;
+  justify-content: space-between;
 }
 </style>

@@ -74,6 +74,7 @@
           v-if="hasRenameAction(item)"
           class="resource-table-edit-name"
           appearance="raw"
+          :aria-label="ariaLabelRename"
           @click="openRenameDialog(item)"
         >
           <oc-icon name="edit-2" fill-type="line" size="small" />
@@ -611,6 +612,9 @@ export default defineComponent({
     },
     hoverableQuickActions() {
       return this.configuration?.options?.hoverableQuickActions
+    },
+    ariaLabelRename() {
+      return this.$gettext("Rename")
     }
   },
   methods: {
@@ -931,13 +935,15 @@ export default defineComponent({
     tr:not([class*='oc-table-highlighted']) {
       .resource-table-edit-name,
       .resource-table-actions div:first-child {
-        visibility: hidden;
+        //visibility: hidden;
+        display: none;
       }
     }
     tr:not([class*='oc-table-highlighted']):hover {
       .resource-table-edit-name,
       .resource-table-actions div:first-child {
         visibility: visible;
+        display: inline-flex;
       }
     }
   }

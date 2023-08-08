@@ -1,5 +1,5 @@
 <template>
-  <div class="oc-page-size">
+  <div :class="['oc-page-size', { 'space-between': isSpaceBetween }]">
     <label
       class="oc-page-size-label"
       :for="selectId"
@@ -67,6 +67,15 @@ export default defineComponent({
       type: String,
       required: false,
       default: () => uniqueId('oc-page-size-')
+    },
+
+    /**
+     * Decides whether there should be space between the label and the oc-select element
+     */
+    isSpaceBetween: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   emits: ['change'],
@@ -95,6 +104,10 @@ export default defineComponent({
   &-select .vs__dropdown-menu {
     min-width: var(--oc-size-width-xsmall);
   }
+}
+
+.space-between {
+  justify-content: space-between;
 }
 </style>
 

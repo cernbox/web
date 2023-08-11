@@ -29,6 +29,7 @@ const applyAdjustmentParams = async ({
   canvas.height = img.height
 
   ctx.filter = imageAdjustmentParams
+  //FIXME Swap the height and width of image if it is rotated by 90 or 270 degrees.
   ctx.translate(img.width / 2, img.height / 2)
   ctx.rotate((rotate * Math.PI) / 180)
   ctx.translate(-(img.width / 2), -(img.height / 2))

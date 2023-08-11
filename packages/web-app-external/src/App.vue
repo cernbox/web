@@ -33,7 +33,7 @@
 </template>
 
 <script lang="ts">
-import { mapActions, mapGetters } from 'vuex'
+import { mapGetters } from 'vuex'
 import ErrorScreen from './components/ErrorScreen.vue'
 import LoadingScreen from './components/LoadingScreen.vue'
 import { computed, unref } from 'vue'
@@ -175,7 +175,7 @@ export default defineComponent({
           this.$nextTick(() => this.$refs.subm.click())
         }
         this.loading = false
-        if (window.location.href.includes('app=MS')) {
+        if (response.data.app_url?.includes('officeapps')) {
           await this.catchClickMicrosoftEdit()
         }
       } catch (error) {

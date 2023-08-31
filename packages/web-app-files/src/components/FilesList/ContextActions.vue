@@ -19,6 +19,7 @@ import {
   useFileActionsShowShares,
   useFileActionsAcceptShare,
   useFileActionsCopy,
+  useFileActionsCopyUrl,
   useFileActionsDeclineShare,
   useFileActionsDelete,
   useFileActionsDownloadArchive,
@@ -51,6 +52,7 @@ export default defineComponent({
 
     const { actions: acceptShareActions } = useFileActionsAcceptShare({ store })
     const { actions: copyActions } = useFileActionsCopy({ store })
+    const { actions: copyUrlActions } = useFileActionsCopyUrl({ store })
     const { actions: createQuickLinkActions } = useFileActionsCreateQuickLink({ store })
     const { actions: declineShareActions } = useFileActionsDeclineShare({ store })
     const { actions: deleteActions } = useFileActionsDelete({ store })
@@ -81,6 +83,7 @@ export default defineComponent({
         ...unref(downloadArchiveActions),
         ...unref(moveActions),
         ...unref(copyActions),
+        ...unref(copyUrlActions),
         ...unref(emptyTrashBinActions),
         ...unref(deleteActions),
         ...unref(restoreActions),
@@ -112,6 +115,7 @@ export default defineComponent({
         ...unref(deleteActions),
         ...unref(moveActions),
         ...unref(copyActions),
+        ...unref(copyUrlActions),
         ...unref(pasteActions),
         ...unref(renameActions),
         ...unref(createSpaceFromResourceActions),

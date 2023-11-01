@@ -261,6 +261,10 @@ export default {
         return []
       }
 
+      if (!options?.resources[0]?.permissions?.includes('O')) {
+        return []
+      }
+
       // we don't support external apps as batch action as of now
       if (options.resources.length !== 1) {
         return []

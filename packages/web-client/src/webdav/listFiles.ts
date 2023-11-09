@@ -60,9 +60,13 @@ export const ListFilesFactory = ({ sdk }: WebDavOptions) => {
           davProperties || DavProperties.Default
         )
         const resources = webDavResources.map(buildResource)
-        if (fileId && fileId !== resources[0].fileId) {
-          return listFilesCorrectedPath()
-        }
+
+        // TODO: Figure out what to do with this. Currently the SDK makes a
+        // request to and endpoint which will always return 404:
+        // https://github.com/cernbox/owncloud-sdk/blob/02a26239931f5dc76043df270acbe966bc06f52e/src/fileManagement.js#L120
+        // if (fileId && fileId !== resources[0].fileId) {
+        //   return listFilesCorrectedPath()
+        // }
         return { resource: resources[0], children: resources.slice(1) } as ListFilesResult
       } catch (e) {
         if (e.statusCode === 404 && fileId) {

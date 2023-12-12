@@ -86,6 +86,6 @@ export const useCapabilityNotifications = createCapabilityComposable(
   []
 )
 export const useCapabilityGroupBasedCapabilities = createCapabilityComposable(
-  'group_based.capabilities',
+  'group_capabilities',
   []
 )

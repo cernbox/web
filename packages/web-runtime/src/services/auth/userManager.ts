@@ -209,6 +209,9 @@ export class UserManager extends OidcUserManager {
     if (!this.store.getters.capabilities.spaces?.enabled && user.quota) {
       this.store.commit('SET_QUOTA', user.quota)
     }
+
+    // Update store with group based capabilities
+    this.store.commit('UPDATE_CAPABILITIES', {capabilities: {group_capabilities: user['group-capabilities']}})
   }
 
   private async fetchRoles({ accessToken = '' }): Promise<any> {

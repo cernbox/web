@@ -55,6 +55,9 @@ const mutations = {
     state.capabilities = data.capabilities
     state.version = data.version
   },
+  UPDATE_CAPABILITIES(state, data) {
+    state.capabilities = {...state.capabilities, ...data.capabilities}
+  },
   /**
    * Legacy for oC10, in OCIS quota sticks on the respective drive
    * @param state

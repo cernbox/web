@@ -81,17 +81,6 @@ const navItems = [
     }
   },
   {
-    name: $gettext('Win spaces'),
-    icon: 'layout-grid',
-    route: {
-      path: `/${appInfo.id}/spaces/winspaces`
-    },
-    activeFor: [{ path: `/${appInfo.id}/spaces/winspaces` }],
-    enabled(capabilities) {
-      return capabilities.group_based?.capabilities?.includes('cephfs-mount') || false
-    }
-  },
-  {
     name: $gettext('Deleted files'),
     icon: 'delete-bin-5',
     route: {
@@ -114,6 +103,18 @@ const navItems = [
     separate: true,
     enabled(capabilities) {
       return true
+    }
+  },
+  {
+    name: $gettext('Winspaces explorer'),
+    icon: 'layout-grid',
+    route: {
+      path: `/${appInfo.id}/spaces/winspaces`
+    },
+    separate: true,
+    activeFor: [{ path: `/${appInfo.id}/spaces/winspaces` }],
+    enabled(capabilities) {
+      return capabilities.group_capabilities?.includes('cephfs-mount') || false
     }
   }
 ]

@@ -12,6 +12,25 @@
         </template>
       </app-bar>
       <app-loading-spinner v-if="areResourcesLoading" />
+
+      <no-content-message
+        v-else-if="recycleError"
+        id="files-trashbin-error"
+        class="files-empty"
+        icon="error-warning"
+        icon-fill-type="line"
+      >
+        <template #message>
+          <span
+            >Your trash bin returned too many entries and cannot be displayed, or the date range is too long. <br />Please filter
+            by date or check the
+            <a href="https://cernbox.docs.cern.ch/advanced/restore_from_trash/" target="_blank"
+              >documentation</a
+            >.</span
+          >
+        </template>
+      </no-content-message>
+
       <template v-else>
         <no-content-message
           v-if="isEmpty"
@@ -182,13 +201,18 @@ export default defineComponent({
       performLoaderTask()
     }
 
+
+    const store = useStore()
+    const recycleError = computed(() => store.getters['Files/recycleError'])
+
     return {
       ...resourcesViewDefaults,
       hasShareJail: useCapabilityShareJailEnabled(),
       noContentMessage,
       performLoaderTask,
       projectName,
-      rangeChanged
+      rangeChanged,
+      recycleError
     }
   },
 

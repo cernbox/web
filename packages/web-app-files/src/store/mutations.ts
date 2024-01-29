@@ -4,6 +4,9 @@ import { getIndicators } from '../helpers/statusIndicators'
 import { Resource, SpaceResource } from 'web-client/src/helpers'
 
 export default {
+  SET_RECYCLE_ERROR(state, error) {
+    state.recycleError = error
+  },
   LOAD_FILES(state, { currentFolder, files }) {
     state.currentFolder = currentFolder
     state.files = files

@@ -2,6 +2,9 @@ import { isProjectSpaceResource } from 'web-client/src/helpers'
 import { ShareTypes } from 'web-client/src/helpers/share'
 
 export default {
+  recycleError: (state) => {
+    return state.recycleError
+  },
   selectedFiles: (state, getters) => {
     return getters.filesAll.filter((f) => state.selectedIds.includes(f.id))
   },

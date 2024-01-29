@@ -29,6 +29,7 @@ export class FolderLoaderTrashbin implements FolderLoader {
 
     return useTask(function* (signal1, signal2, space: Resource, dateFilter, projectName) {
       store.commit('Files/CLEAR_CURRENT_FILES_LIST')
+      store.commit('Files/SET_RECYCLE_ERROR', false)
 
       // const path = unref(hasShareJail)
       //   ? buildWebDavSpacesTrashPath(space.id)
@@ -38,8 +39,16 @@ export class FolderLoaderTrashbin implements FolderLoader {
       if (dateFilter.value) {
         query = { ...query, ...unref(dateFilter) }
       }
+      let resources
+      try {
 
-      const resources = yield client.fileTrash.list(path, '1', DavProperties.Trashbin, query)
+        resources = yield client.fileTrash.list(path, '1', DavProperties.Trashbin, query)
+      } catch (e) {
+        if (e.statusCode === 400) {
+          store.commit('Files/SET_RECYCLE_ERROR', true)
+        }
+        throw e
+      }
 
       store.commit('Files/LOAD_FILES', {
         currentFolder: buildResource(resources[0]),

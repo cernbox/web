@@ -7,6 +7,7 @@
         :side-bar-open="sideBarOpen"
         :space="space"
       />
+      <trashbin-date-picker @range-changed="rangeChanged" />
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
         <no-content-message
@@ -69,13 +70,14 @@ import FilesViewWrapper from '../../components/FilesViewWrapper.vue'
 import ListInfo from '../../components/FilesList/ListInfo.vue'
 import Pagination from '../../components/FilesList/Pagination.vue'
 import ResourceTable from '../../components/FilesList/ResourceTable.vue'
+import TrashbinDatePicker from '../../components/FilesList/TrashbinDatePicker.vue'
 import SideBar from '../../components/SideBar/SideBar.vue'
 import AppLoadingSpinner from 'web-pkg/src/components/AppLoadingSpinner.vue'
 import NoContentMessage from 'web-pkg/src/components/NoContentMessage.vue'
 
 import { eventBus } from 'web-pkg/src/services/eventBus'
 import { useResourcesViewDefaults } from '../../composables'
-import { computed, defineComponent, PropType, onMounted, onBeforeUnmount, unref } from 'vue'
+import { computed, defineComponent, PropType, onMounted, onBeforeUnmount, unref, ref } from 'vue'
 import { Resource } from 'web-client'
 import { useCapabilityShareJailEnabled, useCapabilitySpacesEnabled } from 'web-pkg/src/composables'
 import { createLocationTrash, createLocationSpaces } from '../../router'
@@ -84,6 +86,7 @@ import { useDocumentTitle } from 'web-pkg/src/composables/appDefaults/useDocumen
 import { useGettext } from 'vue3-gettext'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
 import { useRoute, useStore } from 'web-pkg/src/composables'
+import { useRouter } from 'vue-router'
 
 
 
@@ -99,7 +102,8 @@ export default defineComponent({
     NoContentMessage,
     Pagination,
     ResourceTable,
-    SideBar
+    SideBar,
+    TrashbinDatePicker
   },
 
   props: {
@@ -141,9 +145,17 @@ export default defineComponent({
       return found ? found[1] : undefined
     }
 
+    const router = useRouter()
+    const dateFilter =
+      router.currentRoute.value.query.from && router.currentRoute.value.query.to
+        ? ref({
+            from: router.currentRoute.value.query.from,
+            to: router.currentRoute.value.query.to
+          })
+        : ref(null)
     const resourcesViewDefaults = useResourcesViewDefaults<Resource, any, any[]>()
     const performLoaderTask = async () => {
-      await resourcesViewDefaults.loadResourcesTask.perform(props.space, projectName())
+      await resourcesViewDefaults.loadResourcesTask.perform(props.space, dateFilter, projectName())
       resourcesViewDefaults.refreshFileListHeaderPosition()
       resourcesViewDefaults.scrollToResourceFromRoute(
         unref(resourcesViewDefaults.paginatedResources)
@@ -161,12 +173,19 @@ export default defineComponent({
       eventBus.unsubscribe('app.files.list.load', loadResourcesEventToken)
     })
 
+    const rangeChanged = (data) => {
+      dateFilter.value =
+        data.range?.from && data.range?.to ? { from: data.range.from, to: data.range.to } : null
+      performLoaderTask()
+    }
+
     return {
       ...resourcesViewDefaults,
       hasShareJail: useCapabilityShareJailEnabled(),
       noContentMessage,
       performLoaderTask,
-      projectName
+      projectName,
+      rangeChanged
     }
   },
 

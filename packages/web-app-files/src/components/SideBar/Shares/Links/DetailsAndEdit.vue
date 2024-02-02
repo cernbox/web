@@ -70,7 +70,7 @@
       />
     </p>
     <oc-checkbox
-      v-if="hasNotifications && isCurrentLinkRoleUploader()"
+      v-if="isCurrentLinkRoleUploader()"
       :model-value="currentLinkNotifyUploads"
       :label="notifyUploadsLabel"
       @input="toggleNotifyUploads()"
@@ -241,8 +241,7 @@ export default defineComponent({
   setup() {
     return {
       space: inject<Resource>('space'),
-      resource: inject<Resource>('resource'),
-      hasNotifications: useCapabilityGroupBasedCapabilities().value.includes('notifications')
+      resource: inject<Resource>('resource')
     }
   },
   data() {

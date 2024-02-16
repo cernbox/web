@@ -261,17 +261,21 @@ export default {
         return []
       }
 
-      if (!options?.resources[0]?.permissions?.includes('O')) {
-        return []
-      }
-
       // we don't support external apps as batch action as of now
       if (options.resources.length !== 1) {
         return []
       }
 
       const resource = options.resources[0]
-      const { mimeType, webDavPath, fileId } = resource
+      const { mimeType, webDavPath, fileId, permissions } = resource
+
+      // Check if this storage backend supports applications
+      // Check if permissions are not an integer or undefined, because that means
+      // this is a shared resource (coming via OCS request) and it  will always be allowed
+      if (permissions !== undefined && isNaN(permissions as any) && !permissions?.includes('O')) {
+        return []
+      }
+
       const driveAliasAndItem = options.space.getDriveAliasAndItem(resource)
       const mimeTypes = this.$store.getters['External/mimeTypes'] || []
       if (

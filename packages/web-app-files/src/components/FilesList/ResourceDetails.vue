@@ -51,7 +51,7 @@ export default defineComponent({
     const defaultEditorAction = getDefaultEditorAction(fileActionsOptions)
 
     if (unref(openWithDefaultAppQuery) === 'true' && defaultEditorAction) {
-      defaultEditorAction.handler({ ...fileActionsOptions })
+      defaultEditorAction.handler({ ...fileActionsOptions, inline: true })
     }
 
     return {

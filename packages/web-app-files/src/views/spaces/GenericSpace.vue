@@ -250,11 +250,9 @@ export default defineComponent({
     const router = useRouter()
     const userStore = useUserStore()
     const { $gettext, $ngettext } = useGettext()
-    const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
     const clientService = useClientService()
     const { startWorker } = usePasteWorker()
     const { breadcrumbsFromPath, concatBreadcrumbs } = useBreadcrumbsFromPath()
-    const { openWithDefaultApp } = useOpenWithDefaultApp()
 
     const space = computed(() => props.space)
 
@@ -494,13 +492,6 @@ export default defineComponent({
       )
       resourcesViewDefaults.refreshFileListHeaderPosition()
       focusAndAnnounceBreadcrumb(sameRoute)
-
-      if (unref(openWithDefaultAppQuery) === 'true') {
-        openWithDefaultApp({
-          space: unref(space),
-          resource: unref(resourcesViewDefaults.selectedResources)[0]
-        })
-      }
     }
 
     onMounted(() => {

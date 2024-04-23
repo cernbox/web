@@ -17,7 +17,8 @@ export function useOpenWithDefaultApp() {
 
     const fileActionsOptions = {
       resources: [resource],
-      space: space
+      space: space,
+      inline: true
     }
 
     const defaultEditorAction = getDefaultEditorAction(fileActionsOptions)

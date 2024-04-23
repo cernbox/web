@@ -43,7 +43,8 @@ export interface Action<T = ActionOptions> {
 
 export type FileActionOptions<T extends Resource = Resource> = {
   space: SpaceResource
-  resources?: T[]
+  resources?: T[],
+  inline?: boolean
 }
 export type FileAction<T extends Resource = Resource> = Action<FileActionOptions<T>>
 

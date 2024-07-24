@@ -25,7 +25,7 @@ export class FolderLoaderFavorites implements FolderLoader {
         username: userStore.user?.onPremisesSamAccountName
       })
 
-      resources = resources.map(buildResource)
+      resources = resources.results.map(buildResource)
       resourcesStore.initResourceList({ currentFolder: null, resources })
     })
   }

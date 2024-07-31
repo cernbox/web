@@ -128,7 +128,7 @@ export function buildIncomingShareResource({
     id: driveItem.id,
     remoteItemId: driveItem.remoteItem.id,
     driveId: driveItem.parentReference?.driveId,
-    path: '/',
+    path: driveItem.remoteItem.path || '/',
     name: resourceName,
     fileId: driveItem.remoteItem.id,
     storageId,

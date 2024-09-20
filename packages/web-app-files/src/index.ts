@@ -36,13 +36,12 @@ const appInfo = {
 const navItems = [
   {
     name(capabilities) {
-      return capabilities.spaces?.enabled ? $gettext('All files') : $gettext('All files')
+      return capabilities.spaces?.enabled ? $gettext('Personal') : $gettext('All files')
     },
     icon: appInfo.icon,
     route: {
       path: `/${appInfo.id}/spaces/personal`
-    },
-    activeFor: [{ path: `/${appInfo.id}/spaces/eos` }]
+    }
   },
   {
     name: $gettext('Favorites'),
@@ -84,7 +83,7 @@ const navItems = [
     name: $gettext('Deleted files'),
     icon: 'delete-bin-5',
     route: {
-      path: `/${appInfo.id}/trash/eos`
+      path: `/${appInfo.id}/trash`
     },
     enabled(capabilities) {
       return (

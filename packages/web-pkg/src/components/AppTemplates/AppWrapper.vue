@@ -283,6 +283,9 @@ export default defineComponent({
         if (!unref(driveAliasAndItem)) {
           yield addMissingDriveAliasAndItem()
         }
+        if (!unref(currentFileContext)) {
+          return null
+        }
         space.value = unref(unref(currentFileContext).space)
         const fileInfo = yield getFileInfo(unref(currentFileContext), { signal })
         resource.value = fileInfo

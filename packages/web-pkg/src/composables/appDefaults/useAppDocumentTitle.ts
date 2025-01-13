@@ -27,8 +27,9 @@ export function useAppDocumentTitle({
   const { $gettext } = useGettext()
 
   const titleSegments = computed(() => {
+    const fileName = unref(unref(currentFileContext)?.fileName)
     const baseTitle =
-      basename(unref(unref(currentFileContext)?.fileName)) ||
+      (fileName && basename(fileName)) ||
       $gettext((unref(currentRoute)?.meta?.title as string) || '')
     const meta = unref(unref(appMeta).applicationMeta)
 

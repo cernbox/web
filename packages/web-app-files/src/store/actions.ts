@@ -305,7 +305,7 @@ export default {
         context.dispatch(
           'showMessage',
           {
-            title: $gettext('Error while sharing.'),
+            title: $gettext('Error while sharing. Please try again or open a ticket.'),
             desc: e,
             status: 'danger'
           },

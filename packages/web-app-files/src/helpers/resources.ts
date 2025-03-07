@@ -283,7 +283,8 @@ function _buildLink(link): Share {
     file: {
       parent: link.file_parent,
       source: link.file_source,
-      target: link.file_target
+      target: link.file_taget,
+      type: link.item_type
     },
     notifyUploads: link.notify_uploads === 'true',
     notifyUploadsExtraRecipients:
@@ -308,7 +309,8 @@ export function buildCollaboratorShare(s, file, allowSharePermission): Share {
     file: {
       parent: s.file_parent,
       source: s.file_source,
-      target: s.file_target
+      target: s.file_target,
+      type: s.item_type
     }
   }
   if (

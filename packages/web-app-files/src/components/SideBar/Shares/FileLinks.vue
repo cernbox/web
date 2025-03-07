@@ -490,7 +490,30 @@ export default defineComponent({
         client: this.$client,
         params
       })
-        .then(onSuccess)
+        .then((onSuccess) => {
+          if (
+            !(onSuccess.description.toLowerCase() === 'editor') ||
+            !(onSuccess.file.type === 'folder')
+          )
+            return
+          if (!document.getElementById('oc-files-file-link-warning')) {
+            const warningMessage = document.createElement('div')
+            warningMessage.id = 'oc-files-file-link-warning'
+            warningMessage.classList.add(
+              'oc-mt-s',
+              'oc-mb-m',
+              'oc-p-s',
+              'oc-background-secondary',
+              'oc-rounded'
+            )
+            warningMessage.innerHTML =
+              'Anonymously writable folders might be abused to store illicit material. <span class="oc-text-bold">Therefore, the default expiration date has been set to one month.</span> Please consider sharing to specific users or groups if the intended audience has a CERN (primary or external) account.'
+            document.getElementById('oc-files-file-link').prepend(warningMessage)
+          }
+          setTimeout(() => {
+            document.getElementById('oc-files-file-link-warning').remove()
+          }, 10000)
+        })
         .catch((e) => {
           onError(e)
           console.error(e)
@@ -499,7 +522,6 @@ export default defineComponent({
             status: 'danger'
           })
         })
-
       this.showMessage({
         title: this.$gettext('Link was updated successfully')
       })
@@ -589,5 +611,10 @@ export default defineComponent({
   background-color: var(--oc-color-input-bg);
   border: 1px solid var(--oc-color-input-border);
   border-radius: 5px;
+}
+#oc-files-file-link-warning {
+  color: var(--oc-color-swatch-danger-default);
+  text-align: center;
+  border: solid 1px var(--oc-color-swatch-danger-muted);
 }
 </style>

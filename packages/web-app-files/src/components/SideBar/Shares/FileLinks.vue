@@ -201,7 +201,7 @@ export default defineComponent({
       }
 
       if (expireDate.enforced) {
-        const days = parseInt(expireDate.days)
+        const days = parseInt(expireDate.max)
         maxExpireDateFromCaps = DateTime.now()
           .setLocale(getLocaleFromLanguage(this.$language.current))
           .plus({ days })
@@ -407,6 +407,24 @@ export default defineComponent({
       }
     },
 
+    getExpireDate(currentDate) {
+      if (!currentDate) {
+        return DateTime.now()
+          .setLocale(getLocaleFromLanguage(this.$language.current))
+          .plus({ days: 30 })
+          .endOf('day')
+          .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
+      }
+
+      const maxDate = DateTime.now()
+        .setLocale(getLocaleFromLanguage(this.$language.current))
+        .plus({ years: 3 })
+        .endOf('day')
+        .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
+
+      return currentDate > maxDate ? maxDate : currentDate
+    },
+
     getParamsForLink(link) {
       let expireDate = ''
 
@@ -485,16 +503,26 @@ export default defineComponent({
     },
 
     async updatePublicLink({ params, onSuccess = () => {}, onError = (e) => {} }) {
+      // Default expiration date for editor role on folders
+      const currentRole = LinkShareRoles.getByBitmask(
+        parseInt(params.permissions),
+        this.resource.isFolder
+      )
+      if (currentRole.name === 'editor' && currentRole.folder) {
+        params = { ...params, expireDate: this.getExpireDate(params.expireDate) }
+      }
+
       await this.updateLink({
         id: params.id,
         client: this.$client,
         params
       })
-        .then((onSuccess) => {
-          if (
-            !(onSuccess.description.toLowerCase() === 'editor') ||
-            !(onSuccess.file.type === 'folder')
-          )
+        .then((data) => {
+          this.showMessage({
+            title: this.$gettext('Link was updated successfully')
+          })
+          onSuccess()
+          if (!(data.description.toLowerCase() === 'editor') || !(data.file.type === 'folder'))
             return
           if (!document.getElementById('oc-files-file-link-warning')) {
             const warningMessage = document.createElement('div')
@@ -522,9 +550,6 @@ export default defineComponent({
             status: 'danger'
           })
         })
-      this.showMessage({
-        title: this.$gettext('Link was updated successfully')
-      })
     },
 
     deleteLinkConfirmation({ link }) {

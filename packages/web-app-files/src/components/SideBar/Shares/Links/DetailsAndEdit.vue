@@ -137,9 +137,16 @@
                 v-model="newExpiration"
                 class="link-expiry-picker"
                 :min-date="expirationDate.min"
-                :max-date="expirationDate.max"
+                :max-date="
+                  link.file.type === 'folder' && link.description.toLowerCase() === 'editor'
+                    ? new Date(Date.now()).setFullYear(new Date(Date.now()).getFullYear() + 3)
+                    : expirationDate.max
+                "
                 :locale="$language.current"
-                :is-required="expirationDate.enforce"
+                :is-required="
+                  expirationDate.enforce ||
+                  (link.description.toLowerCase() === 'editor' && link.file.type === 'folder')
+                "
               >
                 <template #default="{ togglePopover }">
                   <oc-button
@@ -201,7 +208,6 @@ import {
 import { defineComponent, inject, PropType } from 'vue'
 import { formatDateFromDateTime, formatRelativeDateFromDateTime } from 'web-pkg/src/helpers'
 import { Resource, SpaceResource } from 'web-client/src/helpers'
-import { useCapabilityGroupBasedCapabilities } from 'web-pkg/src/composables'
 import { createFileRouteOptions } from 'web-pkg/src/helpers/router'
 
 export default defineComponent({
@@ -282,7 +288,10 @@ export default defineComponent({
           icon: 'calendar-event',
           showDatepicker: true
         })
-        if (!this.expirationDate.enforced) {
+        if (
+          !this.expirationDate.enforced &&
+          !(this.link.file.type === 'folder' && this.link.description.toLowerCase() === 'editor')
+        ) {
           result.push({
             id: 'remove-expiration',
             title: this.$gettext('Remove expiration date'),

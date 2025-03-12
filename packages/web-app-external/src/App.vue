@@ -93,7 +93,6 @@ export default defineComponent({
       return this.$route.query.fileId
     },
     chromiumBased() {
-      console.log(navigator.userAgent)
       // @ts-ignore
       return !!window.chrome || !navigator.userAgent.includes('Firefox')
     },

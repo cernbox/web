@@ -104,6 +104,12 @@ export default defineComponent({
     await this.onCreate(false)
   },
   methods: {
+    removeAlertOnSuccessfulLoad(event: MessageEvent) {
+      const data = JSON.parse(event.data)
+      if (data.MessageId === 'App_LoadingStatus') {
+        document.getElementById('chromium-alert').style.display = 'none'
+      }
+    },
     async catchClickMicrosoftEdit() {
       if (!this.reloadWithwriteOnEdit)
         this.reloadWithwriteOnEdit = async (event) => {
@@ -185,12 +191,7 @@ export default defineComponent({
         if (response.data.app_url?.includes('officeapps')) {
           await this.catchClickMicrosoftEdit()
         }
-      } catch (error) {
-        this.errorMessage = this.$gettext('Error retrieving file information')
-        console.error('Error retrieving file information', error)
-        this.loading = false
-        this.loadingError = true
-      } finally {
+        window.addEventListener('message', this.removeAlertOnSuccessfulLoad)
         if (
           this.chromiumBased &&
           this.applicationName === 'MS 365 on Cloud' &&
@@ -247,6 +248,12 @@ export default defineComponent({
           }
           document.body.appendChild(chromiumAlert)
         }
+      } catch (error) {
+        this.errorMessage = this.$gettext('Error retrieving file information')
+        console.error('Error retrieving file information', error)
+        this.loading = false
+        this.loadingError = true
+      } finally {
       }
     }
   }

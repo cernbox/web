@@ -91,12 +91,25 @@ export default defineComponent({
     },
     fileId() {
       return this.$route.query.fileId
+    },
+    chromiumBased() {
+      // @ts-ignore
+      return !!window.chrome || !navigator.userAgent.includes('Firefox')
+    },
+    chromiumAlertClosed() {
+      return localStorage.getItem('chromiumAlertClosed')
     }
   },
   async created() {
     await this.onCreate(false)
   },
   methods: {
+    removeAlertOnSuccessfulLoad(event: MessageEvent) {
+      const data = JSON.parse(event.data)
+      if (data.MessageId === 'App_LoadingStatus') {
+        document.getElementById('chromium-alert').style.display = 'none'
+      }
+    },
     async catchClickMicrosoftEdit() {
       if (!this.reloadWithwriteOnEdit)
         this.reloadWithwriteOnEdit = async (event) => {
@@ -125,9 +138,9 @@ export default defineComponent({
         const viewMode = editMode
           ? 'write'
           : this.fileInfo.isReceivedShare() ||
-            window.location.pathname.startsWith('/external/public/')
-          ? 'preview'
-          : false
+              window.location.pathname.startsWith('/external/public/')
+            ? 'preview'
+            : false
 
         const query = stringify({
           file_id: fileId,
@@ -178,11 +191,69 @@ export default defineComponent({
         if (response.data.app_url?.includes('officeapps')) {
           await this.catchClickMicrosoftEdit()
         }
+        window.addEventListener('message', this.removeAlertOnSuccessfulLoad)
+        if (
+          this.chromiumBased &&
+          this.applicationName === 'MS 365 on Cloud' &&
+          !this.chromiumAlertClosed
+        ) {
+          const chromiumAlert = document.createElement('div')
+          chromiumAlert.id = 'chromium-alert'
+          const chromiumText = document.createElement('span')
+          chromiumText.innerHTML = this.$gettext(
+            'Having issues displaying Office files? As a workaround we recommend using Firefox, or just refreshing this page until it loads properly. More information:&nbsp;'
+          )
+          chromiumText.innerHTML += `<a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://cern.service-now.com/service-portal?id=outage&n=OTG0154563"
+            >
+              OTG0154563
+            </a>`
+          chromiumAlert.appendChild(chromiumText)
+          chromiumAlert.classList.add(
+            'oc-my-xxl',
+            'oc-mx-xl',
+            'oc-p-m',
+            'oc-text-center',
+            'oc-rounded'
+          )
+          chromiumAlert.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #f8d7da;
+            color: #721c1c;
+            text-align: left;
+            font-size: 14px;
+            z-index: 9999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          `
+
+          const closeButton = document.createElement('span')
+          closeButton.innerHTML = '&times;'
+          closeButton.style.cssText = `
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+          `
+          chromiumAlert.appendChild(closeButton)
+
+          closeButton.onclick = () => {
+            chromiumAlert.style.display = 'none'
+            localStorage.setItem('chromiumAlertClosed', 'true')
+          }
+          document.body.appendChild(chromiumAlert)
+        }
       } catch (error) {
         this.errorMessage = this.$gettext('Error retrieving file information')
         console.error('Error retrieving file information', error)
         this.loading = false
         this.loadingError = true
+      } finally {
       }
     }
   }

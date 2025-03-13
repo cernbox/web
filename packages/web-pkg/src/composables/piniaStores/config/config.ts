@@ -37,7 +37,11 @@ const defaultOptions = {
   runningOnEos: false,
   tokenStorageLocal: true,
   userListRequiresFilter: false,
-  hideLogo: false
+  hideLogo: false,
+  alertRwFolders: {
+    en: '',
+    fr: ''
+  }
 } satisfies Partial<OptionsConfig>
 
 export const useConfigStore = defineStore('config', () => {

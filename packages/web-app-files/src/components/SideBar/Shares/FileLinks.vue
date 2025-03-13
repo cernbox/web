@@ -128,12 +128,15 @@ export default defineComponent({
       return canShare({ space: unref(space), resource: unref(resource) })
     })
 
+    const language = useGettext()
+
     const sharesStore = useSharesStore()
     const { updateLink, deleteLink } = sharesStore
     const { linkShares } = storeToRefs(sharesStore)
 
     const configStore = useConfigStore()
     const { options: configOptions } = storeToRefs(configStore)
+    const alertRwFolders = configStore.options.alertRwFolders
 
     const { actions: createLinkActions } = useFileActionsCreateLink()
     const createLinkAction = computed<FileAction>(() =>
@@ -225,8 +228,23 @@ export default defineComponent({
           resource: unref(resource),
           linkShare,
           options
+        }).then(() => {
+          showMessage({ title: $gettext('Link was updated successfully') })
         })
-        showMessage({ title: $gettext('Link was updated successfully') })
+        if (options.type === 'edit' && unref(resource).isFolder && alertRwFolders) {
+          if (!document.getElementById('files-file-link-warning')) {
+            const warningMessage = document.createElement('div')
+            warningMessage.className = 'oc-mb-m oc-p-s oc-background-secondary oc-rounded'
+            warningMessage.id = 'files-file-link-warning'
+            warningMessage.innerHTML = $gettext(
+              alertRwFolders[language.current] ?? alertRwFolders[Object.keys(alertRwFolders)[0]]
+            )
+            document.getElementById('files-links-list').parentElement.prepend(warningMessage)
+            setTimeout(() => {
+              warningMessage.remove()
+            }, 10000)
+          }
+        }
       } catch (e) {
         console.error(e)
         showErrorMessage({
@@ -375,5 +393,10 @@ export default defineComponent({
     grid-template-rows: 1fr;
     margin-top: var(--oc-space-medium);
   }
+}
+#files-file-link-warning {
+  color: var(--oc-color-swatch-danger-default);
+  text-align: center;
+  border: solid 1px var(--oc-color-swatch-danger-muted);
 }
 </style>

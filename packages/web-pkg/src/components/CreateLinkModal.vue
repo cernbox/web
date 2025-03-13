@@ -74,7 +74,7 @@
         appearance="filled"
         variation="primary"
         :disabled="confirmButtonDisabled"
-        @click="$emit('confirm')"
+        @click="$emit('confirm', { isRW: selectedType === 'edit', isFolder })"
         >{{ confirmButtonText }}
       </oc-button>
       <oc-button
@@ -99,7 +99,13 @@
             <oc-button
               class="oc-modal-body-actions-confirm-password action-menu-item"
               appearance="raw"
-              @click="$emit('confirm', { copyPassword: true })"
+              @click="
+                $emit('confirm', {
+                  copyPassword: true,
+                  isRW: selectedType === 'edit',
+                  isFolder
+                })
+              "
               >{{ $gettext('Copy link and password') }}
             </oc-button>
           </li>
@@ -347,6 +353,7 @@ export default defineComponent({
       setAdvancedMode,
       onExpiryDateChanged,
       confirmButtonDisabled,
+      isFolder,
       DateTime,
       sharingPublicExpireDateMaxRWFolders,
 

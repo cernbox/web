@@ -11,7 +11,8 @@ import {
   useModals,
   useUserStore,
   useCapabilityStore,
-  useSharesStore
+  useSharesStore,
+  useConfigStore
 } from '../../piniaStores'
 import { useClipboard } from '../../clipboard'
 import { useClientService } from '../../clientService'
@@ -32,6 +33,7 @@ export const useFileActionsCreateLink = ({
   const { addLink } = useSharesStore()
   const { dispatchModal } = useModals()
   const { copyToClipboard } = useClipboard()
+  const configStore = useConfigStore()
 
   const proceedResult = async ({
     result,
@@ -40,7 +42,7 @@ export const useFileActionsCreateLink = ({
   }: {
     result: PromiseSettledResult<LinkShare>[]
     password?: string
-    options?: { copyPassword?: boolean }
+    options?: { isRW?: boolean; isFolder?: boolean; copyPassword?: boolean }
   }) => {
     const succeeded = result.filter(
       (val): val is PromiseFulfilledResult<LinkShare> => val.status === 'fulfilled'
@@ -68,6 +70,20 @@ export const useFileActionsCreateLink = ({
         } catch (e) {
           console.warn('Unable to copy link to clipboard', e)
         }
+      }
+
+      const language = useGettext()
+      const alertRwFolders = configStore.options.alertRwFolders
+
+      if (options.isRW && options.isFolder && alertRwFolders) {
+        dispatchModal({
+          variation: 'warning',
+          title: 'Default expiration date',
+          message: $gettext(
+            alertRwFolders[language.current] ?? alertRwFolders[Object.keys(alertRwFolders)[0]]
+          ),
+          confirmText: 'Got it'
+        })
       }
 
       showMessage({

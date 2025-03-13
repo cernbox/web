@@ -72,7 +72,8 @@ export default defineComponent({
     formParameters: {},
     viewmodeWrite: false,
     fileInfo: {},
-    reloadWithwriteOnEdit: undefined
+    reloadWithwriteOnEdit: undefined,
+    succesfullLoad: false
   }),
   computed: {
     ...mapGetters(['capabilities']),
@@ -106,8 +107,11 @@ export default defineComponent({
   methods: {
     removeAlertOnSuccessfulLoad(event: MessageEvent) {
       const data = JSON.parse(event.data)
-      if (data.MessageId === 'App_LoadingStatus') {
-        document.getElementById('chromium-alert').style.display = 'none'
+      if (data.MessageId === 'Wac_AppBootState') {
+        this.successfulLoad = true
+        if (document.getElementById('chromium-alert')) {
+          document.getElementById('chromium-alert').style.display = 'none'
+        }
       }
     },
     async catchClickMicrosoftEdit() {
@@ -246,7 +250,10 @@ export default defineComponent({
             chromiumAlert.style.display = 'none'
             localStorage.setItem('chromiumAlertClosed', 'true')
           }
-          document.body.appendChild(chromiumAlert)
+          setTimeout(() => {
+            if (this.successfulLoad) return
+            document.body.appendChild(chromiumAlert)
+          }, 2000)
         }
       } catch (error) {
         this.errorMessage = this.$gettext('Error retrieving file information')

@@ -48,6 +48,11 @@
       v-if="isAdvancedMode"
       class="oc-mt-s"
       :min-date="DateTime.now()"
+      :max-date="
+        isFolder && selectedType === 'edit'
+          ? DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day')
+          : null
+      "
       :label="$gettext('Expiry date')"
       @date-changed="onExpiryDateChanged"
     />
@@ -125,7 +130,8 @@ import {
   useLinkTypes,
   Modal,
   useSharesStore,
-  useClientService
+  useClientService,
+  useCapabilityStore
 } from '../composables'
 import { LinkShare, SpaceResource } from '@ownclouders/web-client'
 import { Resource } from '@ownclouders/web-client'
@@ -169,6 +175,7 @@ export default defineComponent({
     const { addLink } = useSharesStore()
     const isAdvancedMode = ref(false)
     const isInvalidExpiryDate = ref(false)
+    const { sharingPublicExpireDateMaxRWFolders } = useCapabilityStore()
 
     const isFolder = computed(() => props.resources.every(({ isFolder }) => isFolder))
 
@@ -297,6 +304,14 @@ export default defineComponent({
 
     const updateSelectedLinkType = (type: SharingLinkType) => {
       selectedType.value = type
+      onExpiryDateChanged({
+        date: unref(selectedExpiry),
+        error:
+          unref(selectedExpiry)?.toISO() >
+            DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day').toISO() &&
+          isFolder &&
+          unref(selectedType) === 'edit'
+      })
     }
 
     onMounted(() => {
@@ -333,6 +348,7 @@ export default defineComponent({
       onExpiryDateChanged,
       confirmButtonDisabled,
       DateTime,
+      sharingPublicExpireDateMaxRWFolders,
 
       // unit tests
       onConfirm

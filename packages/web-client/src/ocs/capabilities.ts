@@ -145,6 +145,19 @@ export interface Capabilities {
         send_mail?: boolean
         supports_upload_only?: boolean
         upload?: boolean
+        expire_date?: {
+          enabled?: boolean
+          default_rw_folders?: {
+            years?: number
+            months?: number
+            days?: number
+          }
+          max_rw_folders?: {
+            years?: number
+            months?: number
+            days?: number
+          }
+        }
       }
       search_min_length?: number
       user?: {

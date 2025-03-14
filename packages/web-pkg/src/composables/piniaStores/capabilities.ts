@@ -35,6 +35,11 @@ const defaultValues = {
       enabled: true,
       password: {
         enforced_for: { read_only: false, upload_only: false, read_write: false }
+      },
+      expire_date: {
+        enabled: true,
+        default_rw_folders: null,
+        max_rw_folders: null
       }
     }
   },
@@ -118,6 +123,13 @@ export const useCapabilityStore = defineStore('capabilities', () => {
   const sharingPublicPasswordEnforcedFor = computed(
     () => unref(capabilities).files_sharing.public?.password.enforced_for
   )
+  const sharingPublicExpireDateDefaultRWFolders = computed(
+    () => unref(capabilities).files_sharing.public?.expire_date.default_rw_folders
+  )
+  const sharingPublicExpireDateMaxRWFolders = computed(
+    () => unref(capabilities).files_sharing.public?.expire_date.max_rw_folders
+  )
+
   const sharingSearchMinLength = computed(() => unref(capabilities).files_sharing.search_min_length)
   const sharingUserProfilePicture = computed(
     () => unref(capabilities).files_sharing.user?.profile_picture
@@ -175,6 +187,8 @@ export const useCapabilityStore = defineStore('capabilities', () => {
     sharingPublicAlias,
     sharingPublicDefaultPermissions,
     sharingPublicPasswordEnforcedFor,
+    sharingPublicExpireDateDefaultRWFolders,
+    sharingPublicExpireDateMaxRWFolders,
     sharingSearchMinLength,
     sharingUserProfilePicture,
     tusMaxChunkSize,

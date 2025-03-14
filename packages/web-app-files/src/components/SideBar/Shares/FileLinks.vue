@@ -92,7 +92,8 @@ import {
   useResourcesStore,
   useLinkTypes,
   useCanShare,
-  UpdateLinkOptions
+  UpdateLinkOptions,
+  useCapabilityStore
 } from '@ownclouders/web-pkg'
 import { shareViaLinkHelp, shareViaIndirectLinkHelp } from '../../../helpers/contextualHelpers'
 import { isSpaceResource, LinkShare } from '@ownclouders/web-client'
@@ -102,11 +103,14 @@ import { isLocationSharesActive, useSharesStore } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
 import { storeToRefs } from 'pinia'
 import { SharingLinkType } from '@ownclouders/web-client/graph/generated'
+import { DateTime, Duration } from 'luxon'
 
 export default defineComponent({
   name: 'FileLinks',
   components: { ListItem },
   setup() {
+    const { sharingPublicExpireDateDefaultRWFolders, sharingPublicExpireDateMaxRWFolders } =
+      useCapabilityStore()
     const { showMessage, showErrorMessage } = useMessages()
     const { $gettext } = useGettext()
     const ability = useAbility()
@@ -192,6 +196,29 @@ export default defineComponent({
       options: UpdateLinkOptions['options']
     }) => {
       try {
+        if (unref(resource).isFolder && options.type === 'edit' && !linkShare.expirationDateTime) {
+          Object.assign(options, {
+            ...options,
+            expirationDateTime: DateTime.now()
+              .plus(sharingPublicExpireDateDefaultRWFolders)
+              .endOf('day')
+              .toISO()
+          })
+        }
+        if (unref(resource).isFolder && linkShare.expirationDateTime) {
+          if (
+            DateTime.fromISO(linkShare.expirationDateTime).diff(DateTime.now(), 'days').as('days') >
+            Duration.fromObject(sharingPublicExpireDateMaxRWFolders).as('days')
+          ) {
+            Object.assign(options, {
+              ...options,
+              expirationDateTime: DateTime.now()
+                .plus(sharingPublicExpireDateDefaultRWFolders)
+                .endOf('day')
+                .toISO()
+            })
+          }
+        }
         await updateLink({
           clientService,
           space: unref(space),

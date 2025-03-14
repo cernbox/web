@@ -46,6 +46,7 @@
 import { DateTime } from 'luxon'
 import {
   createLocationSpaces,
+  useCapabilityStore,
   useGetMatchingSpace,
   useModals,
   useResourcesStore
@@ -97,6 +98,7 @@ export default defineComponent({
     const { $gettext } = useGettext()
     const { getMatchingSpace } = useGetMatchingSpace()
     const resourcesStore = useResourcesStore()
+    const { sharingPublicExpireDateMaxRWFolders } = useCapabilityStore()
     const editPublicLinkDropdown = useTemplateRef<typeof OcDrop>('editPublicLinkDropdown')
 
     const resource = inject<Ref<Resource>>('resource')
@@ -110,7 +112,11 @@ export default defineComponent({
         customComponent: DatePickerModal,
         customComponentAttrs: () => ({
           currentDate: currentDate.isValid ? currentDate : null,
-          minDate: DateTime.now()
+          minDate: DateTime.now(),
+          maxDate:
+            resource.value.isFolder && props.linkShare.type === SharingLinkType.Edit
+              ? DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day')
+              : null
         }),
         onConfirm: (expirationDateTime: DateTime) => {
           emit('updateLink', {
@@ -214,18 +220,21 @@ export default defineComponent({
           method: showDatePickerModal
         })
 
-        result.push({
-          id: 'remove-expiration',
-          title: $gettext('Remove expiration date'),
-          icon: 'calendar-close',
-          method: () => {
-            emit('updateLink', {
-              linkShare: { ...props.linkShare },
-              options: { expirationDateTime: null }
-            })
-            unref(editPublicLinkDropdown).hide()
-          }
-        })
+        // only if is not a edit folder link
+        if (!(props.linkShare.type === SharingLinkType.Edit && resource.value.isFolder)) {
+          result.push({
+            id: 'remove-expiration',
+            title: $gettext('Remove expiration date'),
+            icon: 'calendar-close',
+            method: () => {
+              emit('updateLink', {
+                linkShare: { ...props.linkShare },
+                options: { expirationDateTime: null }
+              })
+              unref(editPublicLinkDropdown).hide()
+            }
+          })
+        }
       } else if (!unref(isInternalLink)) {
         result.push({
           id: 'add-expiration',

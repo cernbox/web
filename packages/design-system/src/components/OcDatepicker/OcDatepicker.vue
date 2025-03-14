@@ -5,6 +5,7 @@
     :label="label"
     type="date"
     :min="minDate?.toISODate()"
+    :max="maxDate?.toISODate()"
     :fix-message-line="true"
     :error-message="errorMessage"
     :clear-button-enabled="isClearable"
@@ -25,7 +26,8 @@ export default defineComponent({
     label: { type: String, required: true },
     isClearable: { type: Boolean, default: true },
     currentDate: { type: Object as PropType<DateTime>, required: false, default: null },
-    minDate: { type: Object as PropType<DateTime>, required: false, default: null }
+    minDate: { type: Object as PropType<DateTime>, required: false, default: null },
+    maxDate: { type: Object as PropType<DateTime>, required: false, default: null }
   },
   emits: ['dateChanged'],
   setup(props, { emit }) {
@@ -44,11 +46,26 @@ export default defineComponent({
       return unref(date) < props.minDate
     })
 
+    const isMaxDateExceeded = computed(() => {
+      if (!props.maxDate || !unref(date)) {
+        return false
+      }
+      return unref(date) > props.maxDate
+    })
+
     const errorMessage = computed(() => {
       if (unref(isMinDateUndercut)) {
         return $gettext('The date must be after %{date}', {
           date: props.minDate
             .minus({ day: 1 })
+            .setLocale(current)
+            .toLocaleString(DateTime.DATE_SHORT)
+        })
+      }
+      if (unref(isMaxDateExceeded)) {
+        return $gettext('The date must be before %{date}', {
+          date: props.maxDate
+            .plus({ day: 1 })
             .setLocale(current)
             .toLocaleString(DateTime.DATE_SHORT)
         })
@@ -73,6 +90,7 @@ export default defineComponent({
       date,
       () => {
         emit('dateChanged', { date: unref(date), error: unref(isMinDateUndercut) })
+        emit('dateChanged', { date: unref(date), error: unref(isMaxDateExceeded) })
       },
       {
         deep: true
@@ -97,7 +115,7 @@ export default defineComponent({
 ```js
 <template>
   <div>
-    <oc-datepicker :current-date="currentDate" :min-date="minDate" label="Enter or pick a date"
+    <oc-datepicker :current-date="currentDate" :min-date="minDate" :max-date="maxDate" label="Enter or pick a date"
                    @date-changed="onDateChanged"/>
     <p v-if="selectedDate" v-text="selectedDate"/>
   </div>
@@ -107,7 +125,7 @@ export default defineComponent({
 
   export default {
     data: () => ({
-      minDate: DateTime.now(), currentDate: DateTime.now(), selectedDate: ''
+      minDate: DateTime.now(), currentDate: DateTime.now(), selectedDate: '', maxDate: null
     }),
     methods: {
       onDateChanged({date}) {

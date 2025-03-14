@@ -3,6 +3,7 @@
     :label="$gettext('Expiration date')"
     type="date"
     :min-date="minDate"
+    :max-date="maxDate"
     :current-date="currentDate"
     :is-clearable="isClearable"
     @date-changed="onDateChanged"
@@ -38,6 +39,7 @@ export default defineComponent({
     modal: { type: Object as PropType<Modal>, required: true },
     currentDate: { type: Object as PropType<DateTime>, required: false, default: null },
     minDate: { type: Object as PropType<DateTime>, required: false, default: null },
+    maxDate: { type: Object as PropType<DateTime>, required: false, default: null },
     isClearable: { type: Boolean, default: true }
   },
   emits: ['confirm', 'cancel'],

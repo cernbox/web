@@ -41,7 +41,7 @@
         :expiration-date="DateTime.fromISO(linkShare.expirationDateTime)"
         class="oc-mx-xs"
       />
-      <copy-link :link-share="linkShare" class="oc-mx-xs" />
+      <copy-link :link-share="linkShare" :disabled="isExpired" class="oc-mx-xs" />
       <edit-dropdown
         :can-rename="canRename"
         :is-modifiable="isModifiable"
@@ -157,6 +157,13 @@ export default defineComponent({
       return getLinkRoleByType(unref(currentLinkType))?.displayName || ''
     })
 
+    const isExpired = computed(() => {
+      return (
+        DateTime.fromISO(props.linkShare.expirationDateTime).endOf('day') <
+        DateTime.now().endOf('day')
+      )
+    })
+
     return {
       updateSelectedType,
       currentLinkType,
@@ -164,6 +171,7 @@ export default defineComponent({
       availableLinkTypeOptions,
       currentLinkRoleDescription,
       currentLinkRoleLabel,
+      isExpired,
       DateTime
     }
   }

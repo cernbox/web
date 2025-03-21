@@ -5,6 +5,7 @@
     :aria-label="$gettext('Copy link to clipboard')"
     appearance="raw"
     class="oc-files-public-link-copy-url"
+    :disabled="disabled"
     @click="copyLinkToClipboard"
   >
     <oc-icon :name="copied ? 'checkbox-circle' : 'file-copy'" fill-type="line" />
@@ -24,6 +25,10 @@ export default defineComponent({
     linkShare: {
       type: Object as PropType<LinkShare>,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {

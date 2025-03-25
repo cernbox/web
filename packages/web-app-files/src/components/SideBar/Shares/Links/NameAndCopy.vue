@@ -1,7 +1,10 @@
 <template>
   <div class="oc-mb-s oc-width-1-1">
     <h4 class="oc-text-truncate oc-text-normal oc-files-file-link-name oc-m-rm" v-text="linkName" />
-    <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1 oc-p-s link-name-container">
+    <div
+      class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1 oc-p-s link-name-container"
+      :class="isExpired ? 'oc-disabled' : ''"
+    >
       <div v-if="copied" class="oc-flex oc-flex-middle oc-text-truncate">
         <oc-icon variation="success" name="checkbox-circle" />
         <p class="oc-files-file-link-url url-copied oc-ml-s oc-my-rm" v-text="copiedLabel" />
@@ -15,7 +18,7 @@
         />
       </div>
       <oc-button
-        v-if="isClipboardCopySupported"
+        v-if="isClipboardCopySupported && !isExpired"
         v-oc-tooltip="copyBtnHint"
         appearance="raw"
         :aria-label="copyBtnHint"
@@ -32,6 +35,7 @@ import { defineComponent } from 'vue'
 import { useStore } from 'web-pkg/src/composables'
 import { useClipboard } from '@vueuse/core'
 import { useGettext } from 'vue3-gettext'
+import { DateTime } from 'luxon'
 
 export default defineComponent({
   name: 'NameAndCopy',
@@ -75,6 +79,9 @@ export default defineComponent({
   computed: {
     linkName() {
       return this.link.name
+    },
+    isExpired() {
+      return DateTime.fromISO(this.link.expiration).endOf('day') < DateTime.now().endOf('day')
     },
     copyBtnLabel() {
       return this.$gettext('Copy')

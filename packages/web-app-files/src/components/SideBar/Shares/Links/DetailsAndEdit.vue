@@ -101,6 +101,7 @@
         :data-testid="`files-link-id-${link.id}-expiration-date`"
         :aria-label="expirationDateTooltip"
         name="calendar-event"
+        :color="isExpired ? 'var(--oc-color-swatch-danger-muted)' : ''"
         fill-type="line"
       />
       <oc-icon
@@ -268,6 +269,10 @@ export default defineComponent({
       return this.currentLinkRole.label
     },
 
+    isExpired() {
+      return DateTime.fromISO(this.link.expiration).endOf('day') < DateTime.now().endOf('day')
+    },
+
     editOptions() {
       const result = []
 
@@ -415,8 +420,10 @@ export default defineComponent({
     },
 
     expirationDateTooltip() {
+      const expire = this.isExpired ? 'Expired' : 'Expires'
+
       return this.$gettextInterpolate(
-        this.$gettext('Expires in %{timeToExpiry} (%{expiryDate})'),
+        this.$gettext(`${expire} %{timeToExpiry} (%{expiryDate})`),
         { timeToExpiry: this.expirationDateRelative, expiryDate: this.localExpirationDate },
         true
       )

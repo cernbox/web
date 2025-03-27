@@ -201,7 +201,7 @@ export default defineComponent({
       }
 
       if (expireDate.enforced) {
-        const days = parseInt(expireDate.days)
+        const days = parseInt(expireDate.max)
         maxExpireDateFromCaps = DateTime.now()
           .setLocale(getLocaleFromLanguage(this.$language.current))
           .plus({ days })
@@ -407,6 +407,24 @@ export default defineComponent({
       }
     },
 
+    getExpireDate(currentDate) {
+      if (!currentDate) {
+        return DateTime.now()
+          .setLocale(getLocaleFromLanguage(this.$language.current))
+          .plus({ days: 30 })
+          .endOf('day')
+          .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
+      }
+
+      const maxDate = DateTime.now()
+        .setLocale(getLocaleFromLanguage(this.$language.current))
+        .plus({ years: 3 })
+        .endOf('day')
+        .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
+
+      return currentDate > maxDate ? maxDate : currentDate
+    },
+
     getParamsForLink(link) {
       let expireDate = ''
 
@@ -485,12 +503,45 @@ export default defineComponent({
     },
 
     async updatePublicLink({ params, onSuccess = () => {}, onError = (e) => {} }) {
+      // Default expiration date for editor role on folders
+      const currentRole = LinkShareRoles.getByBitmask(
+        parseInt(params.permissions),
+        this.resource.isFolder
+      )
+      if (currentRole.name === 'editor' && currentRole.folder) {
+        params = { ...params, expireDate: this.getExpireDate(params.expireDate) }
+      }
+
       await this.updateLink({
         id: params.id,
         client: this.$client,
         params
       })
-        .then(onSuccess)
+        .then((data) => {
+          this.showMessage({
+            title: this.$gettext('Link was updated successfully')
+          })
+          onSuccess()
+          if (!(data.description.toLowerCase() === 'editor') || !(data.file.type === 'folder'))
+            return
+          if (!document.getElementById('oc-files-file-link-warning')) {
+            const warningMessage = document.createElement('div')
+            warningMessage.id = 'oc-files-file-link-warning'
+            warningMessage.classList.add(
+              'oc-mt-s',
+              'oc-mb-m',
+              'oc-p-s',
+              'oc-background-secondary',
+              'oc-rounded'
+            )
+            warningMessage.innerHTML =
+              'Anonymously writable folders might be abused to store illicit material. <span class="oc-text-bold">Therefore, the default expiration date has been set to one month.</span> Please consider sharing to specific users or groups if the intended audience has a CERN (primary or external) account.'
+            document.getElementById('oc-files-file-link').prepend(warningMessage)
+          }
+          setTimeout(() => {
+            document.getElementById('oc-files-file-link-warning').remove()
+          }, 10000)
+        })
         .catch((e) => {
           onError(e)
           console.error(e)
@@ -499,10 +550,6 @@ export default defineComponent({
             status: 'danger'
           })
         })
-
-      this.showMessage({
-        title: this.$gettext('Link was updated successfully')
-      })
     },
 
     deleteLinkConfirmation({ link }) {
@@ -589,5 +636,10 @@ export default defineComponent({
   background-color: var(--oc-color-input-bg);
   border: 1px solid var(--oc-color-input-border);
   border-radius: 5px;
+}
+#oc-files-file-link-warning {
+  color: var(--oc-color-swatch-danger-default);
+  text-align: center;
+  border: solid 1px var(--oc-color-swatch-danger-muted);
 }
 </style>

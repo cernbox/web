@@ -17,7 +17,7 @@ export interface Share {
   password?: boolean
   expiration?: string
   itemSource?: string
-  file?: { parent: string; source: string; target: string }
+  file?: { parent: string; source: string; target: string; type: string }
   owner?: User
   fileOwner?: User
   customPermissions?: SharePermission[]

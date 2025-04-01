@@ -110,6 +110,7 @@ export default defineComponent({
     )
     const isProjectsLocation = isLocationSpacesActive(router, 'files-spaces-projects')
     const isFavoritesLocation = useActiveLocation(isLocationCommonActive, 'files-common-favorites')
+    const isOfficeFilesLocation = useActiveLocation(isLocationCommonActive, 'files-common-office')
     const isSearchLocation = useActiveLocation(isLocationCommonActive, 'files-common-search')
     const isPublicFilesLocation = useActiveLocation(isLocationPublicActive, 'files-public-link')
     const isTrashLocation = useActiveLocation(isLocationTrashActive, 'files-trash-generic')
@@ -250,7 +251,8 @@ export default defineComponent({
           unref(isSharedWithOthersLocation) ||
           unref(isSharedViaLinkLocation) ||
           unref(isSearchLocation) ||
-          unref(isFavoritesLocation)
+          unref(isFavoritesLocation) ||
+          unref(isOfficeFilesLocation)
         )
       })
     }

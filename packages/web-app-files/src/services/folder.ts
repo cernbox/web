@@ -11,7 +11,8 @@ import {
   FolderLoaderSharedViaLink,
   FolderLoaderSharedWithMe,
   FolderLoaderSharedWithOthers,
-  FolderLoaderTrashbin
+  FolderLoaderTrashbin,
+  OfficeFilesLoader
 } from './folder/index'
 
 export * from './folder/types'
@@ -40,7 +41,8 @@ export class FolderService {
       new FolderLoaderSharedViaLink(),
       new FolderLoaderSharedWithMe(),
       new FolderLoaderSharedWithOthers(),
-      new FolderLoaderTrashbin()
+      new FolderLoaderTrashbin(),
+      new OfficeFilesLoader()
     ]
   }
 

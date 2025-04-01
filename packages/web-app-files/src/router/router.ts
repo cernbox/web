@@ -23,4 +23,5 @@ export interface RouteComponents {
     DriveResolver: Component
     Projects: Component
   }
+  OfficeFiles: Component
 }

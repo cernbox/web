@@ -1,5 +1,6 @@
 export type OwnCloudSdk = {
   files: {
+    davClient: any
     createFolder(...args): any
     fileInfo(...args): any
     getFileUrl(...args): any

@@ -6,6 +6,7 @@ import SharedWithOthers from './views/shares/SharedWithOthers.vue'
 import SharedViaLink from './views/shares/SharedViaLink.vue'
 import SpaceDriveResolver from './views/spaces/DriveResolver.vue'
 import SpaceProjects from './views/spaces/Projects.vue'
+import OfficeFiles from './views/OfficeFiles.vue'
 import translations from '../l10n/translations.json'
 import quickActions from './quickActions'
 import store from './store'
@@ -15,7 +16,6 @@ import { archiverService, thumbnailService, Registry } from './services'
 import fileSideBars from './fileSideBars'
 import { buildRoutes } from './router'
 import get from 'lodash-es/get'
-
 
 // dirty: importing view from other extension within project
 import SearchResults from '../../web-app-search/src/views/List.vue'
@@ -57,8 +57,22 @@ const navItems = [
     }
   },
   {
+    name: $gettext('My office files'),
+    // icon: 'resource-type-presentation',
+    icon: 'file-list',
+    route: {
+      path: `/${appInfo.id}/office-files`
+    },
+    activeFor: [{ path: `/${appInfo.id}/office-files` }],
+    enabled(capabilities) {
+      return capabilities.group_capabilities?.includes('office-view') || false
+    }
+  },
+  {
     name(capabilities) {
-      return (window as any).__$store.getters.user.isLightweight ? $gettext('Shared with me') : $gettext('Shares')
+      return (window as any).__$store.getters.user.isLightweight
+        ? $gettext('Shared with me')
+        : $gettext('Shares')
     },
     icon: 'share-forward',
     route: {
@@ -125,6 +139,7 @@ export default {
   routes: buildRoutes({
     App,
     Favorites,
+    OfficeFiles,
     FilesDrop,
     SearchResults,
     Shares: {

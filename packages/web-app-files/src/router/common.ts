@@ -2,17 +2,19 @@ import { RouteComponents } from './router'
 import { RouteLocationNamedRaw, RouteRecordRaw } from 'vue-router'
 import { createLocation, $gettext, isLocationActiveDirector } from './utils'
 
-type commonTypes = 'files-common-favorites' | 'files-common-search'
+type commonTypes = 'files-common-favorites' | 'files-common-search' | 'files-common-office'
 
 export const createLocationCommon = (name: commonTypes, location = {}): RouteLocationNamedRaw =>
   createLocation(name, location)
 
 export const locationFavorites = createLocationCommon('files-common-favorites')
 export const locationSearch = createLocationCommon('files-common-search')
+export const locationOfficeFiles = createLocationCommon('files-common-office')
 
 export const isLocationCommonActive = isLocationActiveDirector<commonTypes>(
   locationFavorites,
-  locationSearch
+  locationSearch,
+  locationOfficeFiles
 )
 
 export const buildRoutes = (components: RouteComponents): RouteRecordRaw[] => [
@@ -43,6 +45,21 @@ export const buildRoutes = (components: RouteComponents): RouteRecordRaw[] => [
         meta: {
           authContext: 'user',
           title: $gettext('Favorite files')
+        }
+      }
+    ]
+  },
+  {
+    path: '/office-files',
+    component: components.App,
+    children: [
+      {
+        name: locationOfficeFiles.name,
+        path: '',
+        component: components.OfficeFiles,
+        meta: {
+          authContext: 'user',
+          title: $gettext('My office files')
         }
       }
     ]

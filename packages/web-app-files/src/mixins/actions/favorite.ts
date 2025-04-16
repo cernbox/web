@@ -22,7 +22,8 @@ export default {
             if (
               this.$_isFilesAppActive &&
               !isLocationSpacesActive(this.$router, 'files-spaces-generic') &&
-              !isLocationCommonActive(this.$router, 'files-common-favorites')
+              !isLocationCommonActive(this.$router, 'files-common-favorites') &&
+              !isLocationCommonActive(this.$router, 'files-common-office')
             ) {
               return false
             }

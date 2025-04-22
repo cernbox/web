@@ -210,19 +210,21 @@ export default defineComponent({
 
     extensionSelectedChanged(extension: string) {
       this.extensionSelected = extension
-      this.loadOfficeFilesAgain()
+      this.loadOfficeFiles()
     },
 
     locationSelectedChanged(location: string[]) {
       this.locationSelected = location
-      this.loadOfficeFilesAgain()
+      this.loadOfficeFiles()
     },
 
-    loadOfficeFilesAgain() {
-      this.loadResourcesTask.perform(
-        this.officeFilesParams.extension,
-        this.officeFilesParams.location
-      )
+    loadOfficeFiles() {
+      if (this.extensionSelected && this.locationSelected.length > 0) {
+        this.loadResourcesTask.perform(
+          this.officeFilesParams.extension,
+          this.officeFilesParams.location
+        )
+      }
     }
   }
 })

@@ -19,6 +19,7 @@ import { defineComponent } from 'vue'
 import { useAccessToken, useStore } from 'web-pkg/src/composables'
 
 const projectOptions = []
+const lastProjectsPicked = localStorage.getItem('projects-picked') || false
 
 export default defineComponent({
   name: 'ProjectPicker',
@@ -42,20 +43,32 @@ export default defineComponent({
   data() {
     return {
       selectedProjects: [],
-      projectOptions
+      projectOptions,
+      lastProjectsPicked
     }
   },
 
   created() {
-    this.getProjects(this.accessToken).then((projects: { name: any; path: any }[]) => {
-      let loadedOptions = projects.map((project: { name: any; path: any }) => ({
+    this.getProjects(this.accessToken).then((projects: { name: string; path: string }[]) => {
+      let loadedOptions = projects.map((project: { name: string; path: string }) => ({
         name: project.name,
         path: project.path
       }))
       this.projectOptions = this.projectOptions.concat(...loadedOptions)
-      this.selectedProjects.push(
-        this.projectOptions.find((project: { name: any; path: any }) => project.name === 'My files')
-      )
+      if (this.lastProjectsPicked) {
+        this.selectedProjects.push(
+          ...this.projectOptions.filter((project: { name: string; path: string }) =>
+            JSON.parse(this.lastProjectsPicked).includes(project.path.split('/').pop())
+          )
+        )
+      } else {
+        this.selectedProjects.push(
+          this.projectOptions.find(
+            (project: { name: string; path: string }) => project.name === 'My files'
+          )
+        )
+      }
+      this.projectsSelected(this.selectedProjects)
     })
   },
 
@@ -73,6 +86,7 @@ export default defineComponent({
       const projects = newValue.map((project: { name: string; path: string }) =>
         project.path.split('/').pop()
       )
+      localStorage.setItem('projects-picked', JSON.stringify(projects))
       this.$emit('projectSelected', projects)
     },
 

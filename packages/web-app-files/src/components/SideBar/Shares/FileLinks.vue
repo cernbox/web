@@ -136,7 +136,6 @@ export default defineComponent({
 
     const configStore = useConfigStore()
     const { options: configOptions } = storeToRefs(configStore)
-    const alertRwFolders = configStore.options.alertRwFolders
 
     const { actions: createLinkActions } = useFileActionsCreateLink()
     const createLinkAction = computed<FileAction>(() =>
@@ -199,7 +198,12 @@ export default defineComponent({
       options: UpdateLinkOptions['options']
     }) => {
       try {
-        if (unref(resource).isFolder && options.type === 'edit' && !linkShare.expirationDateTime) {
+        if (
+          unref(resource).isFolder &&
+          options.type === SharingLinkType.Edit &&
+          !linkShare.expirationDateTime &&
+          sharingPublicExpireDateDefaultRWFolders
+        ) {
           Object.assign(options, {
             ...options,
             expirationDateTime: DateTime.now()
@@ -208,7 +212,12 @@ export default defineComponent({
               .toISO()
           })
         }
-        if (unref(resource).isFolder && linkShare.expirationDateTime) {
+        if (
+          unref(resource).isFolder &&
+          options.type === SharingLinkType.Edit &&
+          linkShare.expirationDateTime &&
+          sharingPublicExpireDateMaxRWFolders
+        ) {
           if (
             DateTime.fromISO(linkShare.expirationDateTime).diff(DateTime.now(), 'days').as('days') >
             Duration.fromObject(sharingPublicExpireDateMaxRWFolders).as('days')
@@ -216,7 +225,7 @@ export default defineComponent({
             Object.assign(options, {
               ...options,
               expirationDateTime: DateTime.now()
-                .plus(sharingPublicExpireDateDefaultRWFolders)
+                .plus(sharingPublicExpireDateMaxRWFolders)
                 .endOf('day')
                 .toISO()
             })
@@ -231,14 +240,20 @@ export default defineComponent({
         }).then(() => {
           showMessage({ title: $gettext('Link was updated successfully') })
         })
-        if (options.type === 'edit' && unref(resource).isFolder && alertRwFolders) {
+        if (
+          options.type === SharingLinkType.Edit &&
+          unref(resource).isFolder &&
+          unref(configOptions).alertRwFolders
+        ) {
           if (!document.getElementById('files-file-link-warning')) {
             const warningMessage = document.createElement('div')
             warningMessage.className = 'oc-mb-m oc-p-s oc-background-secondary oc-rounded'
             warningMessage.id = 'files-file-link-warning'
-            warningMessage.innerHTML = $gettext(
-              alertRwFolders[language.current] ?? alertRwFolders[Object.keys(alertRwFolders)[0]]
-            )
+            warningMessage.innerHTML =
+              unref(configOptions).alertRwFolders[language.current] ??
+              unref(configOptions).alertRwFolders[
+                Object.keys(unref(configOptions).alertRwFolders)[0]
+              ]
             document.getElementById('files-links-list').parentElement.prepend(warningMessage)
             setTimeout(() => {
               warningMessage.remove()

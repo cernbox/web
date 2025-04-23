@@ -49,7 +49,7 @@
       class="oc-mt-s"
       :min-date="DateTime.now()"
       :max-date="
-        isFolder && selectedType === 'edit'
+        isFolder && selectedType === 'edit' && sharingPublicExpireDateMaxRWFolders
           ? DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day')
           : null
       "
@@ -313,6 +313,7 @@ export default defineComponent({
       onExpiryDateChanged({
         date: unref(selectedExpiry),
         error:
+          sharingPublicExpireDateMaxRWFolders &&
           unref(selectedExpiry)?.toISO() >
             DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day').toISO() &&
           isFolder &&

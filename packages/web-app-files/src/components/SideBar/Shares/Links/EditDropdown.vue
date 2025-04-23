@@ -114,7 +114,9 @@ export default defineComponent({
           currentDate: currentDate.isValid ? currentDate : null,
           minDate: DateTime.now(),
           maxDate:
-            resource.value.isFolder && props.linkShare.type === SharingLinkType.Edit
+            resource.value.isFolder &&
+            props.linkShare.type === SharingLinkType.Edit &&
+            sharingPublicExpireDateMaxRWFolders
               ? DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day')
               : null
         }),
@@ -220,8 +222,14 @@ export default defineComponent({
           method: showDatePickerModal
         })
 
-        // only if is not a edit folder link
-        if (!(props.linkShare.type === SharingLinkType.Edit && resource.value.isFolder)) {
+        // only if it isn't a edit folder link
+        if (
+          !(
+            props.linkShare.type === SharingLinkType.Edit &&
+            resource.value.isFolder &&
+            sharingPublicExpireDateMaxRWFolders
+          )
+        ) {
           result.push({
             id: 'remove-expiration',
             title: $gettext('Remove expiration date'),

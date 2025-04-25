@@ -49,12 +49,8 @@ export default defineComponent({
   },
 
   created() {
-    this.getProjects(this.accessToken).then((projects: { name: string; path: string }[]) => {
-      let loadedOptions = projects.map((project: { name: string; path: string }) => ({
-        name: project.name,
-        path: project.path
-      }))
-      this.projectOptions = this.projectOptions.concat(...loadedOptions)
+    this.getAllowedProjects(this.accessToken).then((projects: { name: string; path: string }[]) => {
+      this.projectOptions = this.projectOptions.concat(...projects)
       if (this.lastProjectsPicked) {
         this.selectedProjects.push(
           ...this.projectOptions.filter((project: { name: string; path: string }) =>
@@ -115,7 +111,6 @@ export default defineComponent({
         throw new Error(message)
       }
       const data = await response.json()
-
       let projects = []
       data.projects.forEach((project) => {
         projects.push({
@@ -123,8 +118,24 @@ export default defineComponent({
           path: project.path
         })
       })
-
       return projects
+    },
+
+    async getProjectsFilter() {
+      const response = await fetch('projects_filter.json')
+      if (!response.ok) {
+        const message = `An error has occured: ${response.status}`
+        throw new Error(message)
+      }
+      const projects = await response.json()
+      return projects
+    },
+
+    async getAllowedProjects(accessToken: string) {
+      const projects = await this.getProjects(accessToken)
+      const allowedProjects = await this.getProjectsFilter()
+      const filteredProjects = projects.filter((project) => allowedProjects.includes(project.name))
+      return filteredProjects
     }
   }
 })

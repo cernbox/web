@@ -30,10 +30,12 @@ export default defineComponent({
     const store = useStore()
     const accessToken = useAccessToken({ store })
 
-    projectOptions.push({
-      name: 'My files',
-      path: ''
-    })
+    if (projectOptions.length === 0) {
+      projectOptions.push({
+        name: 'My files',
+        path: ''
+      })
+    }
 
     return {
       accessToken
@@ -112,7 +114,7 @@ export default defineComponent({
       }
       const data = await response.json()
       let projects = []
-      data.projects.forEach((project) => {
+      data.projects.forEach((project: { name: string; path: string }) => {
         projects.push({
           name: project.name,
           path: project.path
@@ -134,7 +136,9 @@ export default defineComponent({
     async getAllowedProjects(accessToken: string) {
       const projects = await this.getProjects(accessToken)
       const allowedProjects = await this.getProjectsFilter()
-      const filteredProjects = projects.filter((project) => allowedProjects.includes(project.name))
+      const filteredProjects = projects.filter((project: { name: string }) =>
+        allowedProjects.includes(project.name)
+      )
       return filteredProjects
     }
   }

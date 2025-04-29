@@ -144,7 +144,7 @@ export default defineComponent({
   data() {
     return {
       extensionSelected: '',
-      locationSelected: []
+      locationSelected: false
     }
   },
 
@@ -213,13 +213,13 @@ export default defineComponent({
       this.loadOfficeFiles()
     },
 
-    locationSelectedChanged(location: string[]) {
+    locationSelectedChanged(location: string) {
       this.locationSelected = location
       this.loadOfficeFiles()
     },
 
     loadOfficeFiles() {
-      if (this.extensionSelected && this.locationSelected.length > 0) {
+      if (this.extensionSelected && this.locationSelected !== false) {
         this.loadResourcesTask.perform(
           this.officeFilesParams.extension,
           this.officeFilesParams.location

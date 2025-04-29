@@ -21,8 +21,6 @@ const extensionOptions = [
   { label: 'Excel', value: 'xls' }
 ]
 
-const lastExtensionPicked = localStorage.getItem('extension-picked') || false
-
 export default defineComponent({
   name: 'OfficeFilesExtensionFilter',
   props: {},
@@ -33,15 +31,14 @@ export default defineComponent({
   data() {
     return {
       officeFileExtension: '',
-      extensionOptions,
-      lastExtensionPicked
+      extensionOptions
     }
   },
 
   created() {
-    if (this.lastExtensionPicked) {
+    if (localStorage.getItem('extension-picked')) {
       this.officeFileExtension = this.extensionOptions.find(
-        (option: { value: string }) => option.value === this.lastExtensionPicked
+        (option: { value: string }) => option.value === localStorage.getItem('extension-picked')
       )
     } else {
       this.officeFileExtension = this.extensionOptions[0]

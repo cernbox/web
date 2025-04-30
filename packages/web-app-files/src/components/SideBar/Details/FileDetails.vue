@@ -141,7 +141,7 @@
             </div>
           </td>
         </tr>
-        <tr v-if="runningOnEos">
+        <tr v-if="runningOnEos && !!directLink">
           <th scope="col" class="oc-pr-s" v-text="directLinkLabel" />
           <td>
             <div class="oc-flex oc-flex-middle oc-flex-between oc-width-1-1">
@@ -239,7 +239,9 @@ export default defineComponent({
     const directLink = computed(() => {
       return !unref(isPublicLinkContext)
         ? `${store.getters.configuration.server}files/spaces${encodePath(unref(resource).path)}`
-        : `${store.getters.configuration.server.replace(/\/+$/, '')}${unref(resource).downloadURL}`
+        : unref(resource).downloadURL
+          ? `${store.getters.configuration.server.replace(/\/+$/, '')}${unref(resource).downloadURL}`
+          : ''
     })
 
     const copyEosPathToClipboard = () => {

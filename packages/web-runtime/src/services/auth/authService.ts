@@ -26,7 +26,7 @@ export class AuthService {
     configurationManager: ConfigurationManager,
     clientService: ClientService,
     store: Store<any>,
-    router: Router,
+    router: Router
   ): void {
     this.configurationManager = configurationManager
     this.clientService = clientService
@@ -60,6 +60,10 @@ export class AuthService {
       if (publicLinkToken) {
         await this.publicLinkManager.updateContext(publicLinkToken)
       }
+    } else {
+      if (this.store.getters['runtime/auth/isPublicLinkContextReady']) {
+        await this.publicLinkManager.clear(extractPublicLinkToken(to))
+      }
     }
 
     if (!this.userManager) {
@@ -71,7 +75,6 @@ export class AuthService {
     }
 
     if (!isAnonymousContext(this.router, to)) {
-
       if (!this.userManager.areEventHandlersRegistered) {
         this.userManager.events.addAccessTokenExpired((...args): void => {
           const handleExpirationError = () => {

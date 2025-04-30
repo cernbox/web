@@ -21,7 +21,7 @@ export class OfficeFilesLoader implements FolderLoader {
     } = context
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return useTask(function* (signal1, signal2, extensionFilter: string, projectNames: string[]) {
+    return useTask(function* (signal1, signal2, extensionFilter: string, projectName: string) {
       store.commit('Files/CLEAR_CURRENT_FILES_LIST')
 
       let body = '<?xml version="1.0"?>\n' + '<oc:filter-files '
@@ -60,12 +60,8 @@ export class OfficeFilesLoader implements FolderLoader {
         '</d:prop>\n'
 
       body += '<oc:filter-rules>\n'
-      if (projectNames.length) {
-        projectNames.forEach((name) => {
-          if (name) {
-            body += `<oc:projects>${name}</oc:projects>\n`
-          }
-        })
+      if (!!projectName) {
+        body += `<oc:projects>${projectName}</oc:projects>\n`
       }
       if (extensionFilter) {
         body += `<oc:my-office-files>${extensionFilter}</oc:my-office-files>\n`

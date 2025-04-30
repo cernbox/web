@@ -2,14 +2,13 @@
   <div class="oc-my-s oc-flex oc-flex-row oc-width-large" style="align-items: center">
     <span>Filter by project: </span>
     <oc-select
-      v-model="selectedProjects"
+      v-model="selectedProject"
       class="oc-mx-s oc-width-medium"
-      :multiple="true"
+      :multiple="false"
       :searchable="true"
       option-label="name"
       :options="projectOptions"
-      @option:selected="projectsSelected"
-      @option:deselected="projectRemoved"
+      @option:selected="projectSelected"
     />
   </div>
 </template>
@@ -19,7 +18,6 @@ import { defineComponent } from 'vue'
 import { useAccessToken, useStore } from 'web-pkg/src/composables'
 
 const projectOptions = []
-const lastProjectsPicked = localStorage.getItem('projects-picked') || false
 
 export default defineComponent({
   name: 'ProjectPicker',
@@ -30,13 +28,6 @@ export default defineComponent({
     const store = useStore()
     const accessToken = useAccessToken({ store })
 
-    if (projectOptions.length === 0) {
-      projectOptions.push({
-        name: 'My files',
-        path: ''
-      })
-    }
-
     return {
       accessToken
     }
@@ -44,60 +35,41 @@ export default defineComponent({
 
   data() {
     return {
-      selectedProjects: [],
-      projectOptions,
-      lastProjectsPicked
+      selectedProject: {},
+      projectOptions
     }
   },
 
   created() {
+    if (this.projectOptions.length === 0) {
+      this.projectOptions.push({
+        name: 'My files',
+        path: ''
+      })
+    }
+
     this.getAllowedProjects(this.accessToken).then((projects: { name: string; path: string }[]) => {
       this.projectOptions = this.projectOptions.concat(...projects)
-      if (this.lastProjectsPicked) {
-        this.selectedProjects.push(
-          ...this.projectOptions.filter((project: { name: string; path: string }) =>
-            JSON.parse(this.lastProjectsPicked).includes(project.path.split('/').pop())
-          )
+      if (localStorage.getItem('project-picked')) {
+        this.selectedProject = this.projectOptions.find(
+          (project: { name: string; path: string }) =>
+            project.path.split('/').pop() === localStorage.getItem('project-picked')
         )
       } else {
-        this.selectedProjects.push(
-          this.projectOptions.find(
-            (project: { name: string; path: string }) => project.name === 'My files'
-          )
+        this.selectedProject = this.projectOptions.find(
+          (project: { name: string; path: string }) => project.name === 'My files'
         )
       }
-      this.projectsSelected(this.selectedProjects)
+      this.projectSelected(this.selectedProject)
     })
   },
 
   methods: {
-    projectsSelected(newValue: { name: string; path: string }[]) {
-      if (newValue.length === 0) {
-        this.selectedProjects.push(
-          this.projectOptions.find(
-            (project: { name: string; path: string }) => project.name === 'My files'
-          )
-        )
-      } else {
-        this.selectedProjects = newValue
-      }
-      const projects = newValue.map((project: { name: string; path: string }) =>
-        project.path.split('/').pop()
-      )
-      localStorage.setItem('projects-picked', JSON.stringify(projects))
-      this.$emit('projectSelected', projects)
-    },
-
-    projectRemoved(project: { name: string; path: string }) {
-      if (project.name === 'My files') {
-        this.selectedProjects.unshift(
-          this.projectOptions.find(
-            (project: { name: string; path: string }) => project.name === 'My files'
-          )
-        )
-      } else {
-        this.projectsSelected(this.selectedProjects)
-      }
+    projectSelected(newValue: { name: string; path: string }) {
+      this.selectedProject = newValue
+      const project = newValue.path.split('/').pop()
+      localStorage.setItem('project-picked', project)
+      this.$emit('projectSelected', project)
     },
 
     async getProjects(accessToken: string) {

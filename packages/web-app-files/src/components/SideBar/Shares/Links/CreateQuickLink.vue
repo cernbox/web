@@ -50,7 +50,6 @@ export default defineComponent({
         link: {
           name: this.$gettext('Quicklink'),
           permissions: 1,
-          expiration: this.expirationDate.enforced ? this.expirationDate.default : null,
           quicklink: true,
           password: false
         }

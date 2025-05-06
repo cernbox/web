@@ -107,7 +107,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, inject, ref } from 'vue'
-import { DateTime } from 'luxon'
+import { DateTime, Duration } from 'luxon'
 import { mapGetters, mapActions, mapState, mapMutations } from 'vuex'
 import {
   useStore,
@@ -190,29 +190,28 @@ export default defineComponent({
       const expireDate = this.capabilities.files_sharing.public.expire_date
 
       let defaultExpireDate = null
-      let maxExpireDateFromCaps = null
+      let maxExpireDate = null
 
-      if (expireDate.days) {
-        const days = parseInt(expireDate.days)
+      if (expireDate.default_rw_folders) {
+        const expireDateDefault = Duration.fromObject(expireDate.default_rw_folders).toObject()
         defaultExpireDate = DateTime.now()
           .setLocale(getLocaleFromLanguage(this.$language.current))
-          .plus({ days })
+          .plus(expireDateDefault)
           .toJSDate()
       }
 
-      if (expireDate.enforced) {
-        const days = parseInt(expireDate.max)
-        maxExpireDateFromCaps = DateTime.now()
+      if (expireDate.max_rw_folders) {
+        const expireDateMax = Duration.fromObject(expireDate.max_rw_folders).toObject()
+        maxExpireDate = DateTime.now()
           .setLocale(getLocaleFromLanguage(this.$language.current))
-          .plus({ days })
+          .plus(expireDateMax)
           .toJSDate()
       }
 
       return {
-        enforced: expireDate.enforced,
         default: defaultExpireDate,
         min: DateTime.now().setLocale(getLocaleFromLanguage(this.$language.current)).toJSDate(),
-        max: maxExpireDateFromCaps
+        max: maxExpireDate
       }
     },
 
@@ -377,7 +376,6 @@ export default defineComponent({
         link: {
           name: this.$gettext('Link'),
           permissions: 1,
-          expiration: this.expirationDate.default,
           password: false
         }
       })
@@ -408,17 +406,21 @@ export default defineComponent({
     },
 
     getExpireDate(currentDate) {
+      const expireDate = this.capabilities.files_sharing.public.expire_date
+
       if (!currentDate) {
+        const expireDateDefault = Duration.fromObject(expireDate.default_rw_folders).toObject()
         return DateTime.now()
           .setLocale(getLocaleFromLanguage(this.$language.current))
-          .plus({ days: 30 })
+          .plus(expireDateDefault)
           .endOf('day')
           .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
       }
 
+      const expireDateMax = Duration.fromObject(expireDate.max_rw_folders).toObject()
       const maxDate = DateTime.now()
         .setLocale(getLocaleFromLanguage(this.$language.current))
-        .plus({ years: 3 })
+        .plus(expireDateMax)
         .endOf('day')
         .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
 

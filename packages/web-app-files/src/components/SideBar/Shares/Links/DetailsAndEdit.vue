@@ -139,14 +139,17 @@
                 class="link-expiry-picker"
                 :min-date="expirationDate.min"
                 :max-date="
-                  link.file.type === 'folder' && link.description.toLowerCase() === 'editor'
-                    ? new Date(Date.now()).setFullYear(new Date(Date.now()).getFullYear() + 3)
-                    : expirationDate.max
+                  link.file.type === 'folder' &&
+                  link.description.toLowerCase() === 'editor' &&
+                  expirationDate.max
+                    ? expirationDate.max
+                    : null
                 "
                 :locale="$language.current"
                 :is-required="
-                  expirationDate.enforce ||
-                  (link.description.toLowerCase() === 'editor' && link.file.type === 'folder')
+                  link.file.type === 'folder' &&
+                  link.description.toLowerCase() === 'editor' &&
+                  expirationDate.max
                 "
               >
                 <template #default="{ togglePopover }">
@@ -224,7 +227,7 @@ export default defineComponent({
     },
     expirationDate: {
       type: Object,
-      default: () => ({}),
+      default: () => {},
       required: true
     },
     isFolderShare: {
@@ -294,8 +297,11 @@ export default defineComponent({
           showDatepicker: true
         })
         if (
-          !this.expirationDate.enforced &&
-          !(this.link.file.type === 'folder' && this.link.description.toLowerCase() === 'editor')
+          !(
+            this.link.file.type === 'folder' &&
+            this.link.description.toLowerCase() === 'editor' &&
+            this.expirationDate.max
+          )
         ) {
           result.push({
             id: 'remove-expiration',

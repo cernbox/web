@@ -68,6 +68,8 @@ export interface Capabilities {
         enabled: boolean
         expire_date: {
           enabled: boolean
+          default_rw_folders: object
+          max_rw_folders: object
         }
         multiple: boolean
         password: {

@@ -411,7 +411,7 @@ export default defineComponent({
       if (!currentDate) {
         return DateTime.now()
           .setLocale(getLocaleFromLanguage(this.$language.current))
-          .plus({ days: 30 })
+          .plus({ months: 3 })
           .endOf('day')
           .toFormat("yyyy-MM-dd'T'HH:mm:ssZZZ")
       }

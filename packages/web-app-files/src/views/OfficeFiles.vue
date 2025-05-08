@@ -135,6 +135,11 @@ export default defineComponent({
       })
     }
 
+    if (!localStorage.getItem('oc_options_files-common-office_sort-by')) {
+      localStorage.setItem('oc_options_files-common-office_sort-by', 'mdate')
+      localStorage.setItem('oc_options_files-common-office_sort-dir', 'desc')
+    }
+
     return {
       ...useResourcesViewDefaults<Resource, any, any[]>(),
       getSpace

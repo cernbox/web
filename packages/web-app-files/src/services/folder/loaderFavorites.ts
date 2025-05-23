@@ -14,7 +14,7 @@ export class FolderLoaderFavorites implements FolderLoader {
   }
 
   public getTask(context: TaskContext): FolderLoaderTask {
-    const { resourcesStore, clientService, userStore } = context
+    const { resourcesStore, clientService, spacesStore } = context
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return useTask(function* (signal1, signal2) {
@@ -22,7 +22,7 @@ export class FolderLoaderFavorites implements FolderLoader {
       resourcesStore.setAncestorMetaData({})
 
       let resources = yield clientService.webdav.listFavoriteFiles({
-        username: userStore.user?.onPremisesSamAccountName,
+        spaceID: spacesStore.personalSpace.id,
         signal: signal1
       })
 

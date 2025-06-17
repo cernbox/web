@@ -229,6 +229,7 @@ export default defineComponent({
     const userStore = useUserStore()
     const { $gettext, $ngettext } = useGettext()
     const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
+    const scrollToQuery = useRouteQuery('scrollTo')
     const clientService = useClientService()
     const { startWorker } = usePasteWorker()
     const { breadcrumbsFromPath, concatBreadcrumbs } = useBreadcrumbsFromPath()
@@ -577,6 +578,7 @@ export default defineComponent({
       resourceTargetRouteCallback,
       performLoaderTask,
       viewModes,
+      scrollToQuery,
       appBarRef,
       folderView,
       folderViewStyle,
@@ -637,6 +639,22 @@ export default defineComponent({
     space: {
       handler: function () {
         this.performLoaderTask(true)
+      }
+    },
+    paginatedResources: {
+      handler: function () {
+        if (this.displayResourceAsSingleResource && this.configOptions.cernFeatures) {
+          const defaultAction = this.getDefaultAction({
+            space: this.space,
+            resources: this.paginatedResources
+          })
+          if (!this.scrollToQuery && defaultAction.label() !== 'Download') {
+            this.triggerDefaultAction({
+              space: this.space,
+              resources: this.paginatedResources
+            })
+          }
+        }
       }
     }
   }

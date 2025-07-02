@@ -4,6 +4,7 @@ import { DAV, DAVRequestOptions } from './client'
 import { HttpError } from '../errors'
 import { ResponseType } from 'axios'
 import { getWebDavPath } from './utils'
+import { urlJoin } from '../utils'
 
 export type GetFileContentsResponse = {
   body: any
@@ -15,6 +16,7 @@ export const GetFileContentsFactory = (dav: DAV, { axiosClient }: WebDavOptions)
     async getFileContents(
       space: SpaceResource,
       { fileId, path }: { fileId?: string; path?: string },
+      version: string = null,
       {
         responseType = 'text',
         noCache = true,
@@ -26,8 +28,11 @@ export const GetFileContentsFactory = (dav: DAV, { axiosClient }: WebDavOptions)
       } & DAVRequestOptions = {}
     ): Promise<GetFileContentsResponse> {
       try {
-        const webDavPath = getWebDavPath(space, { fileId, path })
-        const response = await axiosClient.get(dav.getFileUrl(webDavPath), {
+        const fileUrl = !version
+          ? dav.getFileUrl(getWebDavPath(space, { fileId, path }))
+          : dav.getFileUrl(urlJoin('meta', fileId, 'v', version))
+
+        const response = await axiosClient.get(fileUrl, {
           responseType,
           headers: {
             ...(noCache && { 'Cache-Control': 'no-cache' }),

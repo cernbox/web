@@ -65,7 +65,7 @@ export const GetFileUrlFactory = (
       // downloadURL = [url, combinedQuery].filter(Boolean).join('?')
 
       if (!signed || inlineDisposition) {
-        const response = await getFileContentsFactory.getFileContents(space, resource, {
+        const response = await getFileContentsFactory.getFileContents(space, resource, version, {
           responseType: 'blob',
           ...opts
         })

@@ -45,11 +45,12 @@
                 <oc-icon name="filter-2" class="oc-mr-xs" />
                 <span v-text="$gettext('Filter:')" />
               </div>
-              <item-filter-toggle
-                :filter-label="$gettext('Include disabled')"
-                filter-name="includeDisabled"
-                class="spaces-list-filter-include-disabled oc-mr-s"
-              />
+              <!-- FIXME: TEMPORARY REMOVAL OF FILTER -->
+              <!-- <item-filter-toggle -->
+              <!--   :filter-label="$gettext('Include disabled')" -->
+              <!--   filter-name="includeDisabled" -->
+              <!--   class="spaces-list-filter-include-disabled oc-mr-s" -->
+              <!-- /> -->
             </div>
             <oc-text-input
               id="spaces-filter"

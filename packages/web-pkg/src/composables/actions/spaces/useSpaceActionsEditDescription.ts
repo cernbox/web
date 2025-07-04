@@ -6,6 +6,7 @@ import { useClientService } from '../../clientService'
 import { useGettext } from 'vue3-gettext'
 import { SpaceResource } from '@ownclouders/web-client'
 import {
+  useConfigStore,
   useMessages,
   useModals,
   useSharesStore,
@@ -23,6 +24,7 @@ export const useSpaceActionsEditDescription = () => {
   const { dispatchModal } = useModals()
   const spacesStore = useSpacesStore()
   const sharesStore = useSharesStore()
+  const configStore = useConfigStore()
 
   const editDescriptionSpace = (space: SpaceResource, description: string) => {
     const graphClient = clientService.graphAuthenticated
@@ -70,6 +72,9 @@ export const useSpaceActionsEditDescription = () => {
       handler,
       isVisible: ({ resources }) => {
         if (resources.length !== 1) {
+          return false
+        }
+        if (configStore.options.cernFeatures) {
           return false
         }
 

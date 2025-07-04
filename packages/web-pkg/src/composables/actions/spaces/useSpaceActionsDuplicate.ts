@@ -150,6 +150,10 @@ export const useSpaceActionsDuplicate = () => {
           return false
         }
 
+        if (configStore.options.cernFeatures) {
+          return false
+        }
+
         return ability.can('create-all', 'Drive')
       },
       class: 'oc-files-actions-duplicate-trigger'

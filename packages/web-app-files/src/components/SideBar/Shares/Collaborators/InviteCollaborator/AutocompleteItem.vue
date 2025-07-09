@@ -58,7 +58,10 @@ export default {
   },
   setup(props) {
     const additionalInfo = computed(() => {
-      return props.item.mail || props.item.onPremisesSamAccountName
+      if (props.item.onPremisesSamAccountName) {
+        return `${props.item.onPremisesSamAccountName} - ${props.item.mail}`
+      }
+      return props.item.mail
     })
 
     const externalIssuer = computed(() => {

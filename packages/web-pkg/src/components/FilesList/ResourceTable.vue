@@ -1203,7 +1203,7 @@ export default defineComponent({
       }
 
       return resource.sharedBy.map((s) => ({
-        displayName: s.displayName,
+        displayName: this.configOptions.cernFeatures ? `${s.displayName} (${s.id})` : s.displayName,
         name: s.displayName,
         shareType: ShareTypes.user.value,
         username: s.id
@@ -1219,7 +1219,9 @@ export default defineComponent({
           ShareTypes.authenticated.includes(ShareTypes.getByValue(shareType))
         )
         .map((s) => ({
-          displayName: s.displayName,
+          displayName: this.configOptions.cernFeatures
+            ? `${s.displayName} (${s.id})`
+            : s.displayName,
           name: s.displayName,
           shareType: s.shareType,
           username: s.id

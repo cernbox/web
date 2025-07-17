@@ -614,10 +614,7 @@ export default defineComponent({
       }
 
       if (this.configOptions.runningOnEos) {
-        if (
-          !this.currentFolder.fileId ||
-          this.currentFolder.path === this.paginatedResources[0].path
-        ) {
+        if (!this.currentFolder.fileId || this.currentFolder.id === this.paginatedResources[0].id) {
           return true
         }
       }

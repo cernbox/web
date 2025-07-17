@@ -51,14 +51,15 @@
             fill-type="line"
             size="small"
           />
-          <oc-icon
-            v-if="resource.syncEnabled"
-            v-oc-tooltip="$gettext('Synced with your devices')"
-            :accessible-label="$gettext('Synced with your devices')"
-            name="loop-right"
-            class="sync-enabled"
-            size="small"
-          />
+          <!-- FIXME: temporary fix, not supported by clients yet -->
+          <!-- <oc-icon -->
+          <!--   v-if="resource.syncEnabled" -->
+          <!--   v-oc-tooltip="$gettext('Synced with your devices')" -->
+          <!--   :accessible-label="$gettext('Synced with your devices')" -->
+          <!--   name="loop-right" -->
+          <!--   class="sync-enabled" -->
+          <!--   size="small" -->
+          <!-- /> -->
         </div>
       </template>
       <template #contextMenu="{ resource }">

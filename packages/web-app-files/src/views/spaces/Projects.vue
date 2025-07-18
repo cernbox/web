@@ -178,7 +178,8 @@ import {
   ItemFilterToggle,
   useRouteQuery,
   queryItemAsString,
-  useLoadPreview
+  useLoadPreview,
+  useUserStore
 } from '@ownclouders/web-pkg'
 
 import { AppBar } from '@ownclouders/web-pkg'
@@ -200,6 +201,7 @@ import {
 import SpaceContextActions from '../../components/Spaces/SpaceContextActions.vue'
 import {
   getSpaceManagers,
+  isPersonalSpaceResource,
   isProjectSpaceResource,
   ProjectSpaceResource,
   SpaceResource
@@ -238,6 +240,7 @@ export default defineComponent({
   },
   setup() {
     const spacesStore = useSpacesStore()
+    const userStore = useUserStore()
     const router = useRouter()
     const route = useRoute()
     const clientService = useClientService()
@@ -250,6 +253,10 @@ export default defineComponent({
 
     const { setSelection, initResourceList, clearResourceList, setAncestorMetaData } =
       useResourcesStore()
+
+    const userHasPersonalSpace = !!spacesStore.spaces.find(
+      (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+    )
 
     const loadResourcesTask = useTask(function* (signal) {
       clearResourceList()
@@ -353,7 +360,10 @@ export default defineComponent({
       })
     })
 
-    const hasCreatePermission = computed(() => can('create-all', 'Drive'))
+    const hasCreatePermission = computed(
+      // if user has a personal space, it's not a lightweight account
+      () => can('create-all', 'Drive') && userHasPersonalSpace
+    )
 
     const extensionRegistry = useExtensionRegistry()
     const viewModes = computed(() => {

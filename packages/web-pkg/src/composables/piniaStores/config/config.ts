@@ -34,6 +34,7 @@ const defaultOptions = {
     idBased: true,
     fullShareOwnerPaths: false
   },
+  listVersions: true,
   runningOnEos: false,
   tokenStorageLocal: true,
   userListRequiresFilter: false,

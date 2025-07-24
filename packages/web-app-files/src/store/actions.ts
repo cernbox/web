@@ -287,19 +287,26 @@ export default {
     const shareMethod = isGroupShare ? 'shareFileWithGroup' : 'shareFileWithUser'
     return client.shares[shareMethod](path, shareWith, options)
       .then((share) => {
-        const builtShare = buildCollaboratorShare(
-          share.shareInfo,
-          context.getters.highlightedFile,
-          allowSharePermissions(context.rootGetters)
-        )
-        context.commit('CURRENT_FILE_OUTGOING_SHARES_UPSERT', builtShare)
-        context.commit('SHARESTREE_UPSERT', {
-          path,
-          share: { ...builtShare, indirect: false, outgoing: true }
+        const elements =
+          share.shareInfo.element instanceof Array
+            ? share.shareInfo.element
+            : [share.shareInfo.element]
+
+        elements.forEach((shareData) => {
+          const builtShare = buildCollaboratorShare(
+            shareData,
+            context.getters.highlightedFile,
+            allowSharePermissions(context.rootGetters)
+          )
+          context.commit('CURRENT_FILE_OUTGOING_SHARES_UPSERT', builtShare)
+          context.commit('SHARESTREE_UPSERT', {
+            path,
+            share: { ...builtShare, indirect: false, outgoing: true }
+          })
+          context.dispatch('updateCurrentFileShareTypes')
+          context.commit('LOAD_INDICATORS', path)
+          return share
         })
-        context.dispatch('updateCurrentFileShareTypes')
-        context.commit('LOAD_INDICATORS', path)
-        return share
       })
       .catch((e) => {
         context.dispatch(

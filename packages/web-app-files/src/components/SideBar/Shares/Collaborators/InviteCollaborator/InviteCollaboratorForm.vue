@@ -302,10 +302,16 @@ export default defineComponent({
       const saveQueue = new PQueue({ concurrency: 4 })
       const savePromises = []
 
-      this.selectedCollaborators.forEach((collaborator, i) => {
+      // group selected collaborators by shareType
+      const groupedByShareType = Map.groupBy(
+        this.selectedCollaborators,
+        (item: any) => item.value.shareType
+      )
+
+      groupedByShareType.forEach((shareType) => {
         savePromises.push(
           saveQueue.add(() => {
-            const collaborators = this.selectedCollaborators
+            const collaborators = shareType
             const bitmask = this.selectedRole.hasCustomPermissions
               ? SharePermissions.permissionsToBitmask(this.customPermissions)
               : SharePermissions.permissionsToBitmask(
@@ -326,9 +332,9 @@ export default defineComponent({
               client: this.$client,
               graphClient: this.graphClient,
               path,
-              shareWith: collaborator.value.shareWith,
-              displayName: collaborator.label,
-              shareType: collaborator.value.shareType,
+              shareWith: collaborators.map((c) => c.value.shareWith).join(','),
+              displayName: collaborators.map((c) => c.label).join(','),
+              shareType: collaborators[0].value.shareType,
               permissions: bitmask,
               role: this.selectedRole,
               expirationDate: this.expirationDate,

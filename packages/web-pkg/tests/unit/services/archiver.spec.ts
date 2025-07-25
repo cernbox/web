@@ -6,12 +6,13 @@ import { unref, ref, Ref } from 'vue'
 import { AxiosResponse } from 'axios'
 import { ArchiverCapability } from '@ownclouders/web-client/ocs'
 import { createTestingPinia } from '@ownclouders/web-test-helpers'
-import { useUserStore } from '../../../src/composables/piniaStores'
+import { useAuthStore, useUserStore } from '../../../src/composables/piniaStores'
 
 const serverUrl = 'https://demo.owncloud.com'
 const getArchiverServiceInstance = (capabilities: Ref<ArchiverCapability[]>) => {
   createTestingPinia()
   const userStore = useUserStore()
+  const authStore = useAuthStore()
 
   const clientServiceMock = mockDeep<ClientService>()
   clientServiceMock.httpUnAuthenticated.get.mockResolvedValue({
@@ -20,7 +21,7 @@ const getArchiverServiceInstance = (capabilities: Ref<ArchiverCapability[]>) => 
   } as unknown as AxiosResponse)
   clientServiceMock.ocsUserContext.signUrl.mockImplementation((url) => Promise.resolve(url))
 
-  return new ArchiverService(clientServiceMock, userStore, serverUrl, capabilities)
+  return new ArchiverService(clientServiceMock, userStore, authStore, serverUrl, capabilities)
 }
 
 describe('archiver', () => {

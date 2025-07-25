@@ -42,6 +42,7 @@ import { defineComponent, PropType } from 'vue'
 type Item = {
   displayName?: string
   name?: string
+  tooltip?: string
   shareType?: number
   username?: string
   avatar?: string
@@ -114,7 +115,7 @@ export default defineComponent({
 
     tooltip() {
       if (this.isTooltipDisplayed) {
-        const names = this.avatars.map((user) => user.displayName)
+        const names = this.avatars.map((user) => user.tooltip || user.displayName)
 
         if (this.otherItems.length > 0) {
           names.push(...this.otherItems.map((item) => item.name))

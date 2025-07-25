@@ -1205,6 +1205,7 @@ export default defineComponent({
       return resource.sharedBy.map((s) => ({
         displayName: s.displayName,
         name: s.displayName,
+        tooltip: this.configOptions.cernFeatures ? `${s.displayName} (${s.id})` : s.displayName,
         shareType: ShareTypes.user.value,
         username: s.id
       }))
@@ -1221,6 +1222,7 @@ export default defineComponent({
         .map((s) => ({
           displayName: s.displayName,
           name: s.displayName,
+          tooltip: this.configOptions.cernFeatures ? `${s.displayName} (${s.id})` : s.displayName,
           shareType: s.shareType,
           username: s.id
         }))

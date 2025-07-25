@@ -25,8 +25,7 @@ import SearchResults from '../../web-app-search/src/views/List.vue'
 import {
   isPersonalSpaceResource,
   isShareSpaceResource,
-  isProjectSpaceResource,
-  isMountPointSpaceResource
+  isProjectSpaceResource
 } from '@ownclouders/web-client'
 import { ComponentCustomProperties, unref } from 'vue'
 import { extensionPoints } from './extensionPoints'
@@ -115,9 +114,9 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
           { path: `/${appInfo.id}/spaces/personal` }
         ]
         spacesStores.spaces.forEach((drive) => {
-          if (isMountPointSpaceResource(drive)) {
+          if (isShareSpaceResource(drive)) {
             shares.push({
-              path: `/${appInfo.id}/spaces/${drive.root?.remoteItem?.driveAlias}`
+              path: `/${appInfo.id}/spaces/${drive.driveAlias}`
             })
           }
         })

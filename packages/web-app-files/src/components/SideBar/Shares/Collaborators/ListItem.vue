@@ -38,6 +38,9 @@
         <div class="files-collaborators-collaborator-name-wrapper oc-pl-s">
           <div class="oc-text-truncate">
             <span
+              v-oc-tooltip="
+                shareDisplayName + (share.sharedWith.id ? ` (${share.sharedWith.id})` : '')
+              "
               aria-hidden="true"
               class="files-collaborators-collaborator-name"
               v-text="shareDisplayName"
@@ -132,7 +135,8 @@ import {
   useModals,
   useSpacesStore,
   useUserStore,
-  useSharesStore
+  useSharesStore,
+  useConfigStore
 } from '@ownclouders/web-pkg'
 import { Resource, extractDomSelector } from '@ownclouders/web-client'
 import { computed, defineComponent, inject, PropType, Ref, unref } from 'vue'
@@ -195,6 +199,9 @@ export default defineComponent({
     const { $gettext } = language
     const { dispatchModal } = useModals()
 
+    const configStore = useConfigStore()
+    const cernFeatures = unref(configStore).options.cernFeatures
+
     const sharesStore = useSharesStore()
     const { graphRoles } = storeToRefs(sharesStore)
     const { updateShare } = sharesStore
@@ -242,6 +249,7 @@ export default defineComponent({
       updateShare,
       user,
       clientService,
+      cernFeatures,
       sharedParentDir,
       shareDate,
       graphRoles,
@@ -328,6 +336,13 @@ export default defineComponent({
       const list: ContextualHelperDataListItem[] = []
 
       list.push({ text: this.$gettext('Name'), headline: true }, { text: this.shareDisplayName })
+
+      if (this.share.sharedWith.id && this.cernFeatures) {
+        list.push(
+          { text: this.$gettext('Username'), headline: true },
+          { text: `${this.share.sharedWith.id}` }
+        )
+      }
 
       list.push({ text: this.$gettext('Type'), headline: true }, { text: this.shareTypeText })
       list.push(

@@ -587,6 +587,9 @@ export default defineComponent({
         (recipient) =>
           recipient.shareType === ShareTypes.remote.value ||
           recipient.displayName.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) > -1 ||
+          recipient.onPremisesSamAccountName
+            ?.toLocaleLowerCase()
+            .indexOf(query.toLocaleLowerCase()) > -1 ||
           recipient.mail?.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) > -1
       )
     },

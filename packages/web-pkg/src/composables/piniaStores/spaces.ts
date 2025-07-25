@@ -62,8 +62,8 @@ export const getSpacesByType = async ({
     buildSpace(
       {
         id: extractStorageId(id),
-        name: driveAlias, // FIXME: set a proper name
-        driveType: driveAlias.split('/')[0], // FIXME: can we retrieve this from api?
+        name: driveAlias.split('/').pop(),
+        driveType: 'share', // FIXME: can we retrieve this from api?
         driveAlias,
         path: '/',
         serverUrl: configStore.serverUrl
@@ -240,7 +240,9 @@ export const useSpacesStore = defineStore('spaces', () => {
         graphRoles: sharesStore.graphRoles,
         signal
       })
-      addSpaces(mountPointSpaces)
+      const existingAliases = new Set(unref(spaces).map((s) => s.driveAlias))
+      const uniqueMountPoints = mountPointSpaces.filter((s) => !existingAliases.has(s.driveAlias))
+      addSpaces(uniqueMountPoints)
     } finally {
       mountPointsInitialized.value = true
     }

@@ -299,19 +299,13 @@ export default defineComponent({
     async share() {
       this.saving = true
 
-      const saveQueue = new PQueue({ concurrency: 4 })
-      const savePromises = []
-
       // group selected collaborators by shareType
       const groupedByShareType = Map.groupBy(
         this.selectedCollaborators,
         (item: any) => item.value.shareType
       )
 
-      groupedByShareType.forEach((shareType) => {
-        savePromises.push(
-          saveQueue.add(() => {
-            const collaborators = shareType
+      for (const [_, collaborators] of groupedByShareType) {
             const bitmask = this.selectedRole.hasCustomPermissions
               ? SharePermissions.permissionsToBitmask(this.customPermissions)
               : SharePermissions.permissionsToBitmask(
@@ -327,7 +321,7 @@ export default defineComponent({
             }
 
             const addMethod = this.resourceIsSpace ? this.addSpaceMember : this.addShare
-            addMethod({
+            await addMethod({
               ...this.$language,
               client: this.$client,
               graphClient: this.graphClient,
@@ -341,11 +335,8 @@ export default defineComponent({
               storageId: this.resource.fileId || this.resource.id,
               notify: this.notifyEnabled
             })
-          })
-        )
-      })
+      }
 
-      await Promise.all(savePromises)
       this.selectedCollaborators = []
       this.saving = false
     },

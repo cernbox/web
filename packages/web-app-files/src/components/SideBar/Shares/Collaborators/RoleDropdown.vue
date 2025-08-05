@@ -84,7 +84,7 @@ import {
   Ref,
   watch
 } from 'vue'
-import { useAbility, useUserStore } from '@ownclouders/web-pkg'
+import { useAbility, useResourcesStore, useUserStore } from '@ownclouders/web-pkg'
 import { Resource } from '@ownclouders/web-client'
 import { useGettext } from 'vue3-gettext'
 import { ShareRole } from '@ownclouders/web-client'
@@ -131,6 +131,8 @@ export default defineComponent({
   setup(props, { emit }) {
     const ability = useAbility()
     const userStore = useUserStore()
+    const resourceStore = useResourcesStore()
+
     const { user } = storeToRefs(userStore)
     const { $gettext } = useGettext()
 
@@ -149,12 +151,42 @@ export default defineComponent({
 
     const availableInternalRoles = inject<Ref<ShareRole[]>>('availableInternalShareRoles')
     const availableExternalRoles = inject<Ref<ShareRole[]>>('availableExternalShareRoles')
+
     const availableRoles = computed(() => {
       let roles = availableInternalRoles
       if (props.isExternal) {
         roles = availableExternalRoles
       }
-
+      if (resourceStore.selectedResources.length === 1) {
+        const resource = resourceStore.selectedResources[0]
+        // For the moment, the sharing of spaces is not possible via the web interface.
+        // Therefore, this first group of roles is never shown.
+        if (resource.type === 'space') {
+          roles = ref(
+            unref(roles).filter((role) =>
+              role.rolePermissions.some(
+                (permission) => permission.condition === 'exists @Resource.Root'
+              )
+            )
+          )
+        } else if (resource.type === 'folder') {
+          roles = ref(
+            unref(roles).filter((role) =>
+              role.rolePermissions.some(
+                (permission) => permission.condition === 'exists @Resource.Folder'
+              )
+            )
+          )
+        } else if (resource.type === 'file') {
+          roles = ref(
+            unref(roles).filter((role) =>
+              role.rolePermissions.some(
+                (permission) => permission.condition === 'exists @Resource.File'
+              )
+            )
+          )
+        }
+      }
       return unref(roles)
     })
 

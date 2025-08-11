@@ -9,6 +9,17 @@
       />
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
+        <div
+          class="shared-with-me-filters oc-flex oc-flex-between oc-flex-wrap oc-flex-bottom oc-mx-m oc-mb-m"
+        >
+          <div class="oc-flex oc-flex-wrap">
+            <div class="oc-mr-m oc-flex oc-flex-middle">
+              <oc-icon name="filter-2" class="oc-mr-xs" />
+              <span v-text="$gettext('Filter:')" />
+            </div>
+            <trashbin-date-picker @range-changed="rangeChanged" />
+          </div>
+        </div>
         <no-content-message
           v-if="isEmpty"
           id="files-trashbin-empty"
@@ -66,12 +77,15 @@ import { Pagination } from '@ownclouders/web-pkg'
 
 import { eventBus } from '@ownclouders/web-pkg'
 import { useResourcesViewDefaults } from '../../composables'
-import { computed, defineComponent, PropType, onMounted, onBeforeUnmount, unref } from 'vue'
+import { computed, defineComponent, PropType, onMounted, onBeforeUnmount, unref, ref } from 'vue'
 import { Resource } from '@ownclouders/web-client'
 import { createLocationTrash } from '@ownclouders/web-pkg'
 import { isProjectSpaceResource, SpaceResource } from '@ownclouders/web-client'
 import { useDocumentTitle } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
+
+import { useRouteQuery } from '@ownclouders/web-pkg'
+import TrashbinDatePicker from '../../components/FilesList/TrashbinDatePicker.vue'
 
 export default defineComponent({
   name: 'GenericTrash',
@@ -85,7 +99,8 @@ export default defineComponent({
     ListInfo,
     NoContentMessage,
     Pagination,
-    ResourceTable
+    ResourceTable,
+    TrashbinDatePicker
   },
 
   props: {
@@ -106,6 +121,22 @@ export default defineComponent({
     const userStore = useUserStore()
     const { user } = storeToRefs(userStore)
 
+    const filterFrom = useRouteQuery('from')
+    const filterTo = useRouteQuery('to')
+    const dateFilter =
+      unref(filterFrom) && unref(filterTo)
+        ? ref({
+            from: unref(filterFrom),
+            to: unref(filterTo)
+          })
+        : ref(null)
+
+    const rangeChanged = (data) => {
+      dateFilter.value =
+        data.range?.from && data.range?.to ? { from: data.range.from, to: data.range.to } : null
+      performLoaderTask()
+    }
+
     let loadResourcesEventToken: string
     const noContentMessage = computed(() => {
       return props.space.driveType === 'personal'
@@ -123,7 +154,7 @@ export default defineComponent({
 
     const resourcesViewDefaults = useResourcesViewDefaults<Resource, any, any[]>()
     const performLoaderTask = async () => {
-      await resourcesViewDefaults.loadResourcesTask.perform(props.space)
+      await resourcesViewDefaults.loadResourcesTask.perform(props.space, unref(dateFilter))
       resourcesViewDefaults.refreshFileListHeaderPosition()
       resourcesViewDefaults.scrollToResourceFromRoute(
         unref(resourcesViewDefaults.paginatedResources),
@@ -145,7 +176,8 @@ export default defineComponent({
     return {
       ...resourcesViewDefaults,
       user,
-      noContentMessage
+      noContentMessage,
+      rangeChanged
     }
   },
 

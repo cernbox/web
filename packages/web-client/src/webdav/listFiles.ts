@@ -16,6 +16,7 @@ import { DAV, DAVRequestOptions } from './client'
 import { GetPathForFileIdFactory } from './getPathForFileId'
 import { WebDavOptions } from './types'
 import { getWebDavPath } from './utils'
+import { UiError } from '../errors'
 
 export type ListFilesOptions = {
   depth?: number
@@ -128,6 +129,9 @@ export const ListFilesFactory = (
       } catch (e) {
         if (e.statusCode === 404 && fileId) {
           return listFilesCorrectedPath()
+        }
+        if (e.statusCode === 400) {
+          throw new UiError()
         }
         throw e
       }

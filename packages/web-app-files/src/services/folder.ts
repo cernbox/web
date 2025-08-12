@@ -29,6 +29,7 @@ import {
   FolderLoaderSharedWithOthers,
   FolderLoaderTrashbin
 } from './folder/index'
+import { UiError } from '@ownclouders/web-client'
 
 export * from './folder/types'
 
@@ -98,6 +99,9 @@ export class FolderService {
       try {
         yield loader.getTask(context).perform(...args)
       } catch (e) {
+        if (e instanceof UiError) {
+          throw e
+        }
         console.error(e)
       }
     })

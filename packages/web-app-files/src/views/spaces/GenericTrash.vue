@@ -21,7 +21,24 @@
           </div>
         </div>
         <no-content-message
-          v-if="isEmpty"
+          v-if="recycleError"
+          id="files-trashbin-error"
+          class="files-empty"
+          icon="error-warning"
+          icon-fill-type="line"
+        >
+          <template #message>
+            <span
+              >Your trash bin returned too many entries and cannot be displayed, or the date range is too long. <br />Please filter
+              by date or check the
+              <a href="https://cernbox.docs.cern.ch/advanced/restore_from_trash/" target="_blank"
+                >documentation</a
+              >.</span
+            >
+          </template>
+        </no-content-message>
+        <no-content-message
+          v-else-if="isEmpty"
           id="files-trashbin-empty"
           class="files-empty"
           icon="delete-bin-7"
@@ -136,6 +153,8 @@ export default defineComponent({
         data.range?.from && data.range?.to ? { from: data.range.from, to: data.range.to } : null
       performLoaderTask()
     }
+    const recycleError = ref(false)
+
 
     let loadResourcesEventToken: string
     const noContentMessage = computed(() => {
@@ -154,12 +173,17 @@ export default defineComponent({
 
     const resourcesViewDefaults = useResourcesViewDefaults<Resource, any, any[]>()
     const performLoaderTask = async () => {
-      await resourcesViewDefaults.loadResourcesTask.perform(props.space, unref(dateFilter))
-      resourcesViewDefaults.refreshFileListHeaderPosition()
-      resourcesViewDefaults.scrollToResourceFromRoute(
-        unref(resourcesViewDefaults.paginatedResources),
-        'files-app-bar'
-      )
+      recycleError.value = false
+      try {
+        await resourcesViewDefaults.loadResourcesTask.perform(props.space, unref(dateFilter))
+        resourcesViewDefaults.refreshFileListHeaderPosition()
+        resourcesViewDefaults.scrollToResourceFromRoute(
+          unref(resourcesViewDefaults.paginatedResources),
+          'files-app-bar'
+        )
+      } catch (e) {
+          recycleError.value = true
+      }
     }
 
     onMounted(() => {
@@ -177,7 +201,8 @@ export default defineComponent({
       ...resourcesViewDefaults,
       user,
       noContentMessage,
-      rangeChanged
+      rangeChanged,
+      recycleError
     }
   },
 

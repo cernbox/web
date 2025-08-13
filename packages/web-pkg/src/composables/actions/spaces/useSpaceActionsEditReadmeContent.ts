@@ -5,7 +5,7 @@ import { useGettext } from 'vue3-gettext'
 import { useOpenWithDefaultApp } from '../useOpenWithDefaultApp'
 import { getRelativeSpecialFolderSpacePath, Resource, SpaceResource } from '@ownclouders/web-client'
 import { useClientService } from '../../clientService'
-import { useSharesStore, useSpacesStore, useUserStore } from '../../piniaStores'
+import { useConfigStore, useSharesStore, useSpacesStore, useUserStore } from '../../piniaStores'
 import { useCreateSpace, useSpaceHelpers } from '../../spaces'
 
 export const useSpaceActionsEditReadmeContent = () => {
@@ -15,8 +15,11 @@ export const useSpaceActionsEditReadmeContent = () => {
   const userStore = useUserStore()
   const spacesStore = useSpacesStore()
   const sharesStore = useSharesStore()
+  const configStore = useConfigStore()
   const { $gettext } = useGettext()
   const { getDefaultMetaFolder } = useSpaceHelpers()
+
+  const configOptions = configStore.options
 
   const createReadme = async (space: SpaceResource, metaFolder: Resource) => {
     // FIXME: remove path as soon as we make the full switch to id-based dav requests
@@ -54,7 +57,8 @@ export const useSpaceActionsEditReadmeContent = () => {
     }
 
     if (!markdownResource) {
-      const path = getRelativeSpecialFolderSpacePath(resources[0], 'readme')
+      const spaceID = configOptions.routing.idBased ? resources[0].id : resources[0].name
+      const path = getRelativeSpecialFolderSpacePath(resources[0], 'readme', spaceID)
       if (path) {
         markdownResource = await clientService.webdav.getFileInfo(resources[0], { path })
       } else {

@@ -34,14 +34,18 @@ export function buildWebDavSpacesTrashPath(storageId: string, path = '') {
   })
 }
 
-export function getRelativeSpecialFolderSpacePath(space: SpaceResource, type: 'image' | 'readme') {
+export function getRelativeSpecialFolderSpacePath(
+  space: SpaceResource,
+  type: 'image' | 'readme',
+  spaceID: string
+) {
   const typeMap = { image: 'spaceImageData', readme: 'spaceReadmeData' } as const
   const specialProp = space[typeMap[type]]
   if (!specialProp) {
     return ''
   }
   const webDavPathComponents = decodeURI(specialProp.webDavUrl).split('/')
-  const idComponent = webDavPathComponents.find((c) => c.startsWith(space.id))
+  const idComponent = webDavPathComponents.find((c) => c.startsWith(spaceID))
   if (!idComponent) {
     return ''
   }

@@ -1,5 +1,5 @@
 import { computed, unref, VNodeRef } from 'vue'
-import { SpaceResource } from '@ownclouders/web-client'
+import { SpaceResource, urlJoin } from '@ownclouders/web-client'
 import {
   useClientService,
   useLoadingService,
@@ -8,7 +8,8 @@ import {
   useMessages,
   useSpacesStore,
   useSpaceHelpers,
-  useSharesStore
+  useSharesStore,
+  useConfigStore
 } from '@ownclouders/web-pkg'
 import { eventBus } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
@@ -24,8 +25,11 @@ export const useSpaceActionsUploadImage = ({ spaceImageInput }: { spaceImageInpu
   const previewService = usePreviewService()
   const spacesStore = useSpacesStore()
   const sharesStore = useSharesStore()
+  const configStore = useConfigStore()
   const { createDefaultMetaFolder } = useCreateSpace()
   const { getDefaultMetaFolder } = useSpaceHelpers()
+
+  const configOptions = configStore.options
 
   let selectedSpace: SpaceResource = null
   const handler = ({ resources }: SpaceActionOptions) => {
@@ -72,6 +76,7 @@ export const useSpaceActionsUploadImage = ({ spaceImageInput }: { spaceImageInpu
         const { fileId } = await clientService.webdav.putFileContents(selectedSpace, {
           parentFolderId: metaFolder.id,
           fileName: file.name,
+          path: !configOptions.routing.idBased ? urlJoin(metaFolder.path, file.name) : undefined,
           content,
           headers,
           overwrite: true

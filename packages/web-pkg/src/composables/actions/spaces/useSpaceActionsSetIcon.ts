@@ -1,10 +1,11 @@
-import { SpaceResource } from '@ownclouders/web-client'
+import { SpaceResource, urlJoin } from '@ownclouders/web-client'
 import { computed } from 'vue'
 import { SpaceAction, SpaceActionOptions } from '../types'
 import { useClientService } from '../../clientService'
 import { useLoadingService } from '../../loadingService'
 import { useGettext } from 'vue3-gettext'
 import {
+  useConfigStore,
   useMessages,
   useModals,
   useSharesStore,
@@ -23,10 +24,13 @@ export const useSpaceActionsSetIcon = () => {
   const clientService = useClientService()
   const loadingService = useLoadingService()
   const spacesStore = useSpacesStore()
+  const configStore = useConfigStore()
   const { createDefaultMetaFolder } = useCreateSpace()
   const { dispatchModal } = useModals()
   const { getDefaultMetaFolder } = useSpaceHelpers()
   const sharesStore = useSharesStore()
+
+  const configOptions = configStore.options
 
   const handler = ({ resources }: SpaceActionOptions) => {
     if (resources.length !== 1) {
@@ -86,6 +90,7 @@ export const useSpaceActionsSetIcon = () => {
         const { fileId } = await clientService.webdav.putFileContents(space, {
           parentFolderId: metaFolder.id,
           fileName: 'emoji.png',
+          path: !configOptions.routing.idBased ? urlJoin(metaFolder.path, 'emoji.png') : undefined,
           content,
           headers,
           overwrite: true

@@ -359,6 +359,16 @@ export default defineComponent({
       await fetchRecipientsTask.perform(query)
     }
 
+    const getRecipientType = (shareType: number): string => {
+      switch (shareType) {
+        case ShareTypes.group.value:
+          return 'group'
+        case ShareTypes.remote.value:
+          return 'remote'
+        default:
+          return 'user'
+      }
+    }
     const share = async () => {
       saving.value = true
 
@@ -368,7 +378,7 @@ export default defineComponent({
       const addedShares: CollaboratorShare[] = []
 
       unref(selectedCollaborators).forEach(({ id, shareType, displayName }) => {
-        const type = shareType === ShareTypes.group.value ? 'group' : 'user'
+        const type = getRecipientType(shareType)
 
         savePromises.push(
           saveQueue.add(async () => {

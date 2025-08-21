@@ -17,6 +17,7 @@ import { computed, defineComponent, unref, watch } from 'vue'
 import {
   queryItemAsString,
   useAppProviderService,
+  useConfigStore,
   useRouteMeta,
   useRouteQuery
 } from '@ownclouders/web-pkg'
@@ -25,6 +26,7 @@ import { omit } from 'lodash-es'
 import { useGettext } from 'vue3-gettext'
 import { useApplicationReadyStore } from './piniaStores'
 import { storeToRefs } from 'pinia'
+import { urlJoin } from '@ownclouders/web-client'
 
 export default defineComponent({
   setup() {
@@ -32,6 +34,8 @@ export default defineComponent({
     const appProviderService = useAppProviderService()
     const router = useRouter()
     const { isReady } = storeToRefs(useApplicationReadyStore())
+
+    const configOptions = useConfigStore().options
 
     const appQuery = useRouteQuery('app')
     const appNameQuery = useRouteQuery('appName')
@@ -55,10 +59,19 @@ export default defineComponent({
           return
         }
 
-        router.replace({
-          name: `external-${unref(appName).toLowerCase()}-apps`,
-          query: omit(unref(router.currentRoute).query, ['app', 'appName'])
-        })
+        if (configOptions.routing.idBased) {
+          router.replace({
+            name: `external-${unref(appName).toLowerCase()}-apps`,
+            query: omit(unref(router.currentRoute).query, ['app', 'appName'])
+          })
+        } else {
+          // '/external/a/b/c/' -> ['', 'external', 'a', 'b', 'c'] -> ['a', 'b', 'c']
+          const filePath = unref(router.currentRoute).path.split('/').slice(2)
+          router.replace({
+            path: urlJoin(`external-${unref(appName).toLowerCase()}`, ...filePath),
+            query: omit(unref(router.currentRoute).query, ['app', 'appName', 'fileId'])
+          })
+        }
       },
       { immediate: true }
     )

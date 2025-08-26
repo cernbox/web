@@ -42,6 +42,10 @@ export const useFileActionsPaste = () => {
       return TransferType.MOVE
     }
 
+    if (clipboardStore.action === ClipboardActions.Duplicate) {
+      return TransferType.DUPLICATE
+    }
+
     return TransferType.COPY
   })
 
@@ -174,6 +178,7 @@ export const useFileActionsPaste = () => {
   ])
 
   return {
-    actions
+    actions,
+    handler
   }
 }

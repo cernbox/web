@@ -120,6 +120,16 @@ export class ResourceTransfer extends ConflictDialog {
       transferType = TransferType.COPY
     }
 
+    // Cutting to the same location: cancel operation
+    if (
+      this.resourcesToMove[0].parentFolderId === this.targetFolder.id &&
+      transferType === TransferType.MOVE
+    ) {
+      return []
+    }
+
+    const result: TransferData[] = []
+
     const targetFolderResources = (
       await this.clientService.webdav.listFiles(this.targetSpace, this.targetFolder)
     ).children

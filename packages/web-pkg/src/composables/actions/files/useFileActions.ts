@@ -22,6 +22,7 @@ import {
   useFileActionsDelete,
   useFileActionsDownloadArchive,
   useFileActionsDownloadFile,
+  useFileActionsDuplicate,
   useFileActionsFavorite,
   useFileActionsMove,
   useFileActionsNavigate,
@@ -68,6 +69,7 @@ export const useFileActions = () => {
   const { actions: disableSyncActions } = useFileActionsDisableSync()
   const { actions: downloadArchiveActions } = useFileActionsDownloadArchive()
   const { actions: downloadFileActions } = useFileActionsDownloadFile()
+  const { actions: duplicateActions } = useFileActionsDuplicate()
   const { actions: favoriteActions } = useFileActionsFavorite()
   const { actions: moveActions } = useFileActionsMove()
   const { actions: navigateActions } = useFileActionsNavigate()
@@ -81,6 +83,7 @@ export const useFileActions = () => {
     ...unref(deleteActions),
     ...unref(moveActions),
     ...unref(copyActions),
+    ...unref(duplicateActions),
     ...unref(renameActions),
     ...unref(createSpaceFromResource),
     ...unref(restoreActions),

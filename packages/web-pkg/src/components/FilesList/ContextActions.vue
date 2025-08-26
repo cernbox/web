@@ -28,7 +28,8 @@ import {
   useFileActionsNavigate,
   useFileActionsFavorite,
   useFileActionsCreateSpaceFromResource,
-  useFileActions
+  useFileActions,
+  useFileActionsDuplicate
 } from '../../composables'
 import { isNil } from 'lodash-es'
 
@@ -52,6 +53,7 @@ export default defineComponent({
     const { actions: deleteActions } = useFileActionsDelete()
     const { actions: downloadArchiveActions } = useFileActionsDownloadArchive()
     const { actions: downloadFileActions } = useFileActionsDownloadFile()
+    const { actions: duplicateActions } = useFileActionsDuplicate()
     const { actions: favoriteActions } = useFileActionsFavorite()
     const { actions: emptyTrashBinActions } = useFileActionsEmptyTrashBin()
     const { actions: moveActions } = useFileActionsMove()
@@ -92,6 +94,7 @@ export default defineComponent({
         ...unref(downloadArchiveActions),
         ...unref(moveActions),
         ...unref(copyActions),
+        ...unref(duplicateActions),
         ...unref(emptyTrashBinActions),
         ...unref(deleteActions),
         ...unref(restoreActions),
@@ -130,6 +133,7 @@ export default defineComponent({
         ...unref(downloadArchiveActions),
         ...unref(downloadFileActions),
         ...unref(deleteActions),
+        ...unref(duplicateActions),
         ...unref(moveActions),
         ...unref(copyActions),
         ...unref(pasteActions),

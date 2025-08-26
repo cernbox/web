@@ -134,13 +134,33 @@ export class ResourceTransfer extends ConflictDialog {
       await this.clientService.webdav.listFiles(this.targetSpace, this.targetFolder)
     ).children
 
+    if (transferType === TransferType.DUPLICATE) {
+      for (const resourceToMove of this.resourcesToMove) {
+        const resource = { ...resourceToMove }
+        const { name, extension } = resource
+        const overwriteTarget = false
+        const targetName = resolveFileNameDuplicate(name, extension, targetFolderResources)
+        resource.name = targetName
+
+        result.push({
+          resource,
+          sourceSpace: this.sourceSpace,
+          targetSpace: this.targetSpace,
+          targetFolder: this.targetFolder,
+          path: join(this.targetFolder.path, targetName),
+          overwrite: overwriteTarget,
+          transferType: TransferType.COPY
+        })
+      }
+
+      return result
+    }
+
     const resolvedConflicts = await this.resolveAllConflicts(
       this.resourcesToMove,
       this.targetFolder,
       targetFolderResources
     )
-
-    const result: TransferData[] = []
 
     for (const resourceToMove of this.resourcesToMove) {
       // shallow copy of resources to prevent modifying existing rows

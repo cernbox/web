@@ -17,7 +17,8 @@ export enum Key {
   ArrowDown = 'ArrowDown',
   ArrowLeft = 'ArrowLeft',
   ArrowRight = 'ArrowRight',
-  Esc = 'Escape'
+  Esc = 'Escape',
+  Del = 'Delete'
 }
 
 export enum Modifier {

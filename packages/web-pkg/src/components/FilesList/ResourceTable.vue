@@ -286,7 +286,10 @@ import {
   useIsTopBarSticky,
   embedModeFilePickMessageData,
   routeToContextQuery,
-  useSpaceActionsRename
+  useSpaceActionsRename,
+  Key,
+  useKeyboardActions,
+  useSpacesStore
 } from '../../composables'
 import ResourceListItem from './ResourceListItem.vue'
 import ResourceGhostElement from './ResourceGhostElement.vue'
@@ -306,7 +309,7 @@ import ContextMenuQuickAction from '../ContextActions/ContextMenuQuickAction.vue
 import { useResourceRouteResolver } from '../../composables/filesList/useResourceRouteResolver'
 import { ClipboardActions } from '../../helpers/clipboardActions'
 import { determineResourceTableSortFields } from '../../helpers/ui/resourceTable'
-import { useFileActionsRename } from '../../composables/actions'
+import { useFileActionsDelete, useFileActionsRename } from '../../composables/actions'
 import { createLocationCommon } from '../../router'
 import get from 'lodash-es/get'
 import { storeToRefs } from 'pinia'
@@ -560,8 +563,12 @@ export default defineComponent({
     const authStore = useAuthStore()
     const { userContextReady } = storeToRefs(authStore)
 
+    const spaceStore = useSpacesStore()
+    const { currentSpace } = storeToRefs(spaceStore)
+
     const resourcesStore = useResourcesStore()
-    const { areFileExtensionsShown, latestSelectedId, deleteQueue } = storeToRefs(resourcesStore)
+    const { areFileExtensionsShown, latestSelectedId, selectedResources, deleteQueue } =
+      storeToRefs(resourcesStore)
 
     const dragItem = ref<Resource>()
     const ghostElement = ref()
@@ -571,6 +578,13 @@ export default defineComponent({
     const hasTags = computed(
       () => capabilityStore.filesTags && width.value >= TAGS_MINIMUM_SCREEN_WIDTH
     )
+
+    const { actions: deleteActions } = useFileActionsDelete()
+    const deleteHandler = unref(deleteActions)[0].handler
+    const { bindKeyAction } = useKeyboardActions()
+    bindKeyAction({ primary: Key.Del }, () => {
+      deleteHandler({ space: unref(currentSpace), resources: unref(selectedResources) })
+    })
 
     const { actions: renameActions } = useFileActionsRename()
     const { actions: renameActionsSpace } = useSpaceActionsRename()

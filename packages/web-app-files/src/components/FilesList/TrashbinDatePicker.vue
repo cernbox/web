@@ -36,7 +36,7 @@
 
 <script lang="ts">
 import { DateTime } from 'luxon'
-import { ref, unref, watch, defineComponent } from 'vue'
+import { Ref, ref, unref, watch, defineComponent } from 'vue'
 import { getLocaleFromLanguage } from '@ownclouders/web-pkg'
 import { useRouteQuery, queryItemAsString } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
@@ -60,16 +60,22 @@ export default defineComponent({
     const dateMin = dateNow.minus({ week: 6 })
     const defaultStart = dateNow.minus({ days: 2 })
 
-    const rangeSelected =
+    interface Range {
+      start: Date
+      end: Date
+    }
+
+    const rangeSelected: Ref<Range> = ref(
       unref(fromQuery) && unref(toQuery)
-        ? ref({
+        ? {
             start: new Date(queryItemAsString(unref(fromQuery))),
             end: new Date(queryItemAsString(unref(toQuery)))
-          })
-        : ref({
-            start: defaultStart,
-            end: dateNow
-          })
+          }
+        : {
+            start: defaultStart.toJSDate(),
+            end: dateNow.toJSDate()
+          }
+    )
 
     watch(rangeSelected, (newRange, oldRange) => {
       if (newRange?.start && newRange?.end) {

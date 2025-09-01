@@ -136,7 +136,7 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       activeFor: () => {
         const projects = [{ path: `/${appInfo.id}/spaces/project` }]
         spacesStores.spaces.forEach((drive) => {
-          if (isProjectSpaceResource(drive)) {
+          if (isProjectSpaceResource(drive) || drive.driveType === 'explorer') {
             projects.push({
               path: `/${appInfo.id}/spaces/${drive.driveAlias}`
             })

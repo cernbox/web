@@ -262,7 +262,9 @@ export const useSpacesStore = defineStore('spaces', () => {
       graphRoles: sharesStore.graphRoles,
       signal
     })
-    spaces.value = unref(spaces).filter((s) => !isProjectSpaceResource(s))
+    spaces.value = unref(spaces).filter(
+      (s) => !isProjectSpaceResource(s) && s.driveType !== 'explorer'
+    )
     addSpaces(projectSpaces)
   }
 

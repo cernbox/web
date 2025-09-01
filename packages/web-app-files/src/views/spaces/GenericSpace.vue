@@ -297,7 +297,7 @@ export default defineComponent({
     const route = useRoute()
     const breadcrumbs = computed(() => {
       const rootBreadcrumbItems: BreadcrumbItem[] = []
-      if (isProjectSpaceResource(unref(space))) {
+      if (isProjectSpaceResource(unref(space)) || unref(space).driveType === 'explorer') {
         rootBreadcrumbItems.push({
           id: uuidV4(),
           text: $gettext('Spaces'),

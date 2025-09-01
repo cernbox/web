@@ -15,12 +15,12 @@
         <template #actions>
           <create-space v-if="hasCreatePermission" class="oc-mr-s" />
           <div v-if="!selectedResourcesIds?.length" class="oc-flex oc-flex-middle oc-pl-s">
-            <span v-text="$gettext('Learn about spaces')" />
+            <!-- <span v-text="$gettext('Learn about spaces')" />
             <oc-contextual-helper
               :list="spacesHelpList"
               :title="$gettext('Spaces')"
               class="oc-ml-xs"
-            />
+            /> -->
           </div>
         </template>
       </app-bar>
@@ -45,6 +45,28 @@
                 <oc-icon name="filter-2" class="oc-mr-xs" />
                 <span v-text="$gettext('Filter:')" />
               </div>
+              <item-filter-inline
+                class="project-visibility-filter"
+                filter-name="projectVisibility"
+                :filter-options="visibilityOptions"
+                @toggle-filter="setVisibilityOption"
+              />
+              <!--<item-filter
+                :allow-multiple="true"
+                :filter-label="$gettext('Storage Type')"
+                :filterable-attributes="['label']"
+                :items="storageTypes"
+                :option-filter-label="$gettext('Filter storage types')"
+                :show-option-filter="true"
+                id-attribute="key"
+                class="storage-type-filter oc-ml-s"
+                display-name-attribute="label"
+                filter-name="storageType"
+              >
+                <template #item="{ item }">
+                  <span class="oc-ml-s" v-text="item.label" />
+                </template>
+              </item-filter>-->
               <!-- FIXME: TEMPORARY REMOVAL OF FILTER -->
               <!-- <item-filter-toggle -->
               <!--   :filter-label="$gettext('Include disabled')" -->
@@ -97,7 +119,7 @@
               </template>
             </template>
             <template #actions="{ resource }">
-              <oc-button
+              <!--<oc-button
                 v-if="!resource.disabled"
                 v-oc-tooltip="showSpaceMemberLabel"
                 class="spaces-list-show-members-button"
@@ -106,7 +128,7 @@
                 @click="openSidebarSharePanel(resource as SpaceResource)"
               >
                 <oc-icon name="group" fill-type="line" />
-              </oc-button>
+              </oc-button>-->
             </template>
             <template #contextMenu="{ resource }">
               <space-context-actions
@@ -223,6 +245,7 @@ import {
 import { orderBy } from 'lodash-es'
 import { useResourcesViewDefaults } from '../../composables'
 import { folderViewsProjectSpacesExtensionPoint } from '../../extensionPoints'
+import { ItemFilterInline, InlineFilterOption, ItemFilter } from '@ownclouders/web-pkg'
 
 export default defineComponent({
   components: {
@@ -237,7 +260,9 @@ export default defineComponent({
     ResourceIcon,
     ResourceTiles,
     ResourceTable,
-    SpaceContextActions
+    SpaceContextActions,
+    ItemFilterInline,
+    ItemFilter
   },
   setup() {
     const spacesStore = useSpacesStore()
@@ -258,6 +283,34 @@ export default defineComponent({
     const userHasPersonalSpace = !!spacesStore.spaces.find(
       (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
     )
+
+    const visibilityOption = ref('project')
+    const storageTypeQuery = useRouteQuery('q_storageType')
+
+    const visibilityOptions = computed(() => [
+      { name: 'project', label: $gettext('My Spaces') },
+      { name: 'explorer', label: $gettext('Explorer') },
+      { name: 'all', label: $gettext('All') }
+    ])
+
+    const storageTypes = computed(() => [
+      {
+        key: 'eos',
+        value: 'eos',
+        label: 'EOS'
+      },
+      {
+        key: 'win',
+        value: 'win',
+        label: 'Winspaces'
+      }
+    ])
+
+    const setVisibilityOption = async (value: InlineFilterOption) => {
+      if (visibilityOption.value !== value.name) {
+        visibilityOption.value = value.name
+      }
+    }
 
     const loadResourcesTask = useTask(function* (signal) {
       clearResourceList()
@@ -281,7 +334,11 @@ export default defineComponent({
     let loadPreviewToken: string = null
 
     const runtimeSpaces = computed(() => {
-      return spacesStore.spaces.filter(isProjectSpaceResource) || []
+      return (
+        spacesStore.spaces.filter(
+          (space) => isProjectSpaceResource(space) || space?.driveType === 'explorer'
+        ) || []
+      )
     })
     const selectedSpace = computed(() => {
       if (
@@ -320,6 +377,16 @@ export default defineComponent({
 
       if (!includeDisabled) {
         spaces = spaces.filter((space) => space.disabled !== true)
+      }
+
+      const selectedStorageTypes = queryItemAsString(unref(storageTypeQuery))?.split('+')
+      if (selectedStorageTypes) {
+        spaces = spaces.filter((space) =>
+          selectedStorageTypes.some((type) => space.mimeType?.includes(type))
+        )
+      }
+      if (unref(visibilityOption) !== 'all') {
+        spaces = spaces.filter((space) => space.driveType === unref(visibilityOption))
       }
 
       if (!(filterTerm || '').trim()) {
@@ -529,7 +596,11 @@ export default defineComponent({
       setSelection,
       viewSize,
       fileListHeaderY,
-      spacesHelpList
+      spacesHelpList,
+      visibilityOptions,
+      storageTypes,
+      setVisibilityOption,
+      isProjectSpaceResource
     }
   },
   computed: {

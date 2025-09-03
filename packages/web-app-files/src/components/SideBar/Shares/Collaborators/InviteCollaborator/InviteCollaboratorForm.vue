@@ -2,22 +2,6 @@
   <div id="new-collaborators-form" data-testid="new-collaborators-form">
     <div :class="['oc-flex', 'oc-width-1-1', { 'new-collaborators-form-cern': isRunningOnEos }]">
       <oc-select
-        v-if="isRunningOnEos"
-        id="files-share-account-type-input"
-        v-model="accountType"
-        :options="accountTypes"
-        :label="$gettext('Account type')"
-        class="cern-account-type-input"
-        :reduce="(option: AccountType) => option.description"
-      >
-        <template #option="{ description }">
-          <span class="option oc-text-xsmall" v-text="description" />
-        </template>
-        <template #selected-option="{ description }">
-          <span class="option oc-text-xsmall" v-text="description" />
-        </template>
-      </oc-select>
-      <oc-select
         id="files-share-invite-input"
         ref="ocSharingAutocomplete"
         :class="['oc-width-1-1', { 'cern-files-share-invite-input': isRunningOnEos }]"
@@ -193,11 +177,6 @@ const $gettext = (str: string) => {
   return str
 }
 
-type AccountType = {
-  prefix: string
-  description: string
-}
-
 type DropDownShouldOpenOptions = { open: boolean; search: string[] }
 
 export type ShareRoleType = { id: string; label: string; longLabel: string }
@@ -307,15 +286,6 @@ export default defineComponent({
       markInstance.value = new Mark('.mark-element')
     })
 
-    const accountType = ref('standard')
-    const accountTypes: AccountType[] = [
-      { prefix: '', description: 'standard' },
-      { prefix: 'a:', description: 'secondary' },
-      { prefix: 'a:', description: 'service' },
-      { prefix: 'l:', description: 'guest' },
-      { prefix: 'sm:', description: 'federated' }
-    ]
-
     const createSharesConcurrentRequests = computed(() => {
       return configStore.options.concurrentRequests.shares.create
     })
@@ -325,6 +295,15 @@ export default defineComponent({
       if (unref(isExternalShareRoleType)) {
         // filter for external user types only
         filter = `(userType eq 'Federated')`
+      } else if (unref(isSecondaryShareRoleType)) {
+        // CERN: filter for secondary and service accounts only
+        filter = `(userType eq 'Secondary')`
+      } else if (unref(isServiceShareRoleType)) {
+        // CERN: filter for secondary and service accounts only
+        filter = `(userType eq 'Service')`
+      } else if (unref(isLightweightShareRoleType)) {
+        // CERN: filter for guest users only
+        filter = `(userType eq 'Lightweight')`
       }
 
       const client = clientService.graphAuthenticated
@@ -336,7 +315,7 @@ export default defineComponent({
       )
 
       let groupData: Group[]
-      if (!unref(isExternalShareRoleType)) {
+      if (unref(isInternalShareRoleType)) {
         // groups are only available for internal shares
         groupData = yield* call(
           client.groups.listGroups({ orderBy: ['displayName'], search: `"${query}"` }, { signal })
@@ -451,14 +430,38 @@ export default defineComponent({
 
     const externalShareRolesEnabled = computed(() => unref(availableExternalRoles).length)
 
+    const isRunningOnEos = configStore.options.runningOnEos
+
     const internalShareRoleType = '1'
     const externalShareRoleType = '2'
+    const secondaryShareRoleType = '3'
+    const serviceShareRoleType = '4'
+    const lightweightShareRoleType = '5'
+
     const shareRoleTypes = computed<ShareRoleType[]>(() => [
       {
         id: internalShareRoleType,
         label: $gettext('Internal'),
         longLabel: $gettext('Internal users')
       },
+      ...((isRunningOnEos && [
+        {
+          id: secondaryShareRoleType,
+          label: $gettext('Secondary'),
+          longLabel: $gettext('Secondary accounts')
+        },
+        {
+          id: serviceShareRoleType,
+          label: $gettext('Service'),
+          longLabel: $gettext('Service accounts')
+        },
+        {
+          id: lightweightShareRoleType,
+          label: $gettext('Guests'),
+          longLabel: $gettext('Guest users')
+        }
+      ]) ||
+        []),
       ...((unref(externalShareRolesEnabled) && [
         {
           id: externalShareRoleType,
@@ -469,6 +472,18 @@ export default defineComponent({
         [])
     ])
     const currentShareRoleType = ref<ShareRoleType>(unref(shareRoleTypes)[0])
+    const isInternalShareRoleType = computed(
+      () => unref(currentShareRoleType).id === internalShareRoleType
+    )
+    const isSecondaryShareRoleType = computed(
+      () => unref(currentShareRoleType).id === secondaryShareRoleType
+    )
+    const isServiceShareRoleType = computed(
+      () => unref(currentShareRoleType).id === serviceShareRoleType
+    )
+    const isLightweightShareRoleType = computed(
+      () => unref(currentShareRoleType).id === lightweightShareRoleType
+    )
     const isExternalShareRoleType = computed(
       () => unref(currentShareRoleType).id === externalShareRoleType
     )
@@ -496,7 +511,7 @@ export default defineComponent({
       if (unref(isExternalShareRoleType)) {
         return $gettext('No external users found.')
       }
-      return $gettext('No users or groups found.')
+      return $gettext(`No users ${unref(isInternalShareRoleType) ? 'or groups' : ''} found.`)
     })
 
     const showShareTypeFilter = computed(
@@ -522,6 +537,9 @@ export default defineComponent({
       share,
       shareRoleTypes,
       currentShareRoleType,
+      isSecondaryShareRoleType,
+      isServiceShareRoleType,
+      isLightweightShareRoleType,
       isExternalShareRoleType,
       selectShareRoleType,
       focusShareInput,
@@ -530,8 +548,6 @@ export default defineComponent({
       showShareTypeFilter,
 
       // CERN
-      accountType,
-      accountTypes,
       notifyEnabled,
 
       // unit tests
@@ -564,13 +580,6 @@ export default defineComponent({
       }
 
       this.searchInProgress = true
-
-      // CERN
-      if (this.isRunningOnEos) {
-        const prefix =
-          this.accountTypes.find((t) => t.description === this.accountType)?.prefix || ''
-        query = `${prefix}${query}`
-      }
 
       this.fetchRecipients(query)
     },
@@ -626,14 +635,6 @@ export default defineComponent({
   .oc-spinner {
     margin-left: -0.5rem;
   }
-}
-
-.new-collaborators-form-cern > .cern-files-share-invite-input {
-  width: 75%;
-}
-
-.new-collaborators-form-cern > .cern-account-type-input {
-  width: 30%;
 }
 
 #new-collaborators-form {

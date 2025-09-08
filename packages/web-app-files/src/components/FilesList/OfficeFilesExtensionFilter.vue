@@ -1,0 +1,56 @@
+<template>
+  <div class="oc-my-s oc-flex oc-flex-row oc-width-large" style="align-items: center">
+    <span>Filter by type: </span>
+    <oc-select
+      v-model="officeFileExtension"
+      class="oc-mx-s oc-width-medium"
+      :multiple="false"
+      :searchable="false"
+      :options="extensionOptions"
+      @option:selected="extensionSelected"
+    />
+  </div>
+</template>
+
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+const extensionOptions = [
+  { label: 'PowerPoint', value: 'ppt' },
+  { label: 'Word', value: 'doc' },
+  { label: 'Excel', value: 'xls' }
+]
+
+export default defineComponent({
+  name: 'OfficeFilesExtensionFilter',
+  props: {},
+  emits: ['extensionSelected'],
+
+  setup(props, { emit }) {},
+
+  data() {
+    return {
+      officeFileExtension: { label: '', value: '' },
+      extensionOptions
+    }
+  },
+
+  created() {
+    if (localStorage.getItem('extension-picked')) {
+      this.officeFileExtension = this.extensionOptions.find(
+        (option: { value: string }) => option.value === localStorage.getItem('extension-picked')
+      )
+    } else {
+      this.officeFileExtension = this.extensionOptions[0]
+      this.extensionSelected(this.officeFileExtension)
+    }
+  },
+
+  methods: {
+    extensionSelected(newValue: { label: string; value: string }) {
+      localStorage.setItem('extension-picked', newValue.value)
+      this.$emit('extensionSelected', newValue.value)
+    }
+  }
+})
+</script>

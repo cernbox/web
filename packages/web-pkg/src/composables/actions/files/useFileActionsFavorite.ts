@@ -53,6 +53,7 @@ export const useFileActionsFavorite = () => {
         if (
           unref(isFilesAppActive) &&
           !isLocationSpacesActive(router, 'files-spaces-generic') &&
+          !isLocationCommonActive(router, 'files-common-office') &&
           !isLocationCommonActive(router, 'files-common-favorites')
         ) {
           return false

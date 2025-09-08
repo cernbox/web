@@ -24,6 +24,7 @@ import { ClientService } from '@ownclouders/web-pkg'
 import {
   FolderLoaderSpace,
   FolderLoaderFavorites,
+  FolderLoaderOfficeFiles,
   FolderLoaderSharedViaLink,
   FolderLoaderSharedWithMe,
   FolderLoaderSharedWithOthers,
@@ -60,6 +61,7 @@ export class FolderService {
     this.loaders = [
       new FolderLoaderSpace(),
       new FolderLoaderFavorites(),
+      new FolderLoaderOfficeFiles(),
       new FolderLoaderSharedViaLink(),
       new FolderLoaderSharedWithMe(),
       new FolderLoaderSharedWithOthers(),

@@ -16,6 +16,7 @@ import { SearchFactory } from './search'
 import { GetPathForFileIdFactory } from './getPathForFileId'
 import { SetFavoriteFactory } from './setFavorite'
 import { ListFavoriteFilesFactory } from './listFavoriteFiles'
+import { ListOfficeFilesFactory } from './listOfficeFiles'
 import { AxiosInstance } from 'axios'
 import { Headers } from 'webdav'
 
@@ -45,4 +46,5 @@ export interface WebDAV {
   search: ReturnType<typeof SearchFactory>['search']
   listFavoriteFiles: ReturnType<typeof ListFavoriteFilesFactory>['listFavoriteFiles']
   setFavorite: ReturnType<typeof SetFavoriteFactory>['setFavorite']
+  listOfficeFiles: ReturnType<typeof ListOfficeFilesFactory>['listOfficeFiles']
 }

@@ -20,6 +20,7 @@ import { DAV } from './client/dav'
 import { ListFileVersionsFactory } from './listFileVersions'
 import { SetFavoriteFactory } from './setFavorite'
 import { ListFavoriteFilesFactory } from './listFavoriteFiles'
+import { ListOfficeFilesFactory } from './listOfficeFiles'
 
 export * from './constants'
 export * from './types'
@@ -72,6 +73,8 @@ export const webdav = (baseURI: string, headers?: () => Headers): WebDAV => {
   const { listFavoriteFiles } = ListFavoriteFilesFactory(dav, options)
   const { setFavorite } = SetFavoriteFactory(dav, options)
 
+  const { listOfficeFiles } = ListOfficeFilesFactory(dav, options)
+
   return {
     copyFiles,
     createFolder,
@@ -91,6 +94,7 @@ export const webdav = (baseURI: string, headers?: () => Headers): WebDAV => {
     clearTrashBin,
     search,
     listFavoriteFiles,
-    setFavorite
+    setFavorite,
+    listOfficeFiles
   }
 }

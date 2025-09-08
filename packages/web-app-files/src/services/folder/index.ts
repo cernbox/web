@@ -1,5 +1,6 @@
 export * from './loaderSpace'
 export * from './loaderFavorites'
+export * from './loaderOfficeFiles'
 export * from './loaderSharedViaLink'
 export * from './loaderSharedWithMe'
 export * from './loaderSharedWithOthers'

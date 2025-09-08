@@ -151,6 +151,7 @@ export default defineComponent({
     )
     const isProjectsLocation = isLocationSpacesActive(router, 'files-spaces-projects')
     const isFavoritesLocation = useActiveLocation(isLocationCommonActive, 'files-common-favorites')
+    const isOfficeFilesLocation = useActiveLocation(isLocationCommonActive, 'files-common-office')
     const isSearchLocation = useActiveLocation(isLocationCommonActive, 'files-common-search')
 
     const closeSideBar = () => {
@@ -180,7 +181,12 @@ export default defineComponent({
       )
     })
     const isFlatFileList = computed(() => {
-      return unref(isShareLocation) || unref(isSearchLocation) || unref(isFavoritesLocation)
+      return (
+        unref(isShareLocation) ||
+        unref(isSearchLocation) ||
+        unref(isFavoritesLocation) ||
+        unref(isOfficeFilesLocation)
+      )
     })
 
     const availablePanels = computed(() =>

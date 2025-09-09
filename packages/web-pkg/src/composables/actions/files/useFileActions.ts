@@ -237,7 +237,13 @@ export const useFileActions = () => {
     const routeName = appFileExtension.routeName || appFileExtension.app
     const routeOpts = getEditorRouteOpts(routeName, space, resource, mode, remoteItemId)
 
-    router.push(routeOpts)
+    if (configStore.options.cernFeatures) {
+      const editorRoute = router.resolve(routeOpts)
+      const editorRouteUrl = new URL(editorRoute.href, window.location.origin)
+      openUrl(editorRouteUrl.toString(), '_blank', true)
+    } else {
+      router.push(routeOpts)
+    }
   }
 
   // TODO: Make user-configurable what is a defaultAction for a filetype/mimetype

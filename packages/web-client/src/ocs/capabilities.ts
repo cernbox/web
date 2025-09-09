@@ -1,5 +1,6 @@
 import { AxiosInstance } from 'axios'
 import get from 'lodash-es/get'
+import { UserCapabilities } from './users'
 
 export interface AppProviderCapability {
   apps_url?: string
@@ -187,6 +188,7 @@ export interface Capabilities {
         read_only_attributes?: string[]
       }
     }
+    user?: UserCapabilities
   }
   version: {
     edition?: string

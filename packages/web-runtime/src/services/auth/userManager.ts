@@ -185,8 +185,6 @@ export class UserManager extends OidcUserManager {
   }
 
   private async fetchUserInfo() {
-    await this.fetchCapabilities()
-
     const graphClient = this.clientService.graphAuthenticated
     const [graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
     const role = await this.fetchRole({ graphUser, roles })
@@ -215,6 +213,8 @@ export class UserManager extends OidcUserManager {
         languageSetting: graphUser.preferredLanguage
       })
     }
+
+    await this.fetchCapabilities()
   }
 
   private async fetchRoles() {
@@ -246,9 +246,18 @@ export class UserManager extends OidcUserManager {
       return
     }
 
-    const capabilities = await this.clientService.ocsUserContext.getCapabilities()
+    const capabilities = await this.clientService.ocs.getCapabilities()
+    const userCapabilities = await this.clientService.ocs.getUserCapabilities(
+      this.userStore.user.id
+    )
 
-    this.capabilityStore.setCapabilities(capabilities)
+    this.capabilityStore.setCapabilities({
+      ...capabilities,
+      capabilities: {
+        ...capabilities.capabilities,
+        user: userCapabilities
+      }
+    })
   }
 
   // copied from upstream oidc-client-ts UserManager with CERN customization

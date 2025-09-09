@@ -103,8 +103,9 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       route: {
         path: `/${appInfo.id}/office-files`
       },
-      isVisible: () => true,
-      // return (capabilityStore.group_capabilities?.includes('office-view'))
+      isVisible() {
+        return capabilityStore.groupCapabilities?.includes('office-view')
+      },
       priority: 25
     },
     {

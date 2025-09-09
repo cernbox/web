@@ -66,6 +66,14 @@ const defaultValues = {
     enabled: false,
     max_quota: 0,
     projects: false
+  },
+  user: {
+    quota: null,
+    email: null,
+    displayname: null,
+    'user-type': null,
+    two_factor_auth_enabled: false,
+    'group-capabilities': [] as string[]
   }
 } satisfies Partial<Capabilities['capabilities']>
 
@@ -151,6 +159,8 @@ export const useCapabilityStore = defineStore('capabilities', () => {
   const searchMediaType = computed(() => unref(capabilities).search.property?.mediatype)
   const searchContent = computed(() => unref(capabilities).search.property?.content)
 
+  const groupCapabilities = computed(() => unref(capabilities).user['group-capabilities'] || [])
+
   return {
     isInitialized,
     capabilities,
@@ -198,7 +208,8 @@ export const useCapabilityStore = defineStore('capabilities', () => {
     passwordPolicy,
     searchLastMofifiedDate,
     searchMediaType,
-    searchContent
+    searchContent,
+    groupCapabilities
   }
 })
 

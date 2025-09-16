@@ -92,7 +92,10 @@
             <oc-icon :name="'arrow-' + (showMore ? 'up' : 'down') + '-s'" fill-type="line" />
           </oc-button>
         </div>
-        <list-info v-else class="oc-width-1-1 oc-my-s" />
+        <div v-else>
+          <pagination :pages="paginationPages" :current-page="paginationPage" />
+          <list-info class="oc-width-1-1 oc-my-s" />
+        </div>
       </template>
     </resource-table>
   </div>
@@ -100,6 +103,7 @@
 
 <script lang="ts">
 import {
+  Pagination,
   ResourceTable,
   useCapabilityStore,
   useConfigStore,
@@ -108,6 +112,7 @@ import {
   useLoadPreview,
   useResourcesStore
 } from '@ownclouders/web-pkg'
+import { useResourcesViewDefaults } from '../../composables'
 import { computed, defineComponent, PropType, unref } from 'vue'
 import { SortDir, useGetMatchingSpace } from '@ownclouders/web-pkg'
 import { createLocationSpaces } from '@ownclouders/web-pkg'
@@ -125,6 +130,7 @@ export default defineComponent({
     ResourceTable,
     ContextActions,
     ListInfo,
+    Pagination,
     NoContentMessage
   },
 
@@ -196,6 +202,12 @@ export default defineComponent({
     const { getMatchingSpace } = useGetMatchingSpace()
     const { loadPreview } = useLoadPreview()
 
+    const { paginationPages, paginationPage } = useResourcesViewDefaults<
+      IncomingShareResource,
+      any,
+      any[]
+    >()
+
     const { triggerDefaultAction } = useFileActions()
     const { actions: hideShareActions } = useFileActionsToggleHideShare()
     const hideShareAction = computed(() => unref(hideShareActions)[0])
@@ -228,7 +240,9 @@ export default defineComponent({
       updateResourceField,
       isExternalShare,
       ShareTypes,
-      loadPreview
+      loadPreview,
+      paginationPages,
+      paginationPage
     }
   },
 

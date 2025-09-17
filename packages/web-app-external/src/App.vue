@@ -117,12 +117,15 @@ export default defineComponent({
 
     const loadAppUrl = useTask(function* (signal, viewMode: string) {
       try {
+        if (!props.resource) {
+          return null
+        }
         if (props.isReadOnly && viewMode === 'write') {
           showErrorMessage({ title: $gettext('Cannot open file in edit mode as it is read-only') })
           return
         }
 
-        const fileId = props.resource.fileId
+        const fileId = props.resource?.fileId
         const baseUrl = urlJoin(
           configStore.serverUrl,
           capabilityStore.filesAppProviders[0].open_url
@@ -204,11 +207,14 @@ export default defineComponent({
     })
 
     watch(
-      [props.resource],
-      ([newResource], [oldResource]) => {
-        if (isSameResource(newResource, oldResource)) {
+      [props],
+      ([newProps], [oldProps]) => {
+        if (!newProps || !newProps.resource || !newProps.space) {
           return
         }
+        // if (isSameResource(newResource, oldResource)) {
+        //   return
+        // }
 
         let viewMode = 'view'
 

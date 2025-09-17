@@ -228,7 +228,7 @@ export default defineComponent({
 
       return $gettext(`%{appName} for %{fileName}`, {
         appName: $gettext(appName),
-        fileName: unref(unref(currentFileContext).fileName)
+        fileName: unref(unref(currentFileContext)?.fileName)
       })
     })
 
@@ -328,6 +328,9 @@ export default defineComponent({
 
     const loadFileTask = useTask(function* (signal) {
       try {
+        if (!unref(currentFileContext)) {
+          return null
+        }
         const newExtension = props.importResourceWithExtension(unref(resource))
         if (newExtension) {
           const timestamp = DateTime.local().toFormat('yyyyMMddHHmmss')

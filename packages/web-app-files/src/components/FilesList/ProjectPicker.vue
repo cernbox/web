@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts">
-import { useAuthStore } from '@ownclouders/web-pkg'
+import { useClientService, useSpacesStore } from '@ownclouders/web-pkg'
 import { defineComponent, unref } from 'vue'
 
 const projectOptions = []
@@ -25,11 +25,12 @@ export default defineComponent({
   emits: ['projectSelected'],
 
   setup(props, { emit }) {
-    const authStore = useAuthStore()
-    const accessToken = unref(authStore).accessToken
+    const spacesStore = useSpacesStore()
+    const clientService = useClientService()
 
     return {
-      accessToken
+      spacesStore,
+      clientService
     }
   },
 
@@ -50,7 +51,7 @@ export default defineComponent({
         path: ''
       })
     }
-    this.getAllowedProjects(this.accessToken).then((projects: { name: string; path: string }[]) => {
+    this.getAllowedProjects().then((projects: { name: string; path: string }[]) => {
       const loadedOptions = projects.map((project: { name: string; path: string }) => ({
         name: project.name,
         path: project.path
@@ -77,21 +78,12 @@ export default defineComponent({
       localStorage.setItem('project-picked', project)
       this.$emit('projectSelected', project)
     },
-    async getProjects(accessToken: string) {
-      const headers = new Headers()
-      headers.append('Authorization', 'Bearer ' + accessToken)
-      headers.append('X-Requested-With', 'XMLHttpRequest')
-      const response = await fetch('api/v0/projects', {
-        method: 'GET',
-        headers
+    async getProjects() {
+      await this.spacesStore.reloadProjectSpaces({
+        graphClient: this.clientService.graphAuthenticated
       })
-      if (!response.ok) {
-        const message = `An error has occured: ${response.status}`
-        throw new Error(message)
-      }
-      const data = await response.json()
       const projects = []
-      data.projects.forEach((project: { name: string; path: string }) => {
+      unref(this.spacesStore.spaces).forEach((project) => {
         projects.push({
           name: project.name,
           path: project.path
@@ -110,8 +102,8 @@ export default defineComponent({
       return projects
     },
 
-    async getAllowedProjects(accessToken: string) {
-      const projects = await this.getProjects(accessToken)
+    async getAllowedProjects() {
+      const projects = await this.getProjects()
       const allowedProjects = await this.getProjectsFilter()
       const filteredProjects = projects.filter((project: { name: string }) =>
         allowedProjects.includes(project.name)

@@ -29,9 +29,11 @@
         >
           <template #message>
             <span
-              >Your trash bin returned too many entries and cannot be displayed, or the date range is too long. <br />Please filter
-              by date or check the
-              <a href="https://cernbox.docs.cern.ch/advanced/restore_from_trash/" target="_blank"
+              >Your trash bin returned too many entries and cannot be displayed, or the date range
+              is too long. <br />Please filter by date or check the
+              <a
+                href="https://cernbox.docs.cern.ch/web/data-security/restore_from_trash/"
+                target="_blank"
                 >documentation</a
               >.</span
             >
@@ -155,7 +157,6 @@ export default defineComponent({
     }
     const recycleError = ref(false)
 
-
     let loadResourcesEventToken: string
     const noContentMessage = computed(() => {
       return props.space.driveType === 'personal'
@@ -182,7 +183,7 @@ export default defineComponent({
           'files-app-bar'
         )
       } catch (e) {
-          recycleError.value = true
+        recycleError.value = true
       }
     }
 

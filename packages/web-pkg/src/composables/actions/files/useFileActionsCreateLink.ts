@@ -25,7 +25,8 @@ export const useFileActionsCreateLink = ({
   const clientService = useClientService()
   const userStore = useUserStore()
   const { showMessage, showErrorMessage } = useMessages()
-  const { $gettext, $ngettext } = useGettext()
+  const language = useGettext()
+  const { $gettext, $ngettext } = language
   const capabilityStore = useCapabilityStore()
   const ability = useAbility()
   const loadingService = useLoadingService()
@@ -72,16 +73,14 @@ export const useFileActionsCreateLink = ({
         }
       }
 
-      const language = useGettext()
       const alertRwFolders = configStore.options.alertRwFolders
 
       if (options.isRW && options.isFolder && alertRwFolders) {
         dispatchModal({
           variation: 'warning',
           title: 'Default expiration date',
-          message: $gettext(
-            alertRwFolders[language.current] ?? alertRwFolders[Object.keys(alertRwFolders)[0]]
-          ),
+          message:
+            alertRwFolders[language.current] ?? alertRwFolders[Object.keys(alertRwFolders)[0]],
           confirmText: 'Got it'
         })
       }

@@ -164,7 +164,13 @@ export const useFileActionsPaste = () => {
         if (resources.length === 0) {
           return false
         }
-
+        if (
+          Object.values(resourcesStore.ancestorMetaData)
+            .filter((ancestor) => ancestor.id)
+            .some((ancestor) => ancestor.id === unref(resources[0].id))
+        ) {
+          return false
+        }
         if (isLocationPublicActive(router, 'files-public-link') && unref(currentFolder)) {
           return unref(currentFolder)?.canCreate()
         }

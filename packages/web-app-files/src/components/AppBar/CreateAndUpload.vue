@@ -409,9 +409,11 @@ export default defineComponent({
         return false
       }
 
-      return !unref(clipboardResources).some(
-        (resource) => resource.parentFolderId !== unref(currentFolder).id
+      const ancestors = Object.values(resourcesStore.ancestorMetaData).filter(
+        (ancestor) => ancestor.id
       )
+
+      return ancestors.some((ancestor) => ancestor.id === unref(clipboardResources)[0].id)
     })
 
     const isPasteHereButtonDisabled = computed(() => {

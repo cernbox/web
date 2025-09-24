@@ -4,7 +4,7 @@ import { ResolveStrategy, TransferType, type TransferData } from './types'
 import { ConflictDialog } from './conflictDialog'
 import { resolveFileNameDuplicate, isResourceBeeingMovedToSameLocation } from './conflictUtils'
 import type { ClientService } from '../../../services'
-import { useMessages } from '../../../composables'
+import { useMessages, useResourcesStore } from '../../../composables'
 import { Ref, unref } from 'vue'
 import type { Language } from 'vue3-gettext'
 import { HttpError } from '@ownclouders/web-client'
@@ -24,11 +24,12 @@ export class ResourceTransfer extends ConflictDialog {
   }
 
   hasRecursion(): boolean {
+    const resourceStore = useResourcesStore()
     if (this.sourceSpace.id !== this.targetSpace.id) {
       return false
     }
-    return this.resourcesToMove.some(
-      (resource: Resource) => this.targetFolder.path === resource.path
+    return this.resourcesToMove.some((resource: Resource) =>
+      Object.values(resourceStore.ancestorMetaData).some((ancestor) => ancestor.id === resource.id)
     )
   }
 

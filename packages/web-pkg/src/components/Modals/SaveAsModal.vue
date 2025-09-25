@@ -93,7 +93,6 @@ export default defineComponent({
           title: $gettext('Unable to save "%{fileName}"', { fileName }),
           errors: [e]
         })
-        console.error(e)
       }
 
       removeModal(props.modal.id)
@@ -113,7 +112,7 @@ export default defineComponent({
         {
           fileId: destinationFolder.fileId
         },
-        { davProperties: [DavProperty.Name] }
+        { davProperties: [DavProperty.Name, DavProperty.FileId] }
       )
       const resourceAlreadyExists = existingResources.find(
         (existingResource) => existingResource.name === fileName

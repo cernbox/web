@@ -3,7 +3,7 @@
     id="create-shortcut-modal-url-input"
     v-model="inputUrl"
     :placeholder="'example.org'"
-    :label="$gettext('Webpage or file')"
+    :label="$gettext(labelText)"
     @keydown.up="onKeyUpDrop"
     @keydown.down="onKeyDownDrop"
     @keydown.esc="onKeyEscDrop"
@@ -13,14 +13,10 @@
   >
     <template #label>
       <div class="oc-flex oc-flex-middle create-shortcut-modal-label">
-        <label for="create-shortcut-modal-url-input" v-text="$gettext('Webpage or file')"></label>
+        <label for="create-shortcut-modal-url-input" v-text="$gettext(labelText)"></label>
         <oc-contextual-helper
-          :text="
-            $gettext(
-              'Enter the target URL of a webpage or the name of a file. Users will be directed to this webpage or file.'
-            )
-          "
-          :title="$gettext('Webpage or file')"
+          :text="$gettext(helperText)"
+          :title="$gettext(labelText)"
           class="oc-ml-xs"
         />
       </div>
@@ -122,6 +118,7 @@ import { SpaceResource } from '@ownclouders/web-client'
 import {
   Modal,
   useClientService,
+  useConfigStore,
   useFolderLink,
   useMessages,
   useResourcesStore,
@@ -159,6 +156,7 @@ export default defineComponent({
     const clientService = useClientService()
     const { $gettext } = useGettext()
     const { showMessage, showErrorMessage } = useMessages()
+    const { runningOnEos } = useConfigStore().options
     const router = useRouter()
     const { search } = useSearch()
     const {
@@ -187,6 +185,13 @@ export default defineComponent({
       }
       return `https://${url}`
     }
+
+    const labelText = computed(() => (runningOnEos ? 'Webpage' : 'Webpage or file'))
+    const helperText = computed(() =>
+      runningOnEos
+        ? 'Enter the target URL of a webpage. Users will be directed to this webpage.'
+        : 'Enter the target URL of a webpage or the name of a file. Users will be directed to this webpage or file.'
+    )
 
     const dropItemUrl = computed(() => {
       return getInputUrlWithProtocol(unref(inputUrl))
@@ -360,6 +365,10 @@ export default defineComponent({
 
       ;(unref(dropRef) as InstanceType<typeof OcDrop>).show()
 
+      if (runningOnEos) {
+        return
+      }
+
       if (!isLocationPublicActive(router, 'files-public-link')) {
         debouncedSearch()
       }
@@ -431,6 +440,8 @@ export default defineComponent({
     expose({ onConfirm })
 
     return {
+      labelText,
+      helperText,
       inputUrl,
       inputFilename,
       dropRef,

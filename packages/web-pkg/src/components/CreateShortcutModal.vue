@@ -202,7 +202,7 @@ export default defineComponent({
     )
 
     const confirmButtonDisabled = computed(
-      () => unref(fileAlreadyExists) || !unref(inputFilename) || !unref(inputUrl)
+      () => !unref(inputFilename) || !unref(inputUrl) || unref(inputFileNameErrorMessage).length > 0
     )
 
     watch(

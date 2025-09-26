@@ -33,7 +33,7 @@
       >
         <oc-icon name="link" />
       </oc-button>
-      <p v-text="shareLabel" />
+      <!--<p v-text="shareLabel" />-->
       <oc-button
         appearance="raw"
         :aria-label="openSharesPanelHint"
@@ -54,12 +54,12 @@
         <th scope="col" class="oc-pr-s oc-font-semibold" v-text="$gettext('Subtitle')" />
         <td v-text="resource.description" />
       </tr>
-      <tr>
+      <!--<tr>
         <th scope="col" class="oc-pr-s oc-font-semibold" v-text="$gettext('Manager')" />
         <td>
           <span v-text="ownerUsernames" />
         </td>
-      </tr>
+      </tr>-->
       <tr v-if="!resource.disabled">
         <th scope="col" class="oc-pr-s oc-font-semibold" v-text="$gettext('Quota')" />
         <td>

@@ -4,7 +4,8 @@ import {
   UserManager as OidcUserManager,
   UserManagerSettings,
   User,
-  ErrorResponse
+  ErrorResponse,
+  SigninResponse
 } from 'oidc-client-ts'
 import { buildUrl, useAppsStore } from '@ownclouders/web-pkg'
 import { getAbilities } from './abilities'
@@ -261,15 +262,12 @@ export class UserManager extends OidcUserManager {
   }
 
   // copied from upstream oidc-client-ts UserManager with CERN customization
-  protected async _signinEnd(url: string, verifySub?: string, ...args: any[]): Promise<User> {
-    if (!this.configStore.options.isRunningOnEos) {
-      return (super._signinEnd as any)(url, verifySub, ...args)
+  protected async _buildUser(signinResponse: SigninResponse, verifySub?: string) {
+    if (!this.configStore.options.useRevaToken) {
+      return (super._buildUser as any)(signinResponse, verifySub)
     }
 
-    const logger = this._logger.create('_signinEnd')
-    const signinResponse = await this._client.processSigninResponse(url)
-    logger.debug('got signin response')
-
+    const logger = this._logger.create('_buildUser')
     const user = new User(signinResponse)
     if (verifySub) {
       if (verifySub !== user.profile.sub) {
@@ -288,8 +286,13 @@ export class UserManager extends OidcUserManager {
      */
     try {
       console.log('CERNBox: login successful, exchange sso token with reva token')
-      const httpClient = this.clientService.httpAuthenticated
-      const revaTokenReq = await httpClient.get('/ocs/v1.php/cloud/user')
+      // Use the unauthenticated client, as the authenticated one would replace the
+      // bearer token, failing the request
+      const httpClient = this.clientService.httpUnAuthenticated
+      const requestConfig = {
+        headers: { Authorization: 'Bearer ' + user.access_token }
+      }
+      const revaTokenReq = await httpClient.get('/ocs/v1.php/cloud/user', requestConfig)
       const revaToken = revaTokenReq.headers['x-access-token']
       const claims = JSON.parse(atob(revaToken.split('.')[1]))
       user.access_token = revaToken
@@ -301,7 +304,7 @@ export class UserManager extends OidcUserManager {
 
     await this.storeUser(user)
     logger.debug('user stored')
-    this._events.load(user)
+    await this._events.load(user)
 
     return user
   }

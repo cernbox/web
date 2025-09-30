@@ -36,6 +36,7 @@ const defaultOptions = {
   },
   listVersions: true,
   runningOnEos: false,
+  useRevaToken: false,
   tokenStorageLocal: true,
   userListRequiresFilter: false,
   hideLogo: false,

@@ -234,8 +234,18 @@ export default defineComponent({
       })
     }
     const notifyShare = async () => {
-      // FIXME: cern code
-      // const response = await clientService.owncloudSdk.shares.notifyShare(props.share.id)
+      try {
+        const resp = await clientService.httpAuthenticated.get(`/ocs/v1.php/apps/files_sharing/api/v1/shares/${props.share.id}/notify`) as any
+        showMessage({
+          title: $gettext(`Reminder sent to ${resp.data.recipients[0]}`)
+        })
+      } catch (error) {
+        console.error(error)
+        showErrorMessage({
+          title: $gettext('Failed to send email reminder'),
+          errors: [error]
+        })
+      }
     }
 
     const sharedViaTooltip = computed(() =>

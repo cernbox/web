@@ -59,6 +59,7 @@ import { OcDrop } from '@ownclouders/design-system/components'
 import { useGettext } from 'vue3-gettext'
 import { SharingLinkType } from '@ownclouders/web-client/graph/generated'
 import DatePickerModal from '../../../Modals/DatePickerModal.vue'
+import EmailModal from '../../../Modals/EmailModal.vue'
 import { RouteLocationNamedRaw } from 'vue-router'
 import ContextMenuItem from './ContextMenuItem.vue'
 
@@ -131,6 +132,10 @@ export default defineComponent({
 
     const isInternalLink = computed(() => {
       return props.linkShare.type === SharingLinkType.Internal
+    })
+
+    const isCurrentLinkRoleCreateOnly = computed(() => {
+      return props.linkShare.type === SharingLinkType.CreateOnly
     })
 
     const sharedAncestor = computed(() => {
@@ -279,8 +284,47 @@ export default defineComponent({
         })
       }
 
+      if (unref(isCurrentLinkRoleCreateOnly) && props.linkShare.notifyUploads) {
+        result.push({
+          id: 'add-notify-uploads-extra-recipients',
+          title: $gettext('Edit third party notification'),
+          icon: 'mail-add',
+          method: showNotifyUploadsExtraRecipientsModal
+        })
+      }
+
+      if (props.linkShare.notifyUploadsExtraRecipients) {
+        result.push({
+          id: 'remove-notify-uploads-extra-recipients',
+          title: $gettext('Remove third party notification'),
+          icon: 'mail-close',
+          method: () =>
+            emit('updateLink', {
+              linkShare: { ...props.linkShare, notifyUploadsExtraRecipients: '' },
+              options: { type: null }
+            })
+        })
+      }
+
       return result
     })
+
+    const showNotifyUploadsExtraRecipientsModal = () => {
+      dispatchModal({
+        title: $gettext('Notify a third party about uploads'),
+        hideActions: true,
+        customComponent: EmailModal,
+        customComponentAttrs: () => ({
+          initialEmail: props.linkShare.notifyUploadsExtraRecipients
+        }),
+        onConfirm: (value: string) => {
+          emit('updateLink', {
+            linkShare: { ...props.linkShare, notifyUploadsExtraRecipients: value },
+            options: { type: null }
+          })
+        }
+      })
+    }
 
     return {
       editPublicLinkDropdown,

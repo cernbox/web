@@ -257,7 +257,27 @@ export const useSharesStore = defineStore('shares', () => {
         },
         ...(Object.hasOwn(options, 'expirationDateTime') && {
           expirationDateTime: options.expirationDateTime
-        })
+        }),
+        ...(linkShare.notifyUploads
+          ? {
+              '@libre.graph.permissions.actions': ['notifyUploads']
+            }
+          : {
+              '@libre.graph.permissions.actions': []
+            }),
+        ...(linkShare.notifyUploads && linkShare.notifyUploadsExtraRecipients
+          ? {
+              grantedToIdentities: [
+                {
+                  group: {
+                    id: linkShare.notifyUploadsExtraRecipients
+                  }
+                }
+              ]
+            }
+          : {
+              grantedToIdentities: []
+            })
       } satisfies Permission
 
       link = await client.updatePermission<LinkShare>(space.id, resource.id, linkShare.id, payload)

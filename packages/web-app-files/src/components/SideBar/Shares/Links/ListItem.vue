@@ -23,6 +23,12 @@
             v-text="$gettext(currentLinkRoleLabel)"
           />
         </div>
+        <oc-checkbox
+          v-if="isModifiable && isCurrentLinkRoleUploader"
+          :model-value="linkShare.notifyUploads"
+          :label="$gettext('Notify me on uploads')"
+          @update:model-value="toggleNotifyUploads"
+        />
       </div>
     </div>
     <div class="oc-flex oc-flex-middle">
@@ -164,7 +170,18 @@ export default defineComponent({
       )
     })
 
+    const isCurrentLinkRoleUploader = computed(() => {
+      return unref(currentLinkType) === SharingLinkType.CreateOnly
+    })
+    const toggleNotifyUploads = () => {
+      const linkShare = props.linkShare
+      linkShare.notifyUploads = !linkShare.notifyUploads
+      emit('updateLink', { linkShare, options: { type: null } })
+    }
+
     return {
+      isCurrentLinkRoleUploader,
+      toggleNotifyUploads,
       updateSelectedType,
       currentLinkType,
       showPasswordModal,

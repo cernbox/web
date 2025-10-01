@@ -218,7 +218,7 @@ export default defineComponent({
         })
       }
 
-      if (this.configStore.options.isRunningOnEos) {
+      if (this.configStore.options.runningOnEos) {
         result.push({
           title: this.$gettext('Notify via mail'),
           method: () => this.$emit('notifyShare'),

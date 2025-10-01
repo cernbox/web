@@ -292,7 +292,9 @@ export function buildLinkShare({
     isQuickLink: graphPermission.link['@libre.graph.quickLink'],
     type: graphPermission.link.type,
     webUrl: graphPermission.link.webUrl,
-    preventsDownload: graphPermission.link.preventsDownload
+    preventsDownload: graphPermission.link.preventsDownload,
+    notifyUploads: graphPermission['@libre.graph.permissions.actions']?.includes('notifyUploads'),
+    notifyUploadsExtraRecipients: graphPermission.grantedToIdentities?.[0]?.group?.id
   }
 }
 

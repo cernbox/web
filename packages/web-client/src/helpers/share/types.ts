@@ -71,6 +71,8 @@ export interface LinkShare extends Share {
   type: SharingLinkType
   webUrl: string
   preventsDownload?: boolean
+  notifyUploads?: boolean
+  notifyUploadsExtraRecipients?: string
 }
 
 export interface CollaboratorAutoCompleteItem {

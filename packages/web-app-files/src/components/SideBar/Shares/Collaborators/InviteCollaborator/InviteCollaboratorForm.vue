@@ -75,7 +75,7 @@
         @option-change="collaboratorRoleChanged"
       />
       <div class="oc-flex oc-flex-middle">
-        <expiration-date-indicator
+        <!-- <expiration-date-indicator
           v-if="expirationDate"
           :expiration-date="DateTime.fromISO(expirationDate)"
           class="files-collaborators-collaborator-expiration"
@@ -108,7 +108,7 @@
               </li>
             </oc-list>
           </oc-drop>
-        </oc-button>
+        </oc-button> -->
         <oc-button
           id="new-collaborators-form-create-button"
           key="new-collaborator-save-button"

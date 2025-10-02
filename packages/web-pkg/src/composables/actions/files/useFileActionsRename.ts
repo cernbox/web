@@ -100,26 +100,26 @@ export const useFileActionsRename = () => {
 
       const isCurrentFolder = isSameResource(resource, currentFolder)
 
-      if (isShareSpaceResource(space) && resource.isReceivedShare()) {
-        space.rename(newName)
+      // if (isShareSpaceResource(space) && resource.isReceivedShare()) {
+      //   space.rename(newName)
 
-        if (isCurrentFolder) {
-          currentFolder = { ...currentFolder } as Resource
-          currentFolder.name = newName
-          setCurrentFolder(currentFolder)
-          return router.push(
-            createFileRouteOptions(space, {
-              path: '',
-              fileId: resource.fileId
-            })
-          )
-        }
+      //   if (isCurrentFolder) {
+      //     currentFolder = { ...currentFolder } as Resource
+      //     currentFolder.name = newName
+      //     setCurrentFolder(currentFolder)
+      //     return router.push(
+      //       createFileRouteOptions(space, {
+      //         path: '',
+      //         fileId: resource.fileId
+      //       })
+      //     )
+      //   }
 
-        const sharedResource = { ...resource }
-        sharedResource.name = newName
-        upsertResource(sharedResource)
-        return
-      }
+      //   const sharedResource = { ...resource }
+      //   sharedResource.name = newName
+      //   upsertResource(sharedResource)
+      //   return
+      // }
 
       if (isCurrentFolder) {
         currentFolder = { ...currentFolder } as Resource

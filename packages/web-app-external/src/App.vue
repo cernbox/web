@@ -220,15 +220,15 @@ export default defineComponent({
 
         if (!props.isReadOnly) {
           viewMode = unref(viewModeQueryValue) || 'write'
-        }
 
-        if (
-          determineOpenAsPreview(unref(appName)) &&
-          (isShareSpaceResource(props.space) ||
-            isPublicSpaceResource(props.space) ||
-            isProjectSpaceResource(props.space))
-        ) {
-          viewMode = 'view'
+          if (
+            determineOpenAsPreview(unref(appName)) &&
+            (isShareSpaceResource(props.space) ||
+              isPublicSpaceResource(props.space) ||
+              isProjectSpaceResource(props.space))
+          ) {
+            viewMode = 'preview'
+          }
         }
         loadAppUrl.perform(viewMode)
       },

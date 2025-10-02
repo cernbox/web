@@ -270,6 +270,7 @@ export const useSharesStore = defineStore('shares', () => {
               grantedToIdentities: [
                 {
                   group: {
+                    displayName: "",
                     id: linkShare.notifyUploadsExtraRecipients
                   }
                 }

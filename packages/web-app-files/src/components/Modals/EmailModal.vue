@@ -39,7 +39,7 @@ export default defineComponent({
     modal: { type: Object as PropType<Modal>, required: true },
     initialEmail: { type: Object as PropType<string>, required: false, default: '' }
   },
-  emits: ['confirm'],
+  emits: ['confirm', 'cancel'],
   setup(props) {
     const { $gettext } = useGettext()
 

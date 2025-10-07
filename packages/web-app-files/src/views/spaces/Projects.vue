@@ -283,14 +283,13 @@ export default defineComponent({
     const userHasPersonalSpace = !!spacesStore.spaces.find(
       (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
     )
-
-    const visibilityOption = ref('project')
+    const visibilityOption = ref('all')
     const storageTypeQuery = useRouteQuery('q_storageType')
 
     const visibilityOptions = computed(() => [
+      { name: 'all', label: $gettext('All') },
       { name: 'project', label: $gettext('My Spaces') },
-      { name: 'explorer', label: $gettext('Explorer') },
-      { name: 'all', label: $gettext('All') }
+      { name: 'explorer', label: $gettext('Explorer') }
     ])
 
     const storageTypes = computed(() => [

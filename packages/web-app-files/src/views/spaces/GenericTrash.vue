@@ -32,7 +32,7 @@
               >Your trash bin returned too many entries and cannot be displayed, or the date range
               is too long. <br />Please filter by date or check the
               <a
-                href="https://cernbox.docs.cern.ch/web/data-security/restore_from_trash/"
+                href="https://cernbox.docs.cern.ch/web/data-security/trash-bin/"
                 target="_blank"
                 >documentation</a
               >.</span

@@ -86,18 +86,19 @@ export const useGetMatchingSpace = (options?: GetMatchingSpaceOptions) => {
   }
 
   const isResourceAccessible = ({ space, path }: { space: SpaceResource; path: string }) => {
-    if (!configStore.options.routing.fullShareOwnerPaths) {
-      return true
-    }
+    return true
+    // if (!configStore.options.routing.fullShareOwnerPaths) {
+    //   return true
+    // }
 
-    const projectSpace = unref(spaces).find((s) => isProjectSpaceResource(s) && s.id === space.id)
-    const fullyAccessibleSpace =
-      space.isOwner(userStore.user) || projectSpace?.isMember(userStore.user)
+    // const projectSpace = unref(spaces).find((s) => isProjectSpaceResource(s) && s.id === space.id)
+    // const fullyAccessibleSpace =
+    //   space.isOwner(userStore.user) || projectSpace?.isMember(userStore.user)
 
-    return (
-      fullyAccessibleSpace ||
-      getMatchingMountPoints(space).some((m) => path.startsWith(m.root.remoteItem.path))
-    )
+    // return (
+    //   fullyAccessibleSpace ||
+    //   getMatchingMountPoints(space).some((m) => path.startsWith(m.root.remoteItem.path))
+    // )
   }
 
   return {

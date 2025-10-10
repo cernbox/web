@@ -331,6 +331,9 @@ export default defineComponent({
         if (!unref(currentFileContext)) {
           return null
         }
+        if (!unref(resource)) {
+          return null
+        }
         const newExtension = props.importResourceWithExtension(unref(resource))
         if (newExtension) {
           const timestamp = DateTime.local().toFormat('yyyyMMddHHmmss')

@@ -648,7 +648,8 @@ export default defineComponent({
           if (!this.scrollToQuery && defaultAction.label() !== 'Download') {
             this.triggerDefaultAction({
               space: this.space,
-              resources: this.paginatedResources
+              resources: this.paginatedResources,
+              forceSameTab: true
             })
           }
         }

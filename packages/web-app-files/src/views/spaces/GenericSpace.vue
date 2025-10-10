@@ -468,7 +468,11 @@ export default defineComponent({
       resourcesViewDefaults.refreshFileListHeaderPosition()
       focusAndAnnounceBreadcrumb(sameRoute)
 
-      if (unref(openWithDefaultAppQuery) === 'true') {
+      // At CERN we want to open with default app any single file path
+      // which also includes public links (which is what this query param handles)
+      // so we added this logic on paginated resources instead
+      if (!unref(configOptions).cernFeatures && unref(openWithDefaultAppQuery) === 'true') {
+        console.log('DIOGO here', unref(configOptions).cernFeatures)
         openWithDefaultApp({
           space: unref(space),
           resource: unref(resourcesViewDefaults.selectedResources)[0]

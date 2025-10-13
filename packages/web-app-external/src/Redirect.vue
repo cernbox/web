@@ -47,7 +47,13 @@ export default defineComponent({
         return queryItemAsString(unref(appNameQuery))
       }
       if (unref(isReady)) {
-        return appProviderService.appNames?.[0]
+        if (configOptions.routing.idBased) {
+          return appProviderService.appNames?.[0]
+        } else {
+          const ext = unref(router.currentRoute).path.split('.').pop() || ''
+          return unref(appProviderService.mimeTypes).filter((mimeType) => mimeType.ext === ext)[0]
+            .default_application
+        }
       }
       return ''
     })

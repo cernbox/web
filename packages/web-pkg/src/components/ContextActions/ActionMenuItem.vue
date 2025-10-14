@@ -133,9 +133,6 @@ export default defineComponent({
         }),
         ...(unref(componentType) === 'a' && {
           href: props.action.href(props.actionOptions)
-        }),
-        ...(['router-link', 'a'].includes(unref(componentType)) && {
-          target: options.value.cernFeatures ? '_blank' : '_self'
         })
       }
     })

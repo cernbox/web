@@ -89,8 +89,10 @@ export default defineComponent({
     watch(
       date,
       () => {
-        emit('dateChanged', { date: unref(date), error: unref(isMinDateUndercut) })
-        emit('dateChanged', { date: unref(date), error: unref(isMaxDateExceeded) })
+        emit('dateChanged', {
+          date: unref(date),
+          error: unref(isMinDateUndercut) || unref(isMaxDateExceeded)
+        })
       },
       {
         deep: true

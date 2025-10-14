@@ -42,7 +42,7 @@ export const shareInviteCollaboratorHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/auth-share/'
     },
     options
   )
@@ -66,7 +66,7 @@ export const shareSpaceAddMemberHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/auth-share/'
     },
     options
   )
@@ -81,7 +81,7 @@ export const shareViaLinkHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/public-share/'
     },
     options
   )
@@ -101,7 +101,7 @@ export const shareViaIndirectLinkHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/#permissions-inheritance'
     },
     options
   )

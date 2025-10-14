@@ -1,8 +1,8 @@
 <template>
   <div class="oc-width-1-1 oc-flex oc-flex-middle oc-flex-between files-links-details">
-    <div class="oc-flex oc-flex-middle">
+    <div class="oc-flex oc-flex-middle oc-text-truncate">
       <oc-avatar-item :width="36" icon-size="medium" icon="link" name="df" />
-      <div class="files-links-name-wrapper oc-pl-s">
+      <div class="files-links-name-wrapper oc-pl-s oc-text-truncate">
         <div class="oc-flex oc-flex-middle">
           <div class="oc-text-truncate">
             <span aria-hidden="true" class="files-links-name" v-text="linkShare.displayName" />

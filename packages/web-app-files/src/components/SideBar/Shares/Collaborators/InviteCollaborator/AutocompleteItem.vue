@@ -61,7 +61,10 @@ export default {
       if (props.item.onPremisesSamAccountName) {
         return `${props.item.onPremisesSamAccountName} - ${props.item.mail}`
       }
-      return props.item.mail
+      return (
+        props.item.mail ||
+        (props.item.id.toLowerCase() === props.item.displayName?.toLowerCase() ? '' : props.item.id)
+      )
     })
 
     const externalIssuer = computed(() => {

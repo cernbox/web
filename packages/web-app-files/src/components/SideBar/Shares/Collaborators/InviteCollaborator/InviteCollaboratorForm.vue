@@ -400,6 +400,12 @@ export default defineComponent({
               })
 
               addedShares.push(share)
+
+              if (unref(notifyEnabled)) {
+                clientService.httpAuthenticated.get(
+                  `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
+                ) as any
+              }
             } catch (error) {
               console.error(error)
               errors.push({ displayName, error })

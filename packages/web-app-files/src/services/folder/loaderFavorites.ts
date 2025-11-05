@@ -14,7 +14,7 @@ export class FolderLoaderFavorites implements FolderLoader {
   }
 
   public getTask(context: TaskContext): FolderLoaderTask {
-    const { resourcesStore, clientService, spacesStore } = context
+    const { resourcesStore, clientService, spacesStore, configStore } = context
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return useTask(function* (signal1, signal2) {
@@ -25,6 +25,20 @@ export class FolderLoaderFavorites implements FolderLoader {
         spaceID: spacesStore.personalSpace.id,
         signal: signal1
       })
+
+      if (configStore.options.routing.fullShareOwnerPaths) {
+        const needMountPointsToLoad = resources.results.some((resource) => {
+          const spaceID = resource.props.fileid.split('!')[0]
+          const spaceExists = spacesStore.spaces.some((space) => space.id === spaceID)
+          return !spaceExists
+        })
+        if (needMountPointsToLoad) {
+          spacesStore.loadMountPoints({
+            graphClient: clientService.graphAuthenticated,
+            signal: signal1
+          })
+        }
+      }
 
       resources = resources.results.map(buildResource)
       resourcesStore.initResourceList({ currentFolder: null, resources })

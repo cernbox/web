@@ -94,7 +94,8 @@ import {
   useRoute,
   useRouteQuery,
   useRouter,
-  usePreviewService
+  usePreviewService,
+  useConfigStore
 } from '@ownclouders/web-pkg'
 import MediaControls from './components/MediaControls.vue'
 import MediaAudio from './components/Sources/MediaAudio.vue'
@@ -141,6 +142,7 @@ export default defineComponent({
     const contextRouteQuery = useRouteQuery('contextRouteQuery') as unknown as Ref<
       Record<string, string>
     >
+    const configStore = useConfigStore()
 
     const { isFileTypeAudio, isFileTypeImage, isFileTypeVideo } = useFileTypes()
     const previewService = usePreviewService()
@@ -316,7 +318,8 @@ export default defineComponent({
       isAutoPlayEnabled,
       preview,
       isFileTypeImage,
-      loadFileIntoCache
+      loadFileIntoCache,
+      configStore
     }
   },
 
@@ -352,7 +355,10 @@ export default defineComponent({
   methods: {
     setActiveFile(driveAliasAndItem: string) {
       for (let i = 0; i < this.filteredFiles.length; i++) {
-        if (isShareSpaceResource(unref(this.currentFileContext.space))) {
+        if (
+          !this.configStore.options.routing.fullShareOwnerPaths &&
+          isShareSpaceResource(unref(this.currentFileContext.space))
+        ) {
           // with share space resources, we don't have an underlying space, so match the file id
           if (this.filteredFiles[i].remoteItemId === this.fileId) {
             this.activeIndex = i

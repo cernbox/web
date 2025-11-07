@@ -428,6 +428,11 @@ export default defineComponent({
         return false
       }
 
+      // users should not be able to add/edit themselves
+      if (collaborator.sharedWith.id === this.user.id) {
+        return false
+      }
+
       if (isProjectSpaceResource(this.space) || isShareSpaceResource(this.space)) {
         return this.space.canShare({ user: this.user })
       }

@@ -41,8 +41,9 @@
               "
             />
             <input type="submit" class="oc-hidden" />
-          </form> </template
-      ></oc-modal>
+          </form>
+        </template>
+      </oc-modal>
       <app-loading-spinner v-if="loading" />
       <template v-else>
         <no-content-message
@@ -57,26 +58,46 @@
         </no-content-message>
         <oc-table v-else :fields="fields" :data="sortedTokens" :highlighted="lastCreatedToken">
           <template #token="rowData">
-            <div class="invite-code-wrapper oc-flex">
-              <div class="oc-text-truncate">
-                <span class="oc-text-truncate">{{ encodeInviteToken(rowData.item.token) }}</span>
+            <div class="invite-code-wrapper oc-flex oc-flex-middle">
+              <div class="oc-text-truncate oc-flex-1">
+                <span class="oc-text-truncate">{{
+                  rowData.item.tokenAtProvider || encodeInviteToken(rowData.item.token)
+                }}</span>
               </div>
               <oc-button
-                id="oc-sciencemesh-copy-token"
-                v-oc-tooltip="$gettext('Copy invite token')"
-                :aria-label="$gettext('Copy invite token')"
+                v-oc-tooltip="$gettext('Copy plain token (token@provider)')"
+                :aria-label="$gettext('Copy plain token')"
                 appearance="raw"
-                class="oc-ml-s"
-                @click="copyToken(rowData)"
+                class="oc-ml-xs"
+                @click="copyPlainToken(rowData)"
               >
                 <oc-icon name="file-copy" />
+              </oc-button>
+              <oc-button
+                v-oc-tooltip="$gettext('Copy base64 token')"
+                :aria-label="$gettext('Copy base64 token')"
+                appearance="raw"
+                class="oc-ml-xs"
+                @click="copyBase64Token(rowData)"
+              >
+                <oc-icon name="code" />
+              </oc-button>
+              <oc-button
+                v-if="rowData.item.wayfLink"
+                v-oc-tooltip="$gettext('Copy WAYF link')"
+                :aria-label="$gettext('Copy WAYF link')"
+                appearance="raw"
+                class="oc-ml-xs"
+                @click="copyWayfLink(rowData)"
+              >
+                <oc-icon name="link" />
               </oc-button>
             </div>
           </template>
           <template #link="rowData">
-            <a :href="rowData.item.link" v-text="$gettext('Link')" />
+            <a v-if="rowData.item.link" :href="rowData.item.link" v-text="$gettext('Link')" />
             <oc-button
-              id="oc-sciencemesh-copy-token"
+              v-if="rowData.item.link"
               v-oc-tooltip="$gettext('Copy invitation link')"
               :aria-label="$gettext('Copy invitation link')"
               appearance="raw"
@@ -116,6 +137,8 @@ type Token = {
   id: string
   token: string
   link?: string
+  tokenAtProvider?: string
+  wayfLink?: string
   expiration?: Date
   expirationSeconds?: number
   description?: string
@@ -186,6 +209,16 @@ export default defineComponent({
       return btoa(`${token}@${url.host}`)
     }
 
+    const getTokenAtProvider = (token: string) => {
+      const url = new URL(configStore.serverUrl)
+      return `${token}@${url.host}`
+    }
+
+    const generateWayfLink = (token: string) => {
+      const url = new URL(configStore.serverUrl)
+      return `${url.origin}/open-cloud-mesh/wayf?token=${token}`
+    }
+
     const generateToken = async () => {
       const { description } = unref(formInput)
 
@@ -208,6 +241,8 @@ export default defineComponent({
             id: tokenInfo.token,
             link: tokenInfo.invite_link,
             token: tokenInfo.token,
+            tokenAtProvider: getTokenAtProvider(tokenInfo.token),
+            wayfLink: generateWayfLink(tokenInfo.token),
             ...(tokenInfo.expiration && {
               expiration: toDateTime(tokenInfo.expiration)
             }),
@@ -224,7 +259,7 @@ export default defineComponent({
             )
           })
 
-          const quickToken = encodeInviteToken(tokenInfo.token)
+          const quickToken = getTokenAtProvider(tokenInfo.token)
           lastCreatedToken.value = quickToken
           navigator.clipboard.writeText(quickToken)
         }
@@ -246,6 +281,8 @@ export default defineComponent({
           tokens.value.push({
             id: t.token,
             token: t.token,
+            tokenAtProvider: getTokenAtProvider(t.token),
+            wayfLink: generateWayfLink(t.token),
             ...(t.expiration && {
               expiration: toDateTime(t.expiration)
             }),
@@ -265,15 +302,35 @@ export default defineComponent({
     const copyLink = (rowData: { item: { link: string; token: string } }) => {
       navigator.clipboard.writeText(rowData.item.link)
       showMessage({
-        title: $gettext('Invition link copied'),
+        title: $gettext('Invitation link copied'),
         desc: $gettext('Invitation link has been copied to your clipboard.')
       })
     }
-    const copyToken = (rowData: { item: { link: string; token: string } }) => {
-      navigator.clipboard.writeText(encodeInviteToken(rowData.item.token))
+
+    const copyPlainToken = (rowData: { item: Token }) => {
+      const plainToken = rowData.item.tokenAtProvider || getTokenAtProvider(rowData.item.token)
+      navigator.clipboard.writeText(plainToken)
       showMessage({
-        title: $gettext('Invite token copied'),
-        desc: $gettext('Invite token has been copied to your clipboard.')
+        title: $gettext('Plain token copied'),
+        desc: $gettext('Plain token has been copied to your clipboard.')
+      })
+    }
+
+    const copyBase64Token = (rowData: { item: Token }) => {
+      const base64Token = encodeInviteToken(rowData.item.token)
+      navigator.clipboard.writeText(base64Token)
+      showMessage({
+        title: $gettext('Base64 token copied'),
+        desc: $gettext('Base64 token has been copied to your clipboard.')
+      })
+    }
+
+    const copyWayfLink = (rowData: { item: Token }) => {
+      const wayfLink = rowData.item.wayfLink || generateWayfLink(rowData.item.token)
+      navigator.clipboard.writeText(wayfLink)
+      showMessage({
+        title: $gettext('WAYF link copied'),
+        desc: $gettext('WAYF link has been copied to your clipboard.')
       })
     }
     const errorPopup = (error: Error) => {
@@ -323,7 +380,9 @@ export default defineComponent({
       formInput,
       loading,
       sortedTokens,
-      copyToken,
+      copyPlainToken,
+      copyBase64Token,
+      copyWayfLink,
       copyLink,
       lastCreatedToken,
       fields,
@@ -338,8 +397,10 @@ export default defineComponent({
 <style lang="scss">
 .sciencemesh-app {
   .invite-code-wrapper {
-    width: 200px;
+    min-width: 300px;
+    max-width: 100%;
   }
+
   #invite-tokens-empty {
     height: 100%;
   }

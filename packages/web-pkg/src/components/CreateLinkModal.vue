@@ -106,7 +106,7 @@
                   isFolder
                 })
               "
-              >{{ $gettext('Copy link and password') }}
+              >{{ confirmPasswordButtonText }}
             </oc-button>
           </li>
         </oc-list>
@@ -193,6 +193,13 @@ export default defineComponent({
       return $gettext('Copy link')
     })
 
+    const confirmPasswordButtonText = computed(() => {
+      if (unref(isEmbedEnabled)) {
+        return $gettext('Share link(s) and password(s)')
+      }
+      return $gettext('Copy link and password')
+    })
+
     const passwordInputKey = ref(uuidV4())
     const roleRefs = ref<Record<string, RoleRef>>({})
 
@@ -265,12 +272,21 @@ export default defineComponent({
       const result = await createLinks()
 
       const succeeded = result.filter(({ status }) => status === 'fulfilled')
+      // **DEPRECATED**: Always emit the share url for backwards compatibility
       if (succeeded.length && unref(isEmbedEnabled)) {
         postMessage<string[]>(
           'owncloud-embed:share',
           (succeeded as PromiseFulfilledResult<LinkShare>[]).map(({ value }) => value.webUrl)
         )
       }
+      // Always emit new event with objects, include password only when copyPassword is enabled
+      postMessage<Array<{ url: string; password?: string }>>(
+        'owncloud-embed:share-links',
+        (succeeded as PromiseFulfilledResult<LinkShare>[]).map(({ value }) => ({
+          url: value.webUrl,
+          ...(options.copyPassword && { password: password.value })
+        }))
+      )
 
       const userFacingErrors: Error[] = []
       const failed = result.filter(({ status }) => status === 'rejected')
@@ -350,6 +366,7 @@ export default defineComponent({
       updatePassword,
       getLinkRoleByType,
       confirmButtonText,
+      confirmPasswordButtonText,
       isAdvancedMode,
       setAdvancedMode,
       onExpiryDateChanged,

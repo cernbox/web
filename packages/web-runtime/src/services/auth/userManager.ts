@@ -280,6 +280,15 @@ export class UserManager extends OidcUserManager {
       logger.debug('current user matches user returned from signin')
     }
 
+    // Check if this user should still be forced to use the SSO token
+    if (
+      user.profile.hasOwnProperty('cern_roles') &&
+      (user.profile.cern_roles as Array<string>).includes('force-sso-token')
+    ) {
+      console.log('CERNBox: current user has role to force use of SSO token')
+      return (super._buildUser as any)(signinResponse, verifySub)
+    }
+
     /* CERNBox customization
      * Do a call to the backend, as this will reply with the internal reva token.
      * Use that longer token in all calls to the backend (so, replace the default store token)

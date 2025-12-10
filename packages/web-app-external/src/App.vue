@@ -115,6 +115,71 @@ export default defineComponent({
       })
     }
 
+    const successfulLoad = ref(false)
+    const isAlertClosed = computed(() => {
+      return localStorage.getItem('officeAlertClosed')
+    })
+
+    const removeAlertOnSuccessfulLoad = (event: MessageEvent) => {
+      const data = JSON.parse(event.data)
+      if (data.MessageId === 'Wac_AppBootState') {
+        successfulLoad.value = true
+        if (document.getElementById('office-alert')) {
+          document.getElementById('office-alert').style.display = 'none'
+        }
+      }
+    }
+
+    const showAlert = () => {
+      const officeAlert = document.createElement('div')
+      officeAlert.id = 'office-alert'
+      const officeText = document.createElement('span')
+      officeText.innerHTML = $gettext(
+        'Having issues displaying Office files? As a workaround we recommend using Firefox, or just refreshing this page until it loads properly. More information:&nbsp;'
+      )
+      officeText.innerHTML += `<a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://cern.service-now.com/service-portal?id=outage&n=OTG0154563"
+        >
+          OTG0154563
+        </a>`
+      officeAlert.appendChild(officeText)
+      officeAlert.classList.add('oc-my-xxl', 'oc-mx-xl', 'oc-p-m', 'oc-text-center', 'oc-rounded')
+      officeAlert.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #f8d7da;
+        color: #721c1c;
+        text-align: left;
+        font-size: 14px;
+        z-index: 9999;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      `
+
+      const closeButton = document.createElement('span')
+      closeButton.innerHTML = '&times;'
+      closeButton.style.cssText = `
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+      `
+      officeAlert.appendChild(closeButton)
+
+      closeButton.onclick = () => {
+        officeAlert.style.display = 'none'
+        localStorage.setItem('officeAlertClosed', 'true')
+      }
+      setTimeout(() => {
+        if (unref(successfulLoad)) return
+        document.body.appendChild(officeAlert)
+      }, 2000)
+    }
+
     const loadAppUrl = useTask(function* (signal, viewMode: string) {
       try {
         if (!props.resource) {
@@ -203,6 +268,10 @@ export default defineComponent({
         window.addEventListener('message', catchClickMicrosoftEdit)
       } else {
         window.removeEventListener('message', catchClickMicrosoftEdit)
+      }
+      if (unref(appName) === 'MS365' && !unref(isAlertClosed)) {
+        window.addEventListener('message', removeAlertOnSuccessfulLoad)
+        showAlert()
       }
     })
 

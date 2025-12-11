@@ -46,6 +46,7 @@ import {
   isSameResource,
   useCapabilityStore,
   useConfigStore,
+  useEmbedMode,
   useMessages,
   useRequest,
   useAppProviderService,
@@ -75,6 +76,7 @@ export default defineComponent({
     const route = useRoute()
     const appProviderService = useAppProviderService()
     const { makeRequest } = useRequest()
+    const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
 
     const viewModeQuery = useRouteQuery('view_mode')
     const viewModeQueryValue = computed(() => {
@@ -287,7 +289,9 @@ export default defineComponent({
 
         let viewMode = 'view'
 
-        if (!props.isReadOnly) {
+        if (unref(isEmbedModeEnabled)) {
+          viewMode = 'embedded'
+        } else if (!props.isReadOnly) {
           viewMode = unref(viewModeQueryValue) || 'write'
 
           if (

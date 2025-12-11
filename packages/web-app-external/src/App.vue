@@ -140,7 +140,7 @@ export default defineComponent({
       officeText.innerHTML += `<a
           target="_blank"
           rel="noopener noreferrer"
-          href="https://cern.service-now.com/service-portal?id=outage&n=OTG0154563"
+          href="https://cern.service-now.com/service-portal?id=outage&n=OTG0155118"
         >
           OTG0154563
         </a>`

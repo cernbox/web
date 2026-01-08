@@ -43,7 +43,6 @@ import { useGettext } from 'vue3-gettext'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { urlJoin } from '@ownclouders/web-client'
 import {
-  isSameResource,
   useCapabilityStore,
   useConfigStore,
   useEmbedMode,
@@ -144,7 +143,7 @@ export default defineComponent({
           rel="noopener noreferrer"
           href="https://cern.service-now.com/service-portal?id=outage&n=OTG0155118"
         >
-          OTG0154563
+          OTG0155118
         </a>`
       officeAlert.appendChild(officeText)
       officeAlert.classList.add('oc-my-xxl', 'oc-mx-xl', 'oc-p-m', 'oc-text-center', 'oc-rounded')

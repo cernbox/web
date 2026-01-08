@@ -117,8 +117,11 @@ export default defineComponent({
     }
 
     const successfulLoad = ref(false)
-    const isAlertClosed = computed(() => {
+    const isOfficeAlertClosed = computed(() => {
       return localStorage.getItem('officeAlertClosed')
+    })
+    const isCollaboraModalClosed = computed(() => {
+      return localStorage.getItem('collaboraModalClosed')
     })
 
     const removeAlertOnSuccessfulLoad = (event: MessageEvent) => {
@@ -131,7 +134,7 @@ export default defineComponent({
       }
     }
 
-    const showAlert = () => {
+    const showOfficeAlert = () => {
       const officeAlert = document.createElement('div')
       officeAlert.id = 'office-alert'
       const officeText = document.createElement('span')
@@ -178,6 +181,60 @@ export default defineComponent({
       setTimeout(() => {
         if (unref(successfulLoad)) return
         document.body.appendChild(officeAlert)
+      }, 2000)
+    }
+
+    const showCollaboraModal = () => {
+      const collaboraModal = document.createElement('dialog') as HTMLDialogElement
+      collaboraModal.id = 'collabora-modal'
+      collaboraModal.innerHTML = `
+        <form method="dialog" class="oc-p-m">
+          <div class="oc-text-center oc-mb-m">
+            <img src="https://cernbox.docs.cern.ch/assets/images/logo-full.png" height="100"/>
+            <img src="https://www.collaboraonline.com/wp-content/uploads/2023/06/collabora-online-primary300-e1709657485501.png" height="100"/>
+          </div>
+          <h3>Collabora Online - Experimental Feature</h3>
+          <p>
+              The collabora integration in CERNBox is experimental and is provided for testing and evaluation purposes only.
+            (<a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://cernbox.docs.cern.ch/web/apps/collabora/"
+            >know more here</a>)
+          </p>
+          <p>
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://cern.service-now.com/service-portal?id=sc_cat_item&name=request&se=CERNBox-Service&short_description=Collabora%20feedback"
+            >Send us your feedback</a>.
+          </p>
+          <menu class="oc-flex oc-flex-center oc-m-rm oc-px-rm">
+            <button class="oc-button oc-button-m oc-button-primary oc-button-primary-filled oc-rounded oc-py-s oc-px-xxl" id="collabora-close-button">
+              ${$gettext('I understand')}
+            </button>
+          </menu>
+        </form>
+      `
+      collaboraModal.style.cssText = `
+        background-color: var(--oc-color-background-highlight);
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        width: 25vw;
+        max-width: 80vw;
+        padding: 20px;
+      `
+      const closeButton = collaboraModal.querySelector(
+        '#collabora-close-button'
+      ) as HTMLButtonElement
+      closeButton.onclick = () => {
+        console.log('Collabora modal closed')
+        localStorage.setItem('collaboraModalClosed', 'true')
+      }
+      setTimeout(() => {
+        document.body.appendChild(collaboraModal)
+        collaboraModal.showModal()
       }, 2000)
     }
 
@@ -270,9 +327,12 @@ export default defineComponent({
       } else {
         window.removeEventListener('message', catchClickMicrosoftEdit)
       }
-      if (unref(appName) === 'MS365' && !unref(isAlertClosed)) {
+      if (unref(appName) === 'MS365' && !unref(isOfficeAlertClosed)) {
         window.addEventListener('message', removeAlertOnSuccessfulLoad)
-        showAlert()
+        showOfficeAlert()
+      }
+      if (unref(appName) === 'Collabora' && !unref(isCollaboraModalClosed)) {
+        showCollaboraModal()
       }
     })
 

@@ -121,7 +121,8 @@ export default defineComponent({
       return localStorage.getItem('officeAlertClosed')
     })
     const isCollaboraModalClosed = computed(() => {
-      return localStorage.getItem('collaboraModalClosed')
+      const currentDate = new Date().toLocaleDateString()
+      return localStorage.getItem('collaboraModalClosed') === currentDate
     })
 
     const removeAlertOnSuccessfulLoad = (event: MessageEvent) => {
@@ -189,13 +190,13 @@ export default defineComponent({
       collaboraModal.id = 'collabora-modal'
       collaboraModal.innerHTML = `
         <form method="dialog" class="oc-p-m">
-          <div class="oc-text-center oc-mb-m">
+          <div class="oc-flex oc-flex-around oc-flex-middle oc-mb-m">
             <img src="https://cernbox.docs.cern.ch/assets/images/logo-full.png" height="100"/>
-            <img src="https://www.collaboraonline.com/wp-content/uploads/2023/06/collabora-online-primary300-e1709657485501.png" height="100"/>
+            <img src="https://www.collaboraonline.com/wp-content/uploads/2023/06/collabora-online-primary300-e1709657485501.png" height="70"/>
           </div>
-          <h3>Collabora Online - Experimental Feature</h3>
+          <h3>Collabora Online</h3>
           <p>
-              The collabora integration in CERNBox is experimental and is provided for testing and evaluation purposes only.
+            The Collabora integration in CERNBox is experimental, time-limited, and is provided for testing and evaluation purposes only.
             (<a
               target="_blank"
               rel="noopener noreferrer"
@@ -217,7 +218,7 @@ export default defineComponent({
         </form>
       `
       collaboraModal.style.cssText = `
-        background-color: var(--oc-color-background-highlight);
+        background-color: var(--oc-color-background-default);
         border: none;
         border-radius: 16px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -229,8 +230,9 @@ export default defineComponent({
         '#collabora-close-button'
       ) as HTMLButtonElement
       closeButton.onclick = () => {
+        const currentDate = new Date().toLocaleDateString()
         console.log('Collabora modal closed')
-        localStorage.setItem('collaboraModalClosed', 'true')
+        localStorage.setItem('collaboraModalClosed', currentDate)
       }
       setTimeout(() => {
         document.body.appendChild(collaboraModal)

@@ -196,12 +196,16 @@ export default defineComponent({
           </div>
           <h3>Collabora Online</h3>
           <p>
-            The Collabora integration in CERNBox is experimental, time-limited, and is provided for testing and evaluation purposes only.
+            The Collabora integration in CERNBox is
+              <span class="oc-text-bold oc-background-highlight">experimental</span>,
+              <span class="oc-text-bold oc-background-highlight">time-limited</span>, and is provided for
+              <span class="oc-text-bold oc-background-highlight">testing</span>
+              and <span class="oc-text-bold oc-background-highlight">evaluation purposes only</span>
             (<a
               target="_blank"
               rel="noopener noreferrer"
               href="https://cernbox.docs.cern.ch/web/apps/collabora/"
-            >know more here</a>)
+            >know more here</a>).
           </p>
           <p>
             <a

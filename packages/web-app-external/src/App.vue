@@ -226,7 +226,8 @@ export default defineComponent({
         border: none;
         border-radius: 16px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        width: 25vw;
+        min-width: min-content;
+        width: 30vw;
         max-width: 80vw;
         padding: 20px;
       `

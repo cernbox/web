@@ -260,6 +260,7 @@ import {
 } from 'vue'
 import { useWindowSize } from '@vueuse/core'
 import {
+  encodePath,
   IncomingShareResource,
   isPasswordProtectedFolderFileResource,
   isProjectSpaceResource,
@@ -646,7 +647,7 @@ export default defineComponent({
         return
       }
 
-      return action.route({ space, resources: [resource] })
+      return action.route({ space, resources: [{ ...resource, path: encodePath(resource.path) }] })
     }
 
     const isResourceInDeleteQueue = (id: string): boolean => {

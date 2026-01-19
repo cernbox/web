@@ -110,14 +110,15 @@ export class HandleUpload extends BasePlugin {
     if (!this.resourcesStore.currentFolder && unref(this.route)?.params?.token) {
       // public file drop
       const publicLinkToken = queryItemAsString(unref(this.route).params.token)
-      let endpoint = urlJoin(
+      const baseEndpoint = urlJoin(
         this.clientService.webdav.getPublicFileUrl(unref(this.space), publicLinkToken),
         { trailingSlash: true }
       )
 
       for (const file of files) {
+        let endpoint = baseEndpoint
         if (!this.uppy.getPlugin('Tus')) {
-          endpoint = urlJoin(endpoint, encodeURIComponent(file.name))
+          endpoint = urlJoin(baseEndpoint, encodeURIComponent(file.name))
         }
 
         file[this.getUploadPluginName()] = { endpoint }

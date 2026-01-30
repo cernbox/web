@@ -8,7 +8,8 @@ import {
   CapabilityStore,
   ConfigStore,
   useTokenTimerWorker,
-  AuthServiceInterface
+  AuthServiceInterface,
+  useEmbedMode
 } from '@ownclouders/web-pkg'
 import { RouteLocation, Router } from 'vue-router'
 import {
@@ -19,7 +20,7 @@ import {
   isUserContextRequired
 } from '../../router'
 import { unref } from 'vue'
-import { Ability } from '@ownclouders/web-client'
+import { Ability, urlJoin } from '@ownclouders/web-client'
 import { Language } from 'vue3-gettext'
 import { PublicLinkType } from '@ownclouders/web-client'
 import { WebWorkersStore } from '@ownclouders/web-pkg'
@@ -246,6 +247,13 @@ export class AuthService implements AuthServiceInterface {
   }
 
   public loginUser(redirectUrl?: string) {
+    const { isEnabled: isEmbedModeEnable } = useEmbedMode()
+    // if embed mode is enabled, use popup login instead of a redirect
+    if (unref(isEmbedModeEnable)) {
+      return this.userManager.signinPopup({
+        redirect_uri: urlJoin(unref(this.configStore.serverUrl), 'web-oidc-popup-callback')
+      })
+    }
     this.userManager.setPostLoginRedirectUrl(redirectUrl)
     return this.userManager.signinRedirect()
   }
@@ -298,6 +306,10 @@ export class AuthService implements AuthServiceInterface {
    */
   public async signInSilentCallback() {
     await this.userManager.signinSilentCallback(this.buildSignInCallbackUrl())
+  }
+
+  public async signInPopupCallback() {
+    await this.userManager.signinPopupCallback(this.buildSignInCallbackUrl())
   }
 
   /**

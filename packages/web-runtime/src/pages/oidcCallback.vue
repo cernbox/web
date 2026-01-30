@@ -72,6 +72,8 @@ export default defineComponent({
 
       if (unref(route).path === '/web-oidc-silent-redirect') {
         authService.signInSilentCallback()
+      } else if (unref(route).path === '/web-oidc-popup-callback') {
+        authService.signInPopupCallback()
       } else {
         authService.signInCallback()
       }

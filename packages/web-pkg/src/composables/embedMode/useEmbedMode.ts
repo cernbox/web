@@ -39,7 +39,9 @@ export const useEmbedMode = () => {
     return configStore.options.embed?.fileTypes
   })
 
-  const messagesTargetOrigin = computed(() => configStore.options.embed?.messagesOrigin)
+  const messagesTargetOrigin = computed(() => {
+    return configStore.options.embed?.messagesOrigin
+  })
 
   const isDelegatingAuthentication = computed(
     () => unref(isEnabled) && configStore.options.embed?.delegateAuthentication

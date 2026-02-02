@@ -140,15 +140,8 @@ export default defineComponent({
       officeAlert.id = 'office-alert'
       const officeText = document.createElement('span')
       officeText.innerHTML = $gettext(
-        'Having issues displaying Office files? As a workaround we recommend using Firefox, or just refreshing this page until it loads properly. More information:&nbsp;'
+        'Having connection issues displaying Office files? Try and refresh this page until it loads properly, or as workaround we suggest to use Firefox.'
       )
-      officeText.innerHTML += `<a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://cern.service-now.com/service-portal?id=outage&n=OTG0155118"
-        >
-          OTG0155118
-        </a>`
       officeAlert.appendChild(officeText)
       officeAlert.classList.add('oc-my-xxl', 'oc-mx-xl', 'oc-p-m', 'oc-text-center', 'oc-rounded')
       officeAlert.style.cssText = `

@@ -140,8 +140,15 @@ export default defineComponent({
       officeAlert.id = 'office-alert'
       const officeText = document.createElement('span')
       officeText.innerHTML = $gettext(
-        'Having connection issues displaying Office files? Try and refresh this page until it loads properly, or as workaround we suggest to use Firefox.'
+        'Having connection issues displaying Office files? Try and refresh this page until it loads properly and please&nbsp;'
       )
+      officeText.innerHTML += `<a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://cern.service-now.com/service-portal?id=sc_cat_item&name=request&se=CERNBox-Service&short_description=MS365%20issue%20feedback"
+        >
+          let us know so we can report the issue
+        </a>!`
       officeAlert.appendChild(officeText)
       officeAlert.classList.add('oc-my-xxl', 'oc-mx-xl', 'oc-p-m', 'oc-text-center', 'oc-rounded')
       officeAlert.style.cssText = `

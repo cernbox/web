@@ -127,7 +127,7 @@ export default defineComponent({
 
     const removeAlertOnSuccessfulLoad = (event: MessageEvent) => {
       const data = JSON.parse(event.data)
-      if (data.MessageId === 'Wac_AppBootState') {
+      if (data.MessageId === 'App_LoadingStatus') {
         successfulLoad.value = true
         if (document.getElementById('office-alert')) {
           document.getElementById('office-alert').style.display = 'none'

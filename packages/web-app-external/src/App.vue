@@ -211,8 +211,8 @@ export default defineComponent({
             <a
               target="_blank"
               rel="noopener noreferrer"
-              href="https://cern.service-now.com/service-portal?id=sc_cat_item&name=request&se=CERNBox-Service&short_description=Collabora%20feedback"
-            >Send us your feedback</a>.
+              href="https://indico.cern.ch/event/1652846/surveys/7168"
+            >Please provide feedback via this survey!</a>
           </p>
           <menu class="oc-flex oc-flex-center oc-m-rm oc-px-rm">
             <button class="oc-button oc-button-m oc-button-primary oc-button-primary-filled oc-rounded oc-py-s oc-px-xxl" id="collabora-close-button">

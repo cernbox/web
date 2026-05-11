@@ -1,13 +1,17 @@
 import { UserManager } from './userManager'
 import { PublicLinkManager } from './publicLinkManager'
+import { Ability, PublicLinkType } from '@ownclouders/web-client'
 import {
   AuthStore,
   ClientService,
-  UserStore,
+  AuthServiceInterface,
   CapabilityStore,
   ConfigStore,
+  isLinkedPrimaryAccountError,
   useTokenTimerWorker,
-  AuthServiceInterface
+  UserStore,
+  wasLinkedPrimaryAuthHandled,
+  WebWorkersStore
 } from '@ownclouders/web-pkg'
 import { RouteLocation, Router } from 'vue-router'
 import {
@@ -18,11 +22,10 @@ import {
   isUserContextRequired
 } from '../../router'
 import { unref } from 'vue'
-import { Ability } from '@ownclouders/web-client'
 import { Language } from 'vue3-gettext'
-import { PublicLinkType } from '@ownclouders/web-client'
-import { WebWorkersStore } from '@ownclouders/web-pkg'
 import { isSilentRedirectRoute } from '../../helpers/silentRedirect'
+
+export type AuthBlockRouteName = 'accessDenied' | 'linkedAccountBlocked'
 
 export class AuthService implements AuthServiceInterface {
   private clientService: ClientService
@@ -44,6 +47,7 @@ export class AuthService implements AuthServiceInterface {
   private accessTokenExpiryThreshold = 10
 
   public hasAuthErrorOccurred: boolean
+  public authBlockRouteName: AuthBlockRouteName = 'accessDenied'
 
   public initialize(
     configStore: ConfigStore,
@@ -60,6 +64,7 @@ export class AuthService implements AuthServiceInterface {
     this.clientService = clientService
     this.router = router
     this.hasAuthErrorOccurred = false
+    this.authBlockRouteName = 'accessDenied'
     this.ability = ability
     this.language = language
     this.userStore = userStore
@@ -166,7 +171,7 @@ export class AuthService implements AuthServiceInterface {
             await this.userManager.updateContext(user.access_token, fetchUserData)
           } catch (e) {
             console.error(e)
-            await this.handleAuthError(unref(this.router.currentRoute))
+            await this.handleAuthError(unref(this.router.currentRoute), { cause: e })
           }
         })
 
@@ -178,7 +183,7 @@ export class AuthService implements AuthServiceInterface {
           if (this.userManager.unloadReason === 'authError') {
             this.hasAuthErrorOccurred = true
             return this.router.push({
-              name: 'accessDenied',
+              name: this.authBlockRouteName,
               query: { redirectUrl: unref(this.router.currentRoute)?.fullPath }
             })
           }
@@ -193,14 +198,14 @@ export class AuthService implements AuthServiceInterface {
         })
         this.userManager.events.addSilentRenewError(async (error) => {
           console.error('Silent Renew Error：', error)
-          await this.handleAuthError(unref(this.router.currentRoute))
+          await this.handleAuthError(unref(this.router.currentRoute), { cause: error })
         })
 
         this.userManager.areEventHandlersRegistered = true
       }
 
       // This is to prevent issues in embed mode when the expired token is still saved but already expired
-      // If the following code gets executed, it would toggle errorOccurred var which would then lead to redirect to the access denied screen
+      // If the following code runs it toggles errorOccurred and leads to accessDenied / linkedAccountBlocked
       if (
         this.configStore.options.embed?.enabled &&
         this.configStore.options.embed.delegateAuthentication
@@ -228,7 +233,7 @@ export class AuthService implements AuthServiceInterface {
           }
         } catch (e) {
           console.error(e)
-          await this.handleAuthError(unref(this.router.currentRoute))
+          await this.handleAuthError(unref(this.router.currentRoute), { cause: e })
         }
       }
     }
@@ -270,7 +275,7 @@ export class AuthService implements AuthServiceInterface {
       })
     } catch (e) {
       console.warn('error during authentication:', e)
-      return this.handleAuthError(unref(this.router.currentRoute))
+      return this.handleAuthError(unref(this.router.currentRoute), { cause: e })
     }
   }
 
@@ -295,8 +300,11 @@ export class AuthService implements AuthServiceInterface {
 
   public async handleAuthError(
     route: RouteLocation,
-    { forceLogout = false }: { forceLogout?: boolean } = {}
+    { forceLogout = false, cause }: { forceLogout?: boolean; cause?: unknown } = {}
   ) {
+    if (cause !== undefined && wasLinkedPrimaryAuthHandled(cause)) {
+      return
+    }
     if (isPublicLinkContextRequired(this.router, route)) {
       const token = extractPublicLinkToken(route)
       this.publicLinkManager.clear(token)
@@ -319,14 +327,22 @@ export class AuthService implements AuthServiceInterface {
         return
       }
 
+      this.setAuthBlockRouteFromCause(cause)
       await this.userManager.removeUser('authError')
       this.tokenTimerWorker?.resetTokenTimer()
       return
     }
-    // authGuard is taking care of redirecting the user to the
-    // accessDenied page if hasAuthErrorOccurred is set to true
-    // we can't push the route ourselves, see authGuard for details.
+    // authGuard redirects via `hasAuthErrorOccurred` to `accessDenied` or `linkedAccountBlocked`
+    // when neither user nor IdP context can proceed; see setupAuthGuard.
+    this.setAuthBlockRouteFromCause(cause)
     this.hasAuthErrorOccurred = true
+  }
+
+  private setAuthBlockRouteFromCause(cause: unknown) {
+    this.authBlockRouteName =
+      cause !== undefined && isLinkedPrimaryAccountError(cause)
+        ? 'linkedAccountBlocked'
+        : 'accessDenied'
   }
 
   public async resolvePublicLink(

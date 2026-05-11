@@ -1,7 +1,7 @@
 import { registerClient } from '../services/clientRegistration'
 import { buildApplication, NextApplication } from './application'
 import { RouteLocationRaw, Router, RouteRecordNormalized } from 'vue-router'
-import { App, computed, watch } from 'vue'
+import { App, computed, watch, unref } from 'vue'
 import { loadTheme } from '../helpers/theme'
 import { createGettext, GetTextOptions, Language, Translations } from 'vue3-gettext'
 import { getBackendVersion, getWebVersion } from './versions'
@@ -566,6 +566,10 @@ export const announceAuthService = ({
     capabilityStore,
     webWorkersStore
   )
+  ;(clientService as ClientService).attachLinkedPrimaryAccountHandling((err) =>
+    authService.handleAuthError(unref(router.currentRoute), { cause: err })
+  )
+
   app.config.globalProperties.$authService = authService
   app.provide('$authService', authService)
 }

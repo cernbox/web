@@ -32,6 +32,12 @@ export class HttpClient {
     this.cancelToken.cancel(msg)
   }
 
+  public useResponseErrorInterceptor(
+    onRejected: (error: unknown) => unknown | Promise<unknown>
+  ): number {
+    return this.instance.interceptors.response.use(undefined, onRejected)
+  }
+
   public async delete<T = any, D = any, S extends z.Schema | T = T>(
     url: string,
     data?: D,

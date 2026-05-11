@@ -1,4 +1,5 @@
 import AccessDeniedPage from '../pages/accessDenied.vue'
+import LinkedAccountBlockedPage from '../pages/linkedAccountBlocked.vue'
 import Account from '../pages/account.vue'
 import LoginPage from '../pages/login.vue'
 import LogoutPage from '../pages/logout.vue'
@@ -81,6 +82,12 @@ const routes = [
     name: 'accessDenied',
     component: AccessDeniedPage,
     meta: { title: $gettext('Access denied'), authContext: 'anonymous' }
+  },
+  {
+    path: '/linked-account-blocked',
+    name: 'linkedAccountBlocked',
+    component: LinkedAccountBlockedPage,
+    meta: { title: $gettext('Account linking'), authContext: 'anonymous' }
   },
   {
     path: '/account',

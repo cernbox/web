@@ -19,11 +19,6 @@ export default defineConfig(async (args) => {
     config = _defineConfig
   }
 
-  config.server = {
-    port: 9201,
-    strictPort: true
-  }
-
   // create space component
   ;(config.resolve.alias as any)['../../components/AppBar/CreateSpace.vue'] = join(
     projectRootDir,

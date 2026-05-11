@@ -9,7 +9,12 @@
         v-if="appMenuExtensions.length && !isEmbedModeEnabled && !hideAppSwitcher"
         :menu-items="appMenuExtensions"
       />
-      <router-link v-if="!hideLogo" :to="homeLink" :target="isEmbedModeEnabled ? '_blank' : null" class="oc-width-1-1 oc-logo-href">
+      <router-link
+        v-if="!hideLogo"
+        :to="homeLink"
+        :target="isEmbedModeEnabled ? '_blank' : null"
+        class="oc-width-1-1 oc-logo-href"
+      >
         <oc-img :src="currentTheme.logo.topbar" :alt="sidebarLogoAlt" class="oc-logo-image" />
       </router-link>
     </div>
@@ -112,7 +117,7 @@ export default {
         }
       }
 
-      if (isEmbedModeEnabled) {
+      if (unref(isEmbedModeEnabled)) {
         const currentRoute = unref(router.currentRoute)
         return {
           name: currentRoute.name,

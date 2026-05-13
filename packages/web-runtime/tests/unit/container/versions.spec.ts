@@ -9,7 +9,7 @@ describe('collect version information', () => {
       process.env.PACKAGE_VERSION = '4.7.0'
     })
     it('provides the web version with a static string without exceptions', () => {
-      expect(getWebVersion()).toBe('ownCloud Web UI 4.7.0')
+      expect(getWebVersion()).toBe('CERNBox Web 4.7.0')
     })
   })
   describe('backend version', () => {
@@ -29,7 +29,7 @@ describe('collect version information', () => {
         versionstring: '10.8.0',
         edition: 'Community'
       })
-      expect(getBackendVersion({ capabilityStore })).toBe('ownCloud 10.8.0 Community')
+      expect(getBackendVersion({ capabilityStore })).toBe('Reva 10.8.0 Community')
     })
     it('provides the backend version as concatenation of product, version and edition', () => {
       const capabilityStore = versionStore({

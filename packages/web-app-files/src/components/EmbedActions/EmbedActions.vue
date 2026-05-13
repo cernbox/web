@@ -36,9 +36,9 @@
         data-testid="button-select"
         variation="inverse"
         appearance="filled"
-        :disabled="areSelectActionsDisabled"
+        :disabled="areSelectActionsDisabled || signing"
         @click="emitSelect"
-        >{{ selectLabel }}
+        >{{ signing ? $gettext('Preparing…') : selectLabel }}
       </oc-button>
     </div>
   </section>
@@ -51,11 +51,14 @@ import {
   FileAction,
   routeToContextQuery,
   useAbility,
+  useCapabilityStore,
+  useClientService,
   useEmbedMode,
   useFileActionsCreateLink,
   useResourcesStore,
   useRouter,
-  useSpacesStore
+  useSpacesStore,
+  useUserStore
 } from '@ownclouders/web-pkg'
 import { Resource } from '@ownclouders/web-client'
 import { useGettext } from 'vue3-gettext'
@@ -87,6 +90,11 @@ export default defineComponent({
       return unref(selectedResources)
     })
 
+    const capabilityStore = useCapabilityStore()
+    const clientService = useClientService()
+    const userStore = useUserStore()
+    const signing = ref(false)
+
     const { actions: createLinkActions } = useFileActionsCreateLink({ enforceModal: true })
     const createLinkAction = computed<FileAction>(() => unref(createLinkActions)[0])
 
@@ -102,20 +110,49 @@ export default defineComponent({
       return [0, unref(fileName).split('.')[0].length] as [number, number]
     })
 
-    const emitSelect = (): void => {
-      if (unref(chooseFileName)) {
-        postMessage<embedModeLocationPickMessageData>('owncloud-embed:select', {
-          resources: JSON.parse(JSON.stringify(selectedFiles.value)),
-          fileName: unref(fileName),
-          locationQuery: JSON.parse(JSON.stringify(routeToContextQuery(unref(router.currentRoute))))
-        })
+    const withSignedUrls = async (resources: Resource[]): Promise<Resource[]> => {
+      if (!capabilityStore.supportUrlSigning || !unref(space)) {
+        return resources
       }
 
-      // TODO: adjust type to embedModeLocationPickMessageData later (breaking)
-      postMessage<Resource[]>(
-        'owncloud-embed:select',
-        JSON.parse(JSON.stringify(selectedFiles.value))
+      return Promise.all(
+        resources.map(async (resource) => {
+          if (resource.type === 'folder') {
+            return resource
+          }
+          try {
+            const signedUrl = await clientService.webdav.getFileUrl(unref(space), resource, {
+              isUrlSigningEnabled: true,
+              username: userStore.user?.onPremisesSamAccountName
+            })
+            return { ...resource, downloadURL: signedUrl }
+          } catch {
+            return resource
+          }
+        })
       )
+    }
+
+    const emitSelect = async (): Promise<void> => {
+      signing.value = true
+      try {
+        const resources = await withSignedUrls(JSON.parse(JSON.stringify(selectedFiles.value)))
+
+        if (unref(chooseFileName)) {
+          postMessage<embedModeLocationPickMessageData>('owncloud-embed:select', {
+            resources,
+            fileName: unref(fileName),
+            locationQuery: JSON.parse(
+              JSON.stringify(routeToContextQuery(unref(router.currentRoute)))
+            )
+          })
+        }
+
+        // TODO: adjust type to embedModeLocationPickMessageData later (breaking)
+        postMessage<Resource[]>('owncloud-embed:select', resources)
+      } finally {
+        signing.value = false
+      }
     }
 
     const emitCancel = (): void => {
@@ -133,6 +170,7 @@ export default defineComponent({
       selectLabel,
       emitCancel,
       emitSelect,
+      signing,
       space,
       createLinkAction,
       fileName,

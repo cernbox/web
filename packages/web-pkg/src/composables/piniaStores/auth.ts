@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string>()
   const idpContextReady = ref(false)
   const userContextReady = ref(false)
+  const sessionExpired = ref(false)
   const publicLinkToken = ref<string>()
   const publicLinkPassword = ref<string>()
   const publicLinkType = ref<string>()
@@ -18,6 +19,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
   const setUserContextReady = (value: boolean) => {
     userContextReady.value = value
+  }
+  const setSessionExpired = (value: boolean) => {
+    sessionExpired.value = value
   }
   const setPublicLinkContext = (context: {
     publicLinkToken: string
@@ -50,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken,
     idpContextReady,
     userContextReady,
+    sessionExpired,
     publicLinkToken,
     publicLinkPassword,
     publicLinkType,
@@ -58,6 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
     setAccessToken,
     setIdpContextReady,
     setUserContextReady,
+    setSessionExpired,
     setPublicLinkContext,
     clearUserContext,
     clearPublicLinkContext

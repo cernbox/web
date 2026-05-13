@@ -35,6 +35,10 @@ export const useEmbedMode = () => {
     return configStore.options.embed?.target === 'file'
   })
 
+  const isInlineAttach = computed(() => {
+    return configStore.options.embed?.target === 'inline-attach'
+  })
+
   const fileTypes = computed(() => {
     return configStore.options.embed?.fileTypes
   })
@@ -75,6 +79,7 @@ export const useEmbedMode = () => {
     chooseFileName,
     chooseFileNameSuggestion,
     isFilePicker,
+    isInlineAttach,
     messagesTargetOrigin,
     isDelegatingAuthentication,
     fileTypes,

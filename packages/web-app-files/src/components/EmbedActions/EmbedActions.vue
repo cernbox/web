@@ -1,5 +1,5 @@
 <template>
-  <section class="files-embed-actions oc-width-1-1 oc-flex oc-flex-middle oc-flex-between oc-my-s">
+  <section v-if="!isInlineAttach" class="files-embed-actions oc-width-1-1 oc-flex oc-flex-middle oc-flex-between oc-my-s">
     <oc-text-input
       v-if="chooseFileName"
       v-model="fileName"
@@ -45,7 +45,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, unref } from 'vue'
+import { computed, defineComponent, onMounted, onUnmounted, ref, unref } from 'vue'
 import {
   embedModeLocationPickMessageData,
   FileAction,
@@ -71,6 +71,8 @@ export default defineComponent({
     const {
       isLocationPicker,
       isFilePicker,
+      isInlineAttach,
+      messagesTargetOrigin,
       postMessage,
       chooseFileName,
       chooseFileNameSuggestion
@@ -87,7 +89,11 @@ export default defineComponent({
         return [unref(currentFolder)]
       }
 
-      return unref(selectedResources)
+      const resources = unref(selectedResources)
+      if (isInlineAttach.value) {
+        return resources.filter((r) => !r.isFolder)
+      }
+      return resources
     })
 
     const capabilityStore = useCapabilityStore()
@@ -159,6 +165,19 @@ export default defineComponent({
       postMessage<null>('owncloud-embed:cancel', null)
     }
 
+    const handleRequestSelection = (event: MessageEvent): void => {
+      if (unref(messagesTargetOrigin) && event.origin !== unref(messagesTargetOrigin)) {
+        return
+      }
+      if (event.data?.name !== 'owncloud-embed:request-selection') {
+        return
+      }
+      emitSelect()
+    }
+
+    onMounted(() => window.addEventListener('message', handleRequestSelection))
+    onUnmounted(() => window.removeEventListener('message', handleRequestSelection))
+
     return {
       chooseFileName,
       chooseFileNameSuggestion,
@@ -167,6 +186,7 @@ export default defineComponent({
       canCreatePublicLinks,
       isLocationPicker,
       isFilePicker,
+      isInlineAttach,
       selectLabel,
       emitCancel,
       emitSelect,

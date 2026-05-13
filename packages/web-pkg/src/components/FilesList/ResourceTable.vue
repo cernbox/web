@@ -63,7 +63,7 @@
         :label="getResourceCheckboxLabel(item)"
         :label-hidden="true"
         size="large"
-        :disabled="isResourceDisabled(item)"
+        :disabled="isResourceDisabled(item) || (isInlineAttach && item.isFolder)"
         :model-value="isResourceSelected(item)"
         :outline="isLatestSelectedItem(item)"
         @click.stop="toggleSelection(item.id)"
@@ -547,6 +547,7 @@ export default defineComponent({
     const {
       isLocationPicker,
       isFilePicker,
+      isInlineAttach,
       postMessage,
       isEnabled: isEmbedModeEnabled,
       fileTypes: embedModeFileTypes
@@ -683,6 +684,7 @@ export default defineComponent({
       ...folderLinkUtils,
       postMessage,
       isFilePicker,
+      isInlineAttach,
       isLocationPicker,
       isEmbedModeEnabled,
       emitSelect,
@@ -1142,7 +1144,11 @@ export default defineComponent({
       }
       this.emitSelect(
         this.resources
-          .filter((resource) => !this.disabledResources.includes(resource.id))
+          .filter(
+            (resource) =>
+              !this.disabledResources.includes(resource.id) &&
+              !(this.isInlineAttach && resource.isFolder)
+          )
           .map((resource) => resource.id)
       )
     },

@@ -405,15 +405,23 @@ export default defineComponent({
     })
 
     const isPastingIntoSameFolder = computed(() => {
-      if (!unref(clipboardResources) || unref(clipboardResources).length < 1) {
+      const resources = unref(clipboardResources)
+      if (!resources || resources.length < 1) {
         return false
       }
 
+      // Prevent pasting when all resources are already in the current folder
+      const currentFolderId = unref(currentFolder)?.id
+      if (currentFolderId && resources.every((r) => r.parentFolderId === currentFolderId)) {
+        return true
+      }
+
+      // Prevent recursive paste (pasting a folder into its own descendant)
       const ancestors = Object.values(resourcesStore.ancestorMetaData).filter(
         (ancestor) => ancestor.id
       )
 
-      return ancestors.some((ancestor) => ancestor.id === unref(clipboardResources)[0].id)
+      return ancestors.some((ancestor) => ancestor.id === resources[0].id)
     })
 
     const isPasteHereButtonDisabled = computed(() => {

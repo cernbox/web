@@ -9,7 +9,7 @@ import {
   extractNameWithoutExtension
 } from '../../../../src/helpers'
 import { DavPermission, DavProperty } from '../../../../src/webdav/constants'
-import { HIDDEN_FILE_EXTENSIONS } from '@ownclouders/web-pkg'
+import { HIDDEN_FILE_EXTENSIONS } from '../../../../src/helpers/resource/constants'
 
 describe('extractDomSelector', () => {
   it.each([
@@ -82,14 +82,22 @@ describe('filterResources', () => {
   })
 })
 
+const buildMockWebDavResponse = (
+  props: Record<string, unknown>,
+  basename = 'file.txt'
+): WebDavResponseResource =>
+  mockDeep<WebDavResponseResource>({
+    filename: `/files/user/${basename}`,
+    basename,
+    props
+  })
+
 describe('buildResource', () => {
   describe('canShare', () => {
     it('is true when ability and share permissions are given', () => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          [DavProperty.Permissions]: DavPermission.Shareable,
-          [DavProperty.Tags]: undefined
-        }
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]: DavPermission.Shareable,
+        [DavProperty.Tags]: undefined
       })
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
@@ -98,11 +106,9 @@ describe('buildResource', () => {
       expect(ability.can).toHaveBeenCalledWith('create-all', 'Share')
     })
     it('is false when ability is not given', () => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          [DavProperty.Permissions]: DavPermission.Shareable,
-          [DavProperty.Tags]: undefined
-        }
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]: DavPermission.Shareable,
+        [DavProperty.Tags]: undefined
       })
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
@@ -111,11 +117,9 @@ describe('buildResource', () => {
       expect(ability.can).toHaveBeenCalledWith('create-all', 'Share')
     })
     it('is false when share permissions are not given', () => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          [DavProperty.Permissions]: '',
-          [DavProperty.Tags]: undefined
-        }
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]: '',
+        [DavProperty.Tags]: undefined
       })
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
@@ -128,18 +132,15 @@ describe('buildResource', () => {
   it.each(HIDDEN_FILE_EXTENSIONS)(
     'should disable all permission excluding canBeDeleted when extension is %s',
     (extension) => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          name: `forest.${extension}`,
-          [DavProperty.Permissions]:
-            DavPermission.Shareable +
-            DavPermission.Renameable +
-            DavPermission.Updateable +
-            DavPermission.FileUpdateable +
-            DavPermission.Deletable,
-          [DavProperty.Tags]: undefined
-        }
-      })
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]:
+          DavPermission.Shareable +
+          DavPermission.Renameable +
+          DavPermission.Updateable +
+          DavPermission.FileUpdateable +
+          DavPermission.Deletable,
+        [DavProperty.Tags]: undefined
+      }, `forest.${extension}`)
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
       ability.can.mockReturnValue(true)

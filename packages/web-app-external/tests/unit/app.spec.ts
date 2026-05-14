@@ -2,6 +2,7 @@ import { mock } from 'vitest-mock-extended'
 import { defaultComponentMocks, defaultPlugins, shallowMount } from '@ownclouders/web-test-helpers'
 import { AppProviderService, useRequest, useRoute } from '@ownclouders/web-pkg'
 import { ref } from 'vue'
+import { flushPromises } from '@vue/test-utils'
 
 import { Resource } from '@ownclouders/web-client'
 import App from '../../src/App.vue'
@@ -53,9 +54,7 @@ describe('The app provider extension', () => {
     })
 
     const { wrapper } = createShallowMountWrapper(makeRequest)
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
+    await flushPromises()
     expect(wrapper.html()).toMatchSnapshot()
   })
   it('should be able to load an iFrame via post', async () => {
@@ -65,9 +64,7 @@ describe('The app provider extension', () => {
       data: providerSuccessResponsePost
     })
     const { wrapper } = createShallowMountWrapper(makeRequest)
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
+    await flushPromises()
     expect(wrapper.html()).toMatchSnapshot()
   })
 })

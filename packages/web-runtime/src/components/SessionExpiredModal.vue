@@ -1,7 +1,9 @@
 <template>
   <div v-if="sessionExpired" class="session-expired-overlay">
     <div class="oc-login-card session-expired-card">
-      <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
+      <router-link to="/" aria-label="Home">
+        <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
+      </router-link>
       <div class="oc-login-card-body oc-width-medium">
         <h2 class="oc-login-card-title" v-text="$gettext('Session expired')" />
         <p
@@ -36,7 +38,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, onUnmounted, ref } from 'vue'
-import { useAuthService, useAuthStore, useThemeStore } from '@ownclouders/web-pkg'
+import { useAuthService, useAuthStore, useRouter, useThemeStore } from '@ownclouders/web-pkg'
 import { storeToRefs } from 'pinia'
 
 export default defineComponent({
@@ -53,10 +55,21 @@ export default defineComponent({
     const logoImg = computed(() => currentTheme.value?.logo?.login)
     const footerSlogan = computed(() => currentTheme.value?.common?.slogan)
 
+    const router = useRouter()
+
+    const authRoutes = new Set([
+      'login', 'logout', 'oidcCallback', 'oidcSilentRedirect', 'oidcPopupCallback', 'accessDenied'
+    ])
+
     const dismiss = () => {
       reconnecting.value = false
       popupBlocked.value = false
       authStore.setSessionExpired(false)
+      // If reconnect succeeded while on a transient auth page, go home
+      const currentName = router.currentRoute.value?.name as string
+      if (authRoutes.has(currentName)) {
+        router.replace('/')
+      }
     }
 
     const handleStorageEvent = (event: StorageEvent) => {

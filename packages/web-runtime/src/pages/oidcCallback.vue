@@ -7,7 +7,9 @@
 
   <!-- Normal / silent redirect: existing login card -->
   <div v-else class="oc-login-card oc-position-center">
-    <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
+    <router-link to="/" aria-label="Home">
+      <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
+    </router-link>
     <div v-show="error" class="oc-login-card-body">
       <h2 v-translate class="oc-login-card-title">Authentication failed</h2>
       <p v-translate>Please contact the administrator if this error persists.</p>

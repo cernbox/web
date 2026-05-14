@@ -367,21 +367,16 @@ export class AuthService implements AuthServiceInterface {
       })
     }
 
-    if (isUserContextRequired(this.router, route) || isIdpContextRequired(this.router, route)) {
+    // If the user context was never established (startup or login failure),
+    // navigate to the access denied page with an appropriate message rather
+    // than showing the "session expired" modal which implies a prior session.
+    if (!this.authStore.userContextReady) {
       this.tokenTimerWorker?.resetTokenTimer()
-
-      // Only show the modal when the session was already active.
-      // On initial page load the context is not ready yet, so we let the
-      // auth guard redirect to /login (full SSO redirect in normal mode,
-      // popup page in embed mode) as usual.
-      if (!this.authStore.userContextReady) {
-        return
-      }
-
-      this.authStore.setSessionExpired(true)
-      return
+      return this.router.push({ name: 'accessDenied', query: { reason: 'loginError' } })
     }
 
+    // User WAS logged in — this is a mid-session auth failure.
+    this.tokenTimerWorker?.resetTokenTimer()
     this.authStore.setSessionExpired(true)
   }
 

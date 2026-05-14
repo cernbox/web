@@ -42,11 +42,28 @@ export default defineComponent({
 
     const login = async () => {
       clicked.value = true
+
+      // BroadcastChannel handles the COOP fallback where window.opener is null
+      const bc = new BroadcastChannel('oc_oidc_popup_complete')
+      const coopFallback = new Promise<void>((resolve) => {
+        bc.addEventListener('message', async (e) => {
+          if (e.data?.type === 'complete') {
+            bc.close()
+            await authService.reloadUserFromStorage()
+            resolve()
+          }
+        })
+      })
+
       try {
-        await authService.loginUser(queryItemAsString(unref(redirectUrl)))
-        // Popup flow doesn't redirect automatically — navigate to the original target
+        await Promise.race([
+          authService.loginUser(queryItemAsString(unref(redirectUrl))),
+          coopFallback
+        ])
+        bc.close()
         router.replace(queryItemAsString(unref(redirectUrl)) || '/')
       } catch {
+        bc.close()
         // popup was blocked or dismissed — hint is already visible via clicked.value
       }
     }

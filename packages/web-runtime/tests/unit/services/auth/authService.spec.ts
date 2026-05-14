@@ -153,4 +153,61 @@ describe('AuthService', () => {
       expect(mockUpdateContext).toHaveBeenCalledWith('access-token', true)
     })
   })
+
+  describe('signInCallbackForCOOPFallback', () => {
+    it('processes redirect callback and broadcasts completion', async () => {
+      const authService = new AuthService()
+      const signinRedirectCallbackMock = vi.fn().mockResolvedValue(undefined)
+
+      Object.defineProperty(authService, 'userManager', {
+        value: mock<UserManager>({ signinRedirectCallback: signinRedirectCallbackMock })
+      })
+
+      const broadcastMock = { postMessage: vi.fn(), close: vi.fn() }
+      vi.stubGlobal('BroadcastChannel', vi.fn(() => broadcastMock))
+
+      initAuthService({ authService })
+      await authService.signInCallbackForCOOPFallback()
+
+      expect(signinRedirectCallbackMock).toHaveBeenCalledWith(window.location.href)
+      expect(broadcastMock.postMessage).toHaveBeenCalledWith({ type: 'complete' })
+      expect(broadcastMock.close).toHaveBeenCalled()
+
+      vi.unstubAllGlobals()
+    })
+  })
+
+  describe('reloadUserFromStorage', () => {
+    it('reads user from storage and calls updateContext', async () => {
+      const authService = new AuthService()
+
+      Object.defineProperty(authService, 'userManager', {
+        value: mock<UserManager>({
+          getUser: vi.fn().mockResolvedValue({ access_token: 'new-token' }),
+          updateContext: mockUpdateContext
+        })
+      })
+
+      initAuthService({ authService })
+      await authService.reloadUserFromStorage()
+
+      expect(mockUpdateContext).toHaveBeenCalledWith('new-token', true)
+    })
+
+    it('does nothing when no user in storage', async () => {
+      const authService = new AuthService()
+
+      Object.defineProperty(authService, 'userManager', {
+        value: mock<UserManager>({
+          getUser: vi.fn().mockResolvedValue(null),
+          updateContext: mockUpdateContext
+        })
+      })
+
+      initAuthService({ authService })
+      await authService.reloadUserFromStorage()
+
+      expect(mockUpdateContext).not.toHaveBeenCalled()
+    })
+  })
 })

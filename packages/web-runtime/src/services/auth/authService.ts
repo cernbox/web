@@ -321,6 +321,29 @@ export class AuthService implements AuthServiceInterface {
   }
 
   /**
+   * COOP fallback for popup callback when window.opener is null.
+   * Processes the auth code via the redirect flow, then signals the opener
+   * via BroadcastChannel (same-origin, not affected by COOP).
+   */
+  public async signInCallbackForCOOPFallback() {
+    await this.userManager.signinRedirectCallback(window.location.href)
+    const bc = new BroadcastChannel('oc_oidc_popup_complete')
+    bc.postMessage({ type: 'complete' })
+    bc.close()
+  }
+
+  /**
+   * Called by the opener after BroadcastChannel signals popup completed.
+   * Re-reads the user from storage and updates the auth context.
+   */
+  public async reloadUserFromStorage() {
+    const user = await this.userManager.getUser()
+    if (user?.access_token) {
+      await this.userManager.updateContext(user.access_token, true)
+    }
+  }
+
+  /**
    * craft a url that the parser in oidc-client-ts can handle…
    */
   private buildSignInCallbackUrl() {

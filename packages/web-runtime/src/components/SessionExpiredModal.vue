@@ -76,10 +76,25 @@ export default defineComponent({
     const reconnect = async () => {
       reconnecting.value = true
       popupBlocked.value = false
+
+      // BroadcastChannel handles the COOP fallback where window.opener is null
+      const bc = new BroadcastChannel('oc_oidc_popup_complete')
+      const coopFallback = new Promise<void>((resolve) => {
+        bc.addEventListener('message', async (e) => {
+          if (e.data?.type === 'complete') {
+            bc.close()
+            await authService.reloadUserFromStorage()
+            resolve()
+          }
+        })
+      })
+
       try {
-        await authService.loginUserPopup()
+        await Promise.race([authService.loginUserPopup(), coopFallback])
+        bc.close()
         dismiss()
       } catch {
+        bc.close()
         reconnecting.value = false
         popupBlocked.value = true
       }

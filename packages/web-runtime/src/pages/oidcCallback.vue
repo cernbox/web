@@ -81,8 +81,19 @@ export default defineComponent({
         authService.signInSilentCallback()
       } else if (unref(route).path === '/web-oidc-popup-callback') {
         authService.signInPopupCallback().catch((e) => {
-          console.error('Popup callback failed:', e)
-          error.value = true
+          if (e?.message?.includes('window.opener')) {
+            // COOP: window.opener severed by SSO headers — fall back to BroadcastChannel
+            authService
+              .signInCallbackForCOOPFallback()
+              .then(() => window.close())
+              .catch((e2) => {
+                console.error('Popup COOP fallback failed:', e2)
+                error.value = true
+              })
+          } else {
+            console.error('Popup callback failed:', e)
+            error.value = true
+          }
         })
       } else {
         authService.signInCallback()

@@ -15,10 +15,5 @@ export abstract class ImageType {
   static readonly Avatar: string = 'avatar'
 }
 
-export const PASSWORD_PROTECTED_FOLDER_FILE_EXTENSION = 'psec'
-
-/**
- * List of file extensions that should be hidden from the user.
- * Hiding the extension currently leads to hiding all actions except delete.
- */
-export const HIDDEN_FILE_EXTENSIONS = [PASSWORD_PROTECTED_FOLDER_FILE_EXTENSION]
+// Re-exported from web-client where they are defined to avoid circular workspace dependency
+export { HIDDEN_FILE_EXTENSIONS, PASSWORD_PROTECTED_FOLDER_FILE_EXTENSION } from '@ownclouders/web-client'

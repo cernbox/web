@@ -160,8 +160,11 @@ describe('share helper functions', () => {
     })
     it('constructs a private link', () => {
       const serverUrl = 'https://example.com'
-      const result = buildIncomingShareResource({ driveItem, graphRoles, serverUrl })
-      expect(result.privateLink).toEqual(urlJoin(serverUrl, 'f', driveItem.remoteItem.id))
+      const item = mockDeep<DriveItem>({ id: 'driveItemId', name: 'driveItemName' })
+      item.remoteItem.webUrl = null
+      item.remoteItem.permissions = driveItem.remoteItem.permissions
+      const result = buildIncomingShareResource({ driveItem: item, graphRoles, serverUrl })
+      expect(result.privateLink).toEqual(urlJoin(serverUrl, 'f', item.remoteItem.id))
     })
   })
 
@@ -205,8 +208,12 @@ describe('share helper functions', () => {
     })
     it('constructs a private link', () => {
       const serverUrl = 'https://example.com'
-      const result = buildOutgoingShareResource({ driveItem, user, serverUrl })
-      expect(result.privateLink).toEqual(urlJoin(serverUrl, 'f', driveItem.id))
+      const item = mockDeep<DriveItem>({ id: 'driveItemId', name: 'driveItemName' })
+      item.webUrl = null
+      item.parentReference.path = ''
+      item.permissions = driveItem.permissions
+      const result = buildOutgoingShareResource({ driveItem: item, user, serverUrl })
+      expect(result.privateLink).toEqual(urlJoin(serverUrl, 'f', item.id))
     })
   })
 

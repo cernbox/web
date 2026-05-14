@@ -15,14 +15,14 @@ export const useSpaceActionsShowMembers = () => {
   }
 
   const actions = computed((): SpaceAction[] => [
-    // {
-    //   name: 'show-members',
-    //   icon: 'group',
-    //   label: () => $gettext('Members'),
-    //   handler,
-    //   isVisible: ({ resources }) => resources.length === 1 && !resources[0].disabled,
-    //   class: 'oc-files-actions-show-details-trigger'
-    // }
+    {
+      name: 'show-members',
+      icon: 'group',
+      label: () => $gettext('Members'),
+      handler,
+      isVisible: ({ resources }) => resources.length === 1 && !resources[0].disabled,
+      class: 'oc-files-actions-show-details-trigger'
+    }
   ])
 
   return {

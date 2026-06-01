@@ -40,6 +40,7 @@
 import { computed, defineComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useAuthService, useAuthStore, useRouter, useThemeStore } from '@ownclouders/web-pkg'
 import { storeToRefs } from 'pinia'
+import { loginWithPopupCoopFallback } from '../helpers/loginWithPopupCoopFallback'
 
 export default defineComponent({
   name: 'SessionExpiredModal',
@@ -90,24 +91,10 @@ export default defineComponent({
       reconnecting.value = true
       popupBlocked.value = false
 
-      // BroadcastChannel handles the COOP fallback where window.opener is null
-      const bc = new BroadcastChannel('oc_oidc_popup_complete')
-      const coopFallback = new Promise<void>((resolve) => {
-        bc.addEventListener('message', async (e) => {
-          if (e.data?.type === 'complete') {
-            bc.close()
-            await authService.reloadUserFromStorage()
-            resolve()
-          }
-        })
-      })
-
       try {
-        await Promise.race([authService.loginUserPopup(), coopFallback])
-        bc.close()
+        await loginWithPopupCoopFallback(() => authService.loginUserPopup())
         dismiss()
       } catch {
-        bc.close()
         reconnecting.value = false
         popupBlocked.value = true
       }

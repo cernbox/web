@@ -18,6 +18,7 @@
 <script lang="ts">
 import { defineComponent, ref, unref } from 'vue'
 import { authService } from '../services/auth'
+import { loginWithPopupCoopFallback } from '../helpers/loginWithPopupCoopFallback'
 import {
   AppLoadingSpinner,
   queryItemAsString,
@@ -43,28 +44,13 @@ export default defineComponent({
     const login = async () => {
       clicked.value = true
 
-      // BroadcastChannel handles the COOP fallback where window.opener is null
-      const bc = new BroadcastChannel('oc_oidc_popup_complete')
-      const coopFallback = new Promise<void>((resolve) => {
-        bc.addEventListener('message', async (e) => {
-          if (e.data?.type === 'complete') {
-            bc.close()
-            await authService.reloadUserFromStorage()
-            resolve()
-          }
-        })
-      })
-
       try {
-        await Promise.race([
-          authService.loginUser(queryItemAsString(unref(redirectUrl))),
-          coopFallback
-        ])
-        bc.close()
+        await loginWithPopupCoopFallback(() =>
+          authService.loginUser(queryItemAsString(unref(redirectUrl)))
+        )
         router.replace(queryItemAsString(unref(redirectUrl)) || '/')
       } catch {
-        bc.close()
-        // popup was blocked or dismissed — hint is already visible via clicked.value
+        // popup was blocked or dismissed, hint is already visible via clicked.value
       }
     }
 

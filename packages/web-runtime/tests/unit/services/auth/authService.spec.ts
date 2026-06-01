@@ -177,6 +177,41 @@ describe('AuthService', () => {
     })
   })
 
+  describe('handleAuthError', () => {
+    it('routes startup failures to accessDenied with loginError reason', async () => {
+      const authService = new AuthService()
+      const router = createRouter({
+        routes: [{ path: '/access-denied', name: 'accessDenied', component: { template: '<div />' } }]
+      })
+      const pushSpy = vi.spyOn(router, 'push')
+
+      initAuthService({ authService, router })
+      const authStore = useAuthStore()
+      authStore.userContextReady = false
+
+      await authService.handleAuthError(mock<RouteLocation>({ name: 'files' }))
+
+      expect(pushSpy).toHaveBeenCalledWith({
+        name: 'accessDenied',
+        query: { reason: 'loginError' }
+      })
+    })
+
+    it('shows session expired modal for mid-session failures', async () => {
+      const authService = new AuthService()
+      const router = createRouter()
+
+      initAuthService({ authService, router })
+      const authStore = useAuthStore()
+      authStore.userContextReady = true
+
+      await authService.handleAuthError(mock<RouteLocation>({ name: 'files' }))
+
+      // createTestingPinia stubs actions, so assert the action was invoked
+      expect(authStore.setSessionExpired).toHaveBeenCalledWith(true)
+    })
+  })
+
   describe('reloadUserFromStorage', () => {
     it('reads user from storage and calls updateContext', async () => {
       const authService = new AuthService()

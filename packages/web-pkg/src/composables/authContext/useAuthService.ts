@@ -8,6 +8,7 @@ export interface AuthServiceInterface {
   getRefreshToken(): Promise<string>
   showSessionExpiredModal(): void
   loginUserPopup(): Promise<unknown>
+  reloadUserFromStorage(): Promise<void>
 }
 
 export const useAuthService = (): AuthServiceInterface => {

@@ -1,5 +1,5 @@
 import { defaultPlugins, shallowMount, createTestingPinia } from '@ownclouders/web-test-helpers'
-import { flushPromises, nextTick } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import SessionExpiredModal from '../../../src/components/SessionExpiredModal.vue'
 import { useAuthService, useAuthStore } from '@ownclouders/web-pkg'
 
@@ -49,13 +49,17 @@ describe('SessionExpiredModal', () => {
   })
 
   it('reconnect: shows popup-blocked hint when popup throws', async () => {
+    vi.useFakeTimers()
     mockAuthService.loginUserPopup.mockRejectedValue(new Error('Popup blocked'))
     const { wrapper } = getWrapper({ sessionExpired: true })
 
     await wrapper.find('oc-button-stub').trigger('click')
+    // popup rejection waits for the COOP grace period before surfacing the failure
+    await vi.advanceTimersByTimeAsync(2000)
     await flushPromises()
 
     expect(wrapper.text()).toContain('Popup was blocked')
+    vi.useRealTimers()
   })
 
   it('dismisses when storage event signals another tab refreshed the token', async () => {

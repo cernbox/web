@@ -264,7 +264,7 @@ export default defineComponent({
     const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
     const performLoaderTask = async () => {
       await loadResourcesTask.perform()
-      scrollToResourceFromRoute(unref(items), 'files-app-bar')
+      scrollToResourceFromRoute(unref(sortedFilteredItems), 'files-app-bar')
       if (queryItemAsString(unref(openWithDefaultAppQuery)) === 'true') {
         openWithDefaultApp({
           space: unref(selectedShareSpace),

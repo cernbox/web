@@ -7,7 +7,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, ref, unref, watchEffect } from 'vue'
-import { useRoute, useRouter, useSpacesStore } from '@ownclouders/web-pkg'
+import { useRoute, useRouter, useSpacesLoading, useSpacesStore } from '@ownclouders/web-pkg'
 import { AppLoadingSpinner } from '@ownclouders/web-pkg'
 import { urlJoin } from '@ownclouders/web-client'
 import { createFileRouteOptions } from '@ownclouders/web-pkg'
@@ -34,10 +34,19 @@ export default defineComponent({
     const router = useRouter()
     const route = useRoute()
     const spacesStore = useSpacesStore()
+    const { areSpacesLoading } = useSpacesLoading()
     const showNotFound = ref(false)
 
     const personalSpace = computed(() => {
       return spacesStore.spaces.find((space) => space.driveType === 'personal')
+    })
+
+    const isPersonalAlias = computed(() => {
+      return (
+        props.driveAliasAndItem.startsWith(fakePersonalDriveAlias) ||
+        props.driveAliasAndItem === 'personal' ||
+        props.driveAliasAndItem === ''
+      )
     })
 
     const itemPath = computed(() => {
@@ -45,12 +54,12 @@ export default defineComponent({
     })
 
     watchEffect(() => {
-      if (
-        (props.driveAliasAndItem.startsWith(fakePersonalDriveAlias) ||
-          props.driveAliasAndItem === 'personal' ||
-          props.driveAliasAndItem === '') &&
-        unref(personalSpace)
-      ) {
+      if (unref(areSpacesLoading)) {
+        showNotFound.value = false
+        return
+      }
+
+      if (unref(isPersonalAlias) && unref(personalSpace)) {
         showNotFound.value = false
         const { params, query } = createFileRouteOptions(unref(personalSpace), {
           path: unref(itemPath)
@@ -67,9 +76,10 @@ export default defineComponent({
           })
           // avoid NavigationDuplicated error in console
           .catch(() => {})
-      } else {
-        showNotFound.value = true
+        return
       }
+
+      showNotFound.value = !unref(isPersonalAlias) || !unref(personalSpace)
     })
 
     return { showNotFound }

@@ -567,7 +567,7 @@ export const announceAuthService = ({
     webWorkersStore
   )
   ;(clientService as ClientService).attachLinkedPrimaryAccountHandling((err) =>
-    authService.handleAuthError(unref(router.currentRoute), { cause: err })
+    authService.handleAuthError(unref(router.currentRoute), { cause: err }).then(() => undefined)
   )
 
   app.config.globalProperties.$authService = authService

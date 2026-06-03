@@ -123,7 +123,7 @@ export default {
           {text: "Only invited people can access", headline: true},
           {text: "Only people from the list \"Invited people\" can access. If there is no list, no people are invited yet."},
           {text: "Everyone with the link", headline: true },
-          {text: "Everyone with the link can access. Note: If you share this link with people from the list \"Invited people\", they need to login-in so that their individual assigned permissions can take effect. If they are not logged-in, the permissions of the link take effect." }
+          {text: "Everyone with the link can access, no login required. Open it to provide users with direct paths if needed. Users in the \"Invited people\" list should use the Direct link instead." }
         ],
         endText: "Invited persons can not see who else has access",
         readMoreLink: "https://owncloud.design"

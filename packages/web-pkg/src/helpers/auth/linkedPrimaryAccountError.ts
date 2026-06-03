@@ -1,16 +1,8 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 
 /**
- * LOCAL 4348: Linked primary account detection on identity bootstrap routes only for matching HTTP responses.
- *
- * Post-bootstrap behaviour relies on Axios response interceptors wired from runtime (`ClientService.attachLinkedPrimaryAccountHandling`)
- * on Graph, OCS, and authenticated HTTP stacks only. WebDAV and other non-Axios transports are out of scope unless backends expose the same Axios-shaped errors there.
- */
-
-/**
  * Machine-readable codes backends may return for "linked primary account"
- * on identity bootstrap routes (Graph `/me`, settings, OCS user/capabilities).
- * Align error payloads with your deployment; do not treat arbitrary 409 as this case.
+ * conflicts. These are trusted enough to use on authenticated protected endpoints.
  */
 const LINKED_PRIMARY_ERROR_CODES = new Set([
   'linkedPrimaryAccount',
@@ -112,14 +104,17 @@ export function markLinkedPrimaryAuthHandled(error: unknown): void {
   if (!axios.isAxiosError(error) || !error.config) {
     return
   }
-  ;(error.config as unknown as Record<string, unknown>)[LINKED_PRIMARY_AUTH_HANDLED_CONFIG_KEY] = true
+  ;(error.config as unknown as Record<string, unknown>)[LINKED_PRIMARY_AUTH_HANDLED_CONFIG_KEY] =
+    true
 }
 
 export function wasLinkedPrimaryAuthHandled(error: unknown): boolean {
   if (!axios.isAxiosError(error) || !error.config) {
     return false
   }
-  return !!(error.config as unknown as Record<string, unknown>)[LINKED_PRIMARY_AUTH_HANDLED_CONFIG_KEY]
+  return !!(error.config as unknown as Record<string, unknown>)[
+    LINKED_PRIMARY_AUTH_HANDLED_CONFIG_KEY
+  ]
 }
 
 /**
@@ -142,8 +137,8 @@ export function attachLinkedPrimaryAccountResponseInterceptor(
 }
 
 /**
- * True when the response matches the linked-primary contract on an identity
- * bootstrap URL (so unrelated WebDAV or editor 409s are excluded).
+ * True when a protected Axios response matches the linked-primary contract.
+ * Header and code are trusted signals; message matching stays limited to bootstrap URLs.
  */
 export function isLinkedPrimaryAccountError(err: unknown): boolean {
   if (!axios.isAxiosError(err)) {
@@ -154,9 +149,6 @@ export function isLinkedPrimaryAccountError(err: unknown): boolean {
     return false
   }
   const path = resolveRequestPath(ae.config)
-  if (!isIdentityBootstrapRequestUrl(path)) {
-    return false
-  }
   if (readLinkedPrimaryHeader(ae.response.headers)) {
     return true
   }
@@ -164,5 +156,5 @@ export function isLinkedPrimaryAccountError(err: unknown): boolean {
   if (code && LINKED_PRIMARY_ERROR_CODES.has(code)) {
     return true
   }
-  return messageSuggestsLinkedPrimary(ae.response.data)
+  return isIdentityBootstrapRequestUrl(path) && messageSuggestsLinkedPrimary(ae.response.data)
 }

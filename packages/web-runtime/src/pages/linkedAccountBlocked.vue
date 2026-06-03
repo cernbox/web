@@ -8,6 +8,7 @@
         <div v-if="linkedAccountDocUrl || linkedAccountPortalUrl" class="oc-mt-m">
           <oc-button
             v-if="linkedAccountDocUrl"
+            data-testid="linked-account-doc-link"
             type="a"
             appearance="raw"
             :href="linkedAccountDocUrl"
@@ -18,6 +19,7 @@
           </oc-button>
           <oc-button
             v-if="linkedAccountPortalUrl"
+            data-testid="linked-account-portal-link"
             type="a"
             appearance="raw"
             class="oc-mt-s"
@@ -59,6 +61,10 @@ import {
   useThemeStore
 } from '@ownclouders/web-pkg'
 
+const DEFAULT_LINKED_ACCOUNT_DOC_URL =
+  'https://auth.docs.cern.ch/user-documentation/verified-guest/'
+const DEFAULT_LINKED_ACCOUNT_PORTAL_URL = 'https://account.cern.ch/account/'
+
 export default defineComponent({
   name: 'LinkedAccountBlockedPage',
   setup() {
@@ -72,13 +78,15 @@ export default defineComponent({
     const footerSlogan = computed(() => currentTheme.value.common.slogan)
     const logoImg = computed(() => currentTheme.value.logo.login)
 
-    const linkedAccountDocUrl = computed(() => configStore.options.linkedAccount?.docUrl || '')
+    const linkedAccountDocUrl = computed(
+      () => configStore.options.linkedAccount?.docUrl || DEFAULT_LINKED_ACCOUNT_DOC_URL
+    )
     const linkedAccountPortalUrl = computed(() => {
       const explicit = configStore.options.linkedAccount?.userPortalUrl
       if (explicit) {
         return explicit
       }
-      return configStore.options.accountEditLink?.href || ''
+      return configStore.options.accountEditLink?.href || DEFAULT_LINKED_ACCOUNT_PORTAL_URL
     })
 
     const cardTitle = computed(() => {

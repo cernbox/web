@@ -37,10 +37,10 @@ describe('isLinkedPrimaryAccountError', () => {
     expect(isLinkedPrimaryAccountError(new Error('oops'))).toBe(false)
   })
 
-  it('returns false for 409 on non-bootstrap URLs', () => {
+  it('returns false for 409 without linked-primary signal', () => {
     const error = err409({
       url: '/remote.php/dav/files/foo',
-      data: { error: { code: 'linkedPrimaryAccount' } }
+      data: { error: { code: 'resourceAlreadyExists' } }
     })
     expect(isLinkedPrimaryAccountError(error)).toBe(false)
   })
@@ -65,6 +65,23 @@ describe('isLinkedPrimaryAccountError', () => {
     const error = err409({
       data: {},
       headers: { 'x-oc-linked-primary-account': 'true' }
+    })
+    expect(isLinkedPrimaryAccountError(error)).toBe(true)
+  })
+
+  it('returns true for trusted linked-primary header on protected endpoint URLs', () => {
+    const error = err409({
+      url: '/api/v0/storage/spaces',
+      data: {},
+      headers: { 'x-oc-linked-primary-account': 'true' }
+    })
+    expect(isLinkedPrimaryAccountError(error)).toBe(true)
+  })
+
+  it('returns true for linked-primary code on protected endpoint URLs', () => {
+    const error = err409({
+      url: '/api/v0/storage/spaces',
+      data: { error: { code: 'linkedPrimaryAccount' } }
     })
     expect(isLinkedPrimaryAccountError(error)).toBe(true)
   })
@@ -112,6 +129,19 @@ describe('isLinkedPrimaryAccountError', () => {
     })
     expect(isLinkedPrimaryAccountError(error)).toBe(true)
   })
+
+  it('returns false when only error.message suggests linked primary on non-bootstrap URLs', () => {
+    const error = err409({
+      url: '/api/v0/files/some-operation',
+      data: {
+        error: {
+          code: 'unknown',
+          message: 'Your linked primary account cannot access this application'
+        }
+      }
+    })
+    expect(isLinkedPrimaryAccountError(error)).toBe(false)
+  })
 })
 
 describe('linkedPrimaryAuthHandled marker', () => {
@@ -151,7 +181,7 @@ describe('attachLinkedPrimaryAccountResponseInterceptor', () => {
     const onRejected = useSpy.mock.calls[0][1] as (err: unknown) => Promise<unknown>
     const rejection = err409({
       url: '/remote.php/dav/files/foo',
-      data: { error: { code: 'linkedPrimaryAccount' } }
+      data: { error: { code: 'resourceAlreadyExists' } }
     })
 
     await expect(onRejected(rejection)).rejects.toBe(rejection)

@@ -6,7 +6,13 @@ exports[`linked account blocked page > renders component 1`] = `
     <div class="oc-login-card-body oc-width-medium">
       <h2 class="oc-login-card-title">Sign-in blocked</h2>
       <p>You signed in with an identity that is linked as a primary account elsewhere. This application cannot be used with that account until it is unlinked.</p>
-      <!--v-if-->
+      <div class="oc-mt-m"><a href="https://auth.docs.cern.ch/user-documentation/verified-guest/" target="_blank" class="oc-button oc-rounded oc-button-m oc-button-justify-content-center oc-button-gap-m oc-button-passive oc-button-passive-raw" data-testid="linked-account-doc-link" rel="noopener noreferrer">
+          <!--v-if-->
+          <!-- @slot Content of the button --> <span>Read documentation</span>
+        </a> <a href="https://account.cern.ch/account/" target="_blank" class="oc-button oc-rounded oc-button-m oc-button-justify-content-center oc-button-gap-m oc-button-passive oc-button-passive-raw oc-mt-s" data-testid="linked-account-portal-link" rel="noopener noreferrer">
+          <!--v-if-->
+          <!-- @slot Content of the button --> <span>Open user portal to unlink</span>
+        </a></div>
     </div>
     <div class="oc-login-card-footer oc-pt-rm">
       <p>ownCloud – A safe home for all your data</p>

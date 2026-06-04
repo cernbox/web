@@ -7,7 +7,7 @@
         :has-bulk-actions="true"
         :has-hidden-files="false"
         :has-file-extensions="false"
-        :has-pagination="false"
+        :has-pagination="true"
         :is-side-bar-open="isSideBarOpen"
         :view-modes="viewModes"
         :view-mode-default="FolderViewModeConstants.name.tiles"

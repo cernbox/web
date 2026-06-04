@@ -49,7 +49,6 @@
                 class="project-visibility-filter"
                 filter-name="projectVisibility"
                 :filter-options="visibilityOptions"
-                @toggle-filter="setVisibilityOption"
               />
               <!--<item-filter
                 :allow-multiple="true"
@@ -245,7 +244,7 @@ import {
 import { orderBy } from 'lodash-es'
 import { useResourcesViewDefaults } from '../../composables'
 import { folderViewsProjectSpacesExtensionPoint } from '../../extensionPoints'
-import { ItemFilterInline, InlineFilterOption, ItemFilter } from '@ownclouders/web-pkg'
+import { ItemFilterInline, ItemFilter } from '@ownclouders/web-pkg'
 
 export default defineComponent({
   components: {
@@ -283,7 +282,10 @@ export default defineComponent({
     const userHasPersonalSpace = !!spacesStore.spaces.find(
       (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
     )
-    const visibilityOption = ref('all')
+    const visibilityOption = useRouteQueryPersisted({
+      name: 'q_projectVisibility',
+      defaultValue: 'all'
+    })
     const storageTypeQuery = useRouteQuery('q_storageType')
 
     const visibilityOptions = computed(() => [
@@ -304,12 +306,6 @@ export default defineComponent({
         label: 'Winspaces'
       }
     ])
-
-    const setVisibilityOption = async (value: InlineFilterOption) => {
-      if (visibilityOption.value !== value.name) {
-        visibilityOption.value = value.name
-      }
-    }
 
     const loadResourcesTask = useTask(function* (signal) {
       clearResourceList()
@@ -384,8 +380,9 @@ export default defineComponent({
           selectedStorageTypes.some((type) => space.mimeType?.includes(type))
         )
       }
-      if (unref(visibilityOption) !== 'all') {
-        spaces = spaces.filter((space) => space.driveType === unref(visibilityOption))
+      const visibility = queryItemAsString(unref(visibilityOption))
+      if (visibility !== 'all') {
+        spaces = spaces.filter((space) => space.driveType === visibility)
       }
 
       if (!(filterTerm || '').trim()) {
@@ -598,7 +595,6 @@ export default defineComponent({
       spacesHelpList,
       visibilityOptions,
       storageTypes,
-      setVisibilityOption,
       isProjectSpaceResource
     }
   },

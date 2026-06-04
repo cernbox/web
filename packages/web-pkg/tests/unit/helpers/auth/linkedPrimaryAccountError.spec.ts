@@ -2,6 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import {
   attachLinkedPrimaryAccountResponseInterceptor,
+  createLinkedPrimaryRejectionHandler,
   isLinkedPrimaryAccountError,
   markLinkedPrimaryAuthHandled,
   wasLinkedPrimaryAuthHandled
@@ -150,6 +151,19 @@ describe('linkedPrimaryAuthHandled marker', () => {
     expect(wasLinkedPrimaryAuthHandled(error)).toBe(false)
     markLinkedPrimaryAuthHandled(error)
     expect(wasLinkedPrimaryAuthHandled(error)).toBe(true)
+  })
+})
+
+describe('createLinkedPrimaryRejectionHandler', () => {
+  it('invokes onDetected and marks handled for linked-primary errors', async () => {
+    const handler = vi.fn().mockResolvedValue(undefined)
+    const onRejected = createLinkedPrimaryRejectionHandler(handler)
+    const rejection = err409({})
+
+    await expect(onRejected(rejection)).rejects.toBe(rejection)
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(wasLinkedPrimaryAuthHandled(rejection)).toBe(true)
   })
 })
 

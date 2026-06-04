@@ -1,6 +1,12 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 
 /**
+ * Detects Reva's linked-primary sign-in contract: HTTP 409 with header
+ * `X-Oc-Linked-Primary-Account: true` and/or `error.code` `linkedPrimaryAccount`
+ * (see Reva `identity-auth-http-errors` documentation).
+ */
+
+/**
  * Machine-readable codes backends may return for "linked primary account"
  * conflicts. These are trusted enough to use on authenticated protected endpoints.
  */
@@ -118,7 +124,23 @@ export function wasLinkedPrimaryAuthHandled(error: unknown): boolean {
 }
 
 /**
- * Registers an Axios response interceptor: linked-primary 409 on bootstrap URLs invokes `onDetected`, then marks the error so duplicate `handleAuthError(..., { cause })` calls no-op.
+ * Axios response error handler: runs `onDetected` for linked-primary 409s and marks the
+ * error so duplicate `handleAuthError(..., { cause })` calls no-op.
+ */
+export function createLinkedPrimaryRejectionHandler(
+  onDetected: (error: unknown) => void | Promise<void>
+): (error: unknown) => Promise<unknown> {
+  return async (error: unknown) => {
+    if (isLinkedPrimaryAccountError(error)) {
+      await onDetected(error)
+      markLinkedPrimaryAuthHandled(error)
+    }
+    return Promise.reject(error)
+  }
+}
+
+/**
+ * Registers an Axios response interceptor for linked-primary 409 responses.
  */
 export function attachLinkedPrimaryAccountResponseInterceptor(
   axiosInstance: AxiosInstance,
@@ -126,13 +148,7 @@ export function attachLinkedPrimaryAccountResponseInterceptor(
 ): number {
   return axiosInstance.interceptors.response.use(
     (response) => response,
-    async (error: unknown) => {
-      if (isLinkedPrimaryAccountError(error)) {
-        await onDetected(error)
-        markLinkedPrimaryAuthHandled(error)
-      }
-      return Promise.reject(error)
-    }
+    createLinkedPrimaryRejectionHandler(onDetected)
   )
 }
 

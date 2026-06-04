@@ -13,8 +13,7 @@ import { AuthStore, ConfigStore } from '../../composables'
 import type { AxiosInstance } from 'axios'
 import {
   attachLinkedPrimaryAccountResponseInterceptor,
-  isLinkedPrimaryAccountError,
-  markLinkedPrimaryAuthHandled
+  createLinkedPrimaryRejectionHandler
 } from '../../helpers/auth/linkedPrimaryAccountError'
 
 const createFetchOptions = (authParams: AuthParameters, language: string): FetchEventSourceInit => {
@@ -119,7 +118,7 @@ export class ClientService {
   }
 
   /**
-   * Registers linked-primary 409 handling on Graph, OCS, and authenticated HTTP Axios stacks (LOCAL 4348 §4.2).
+   * Registers linked-primary 409 handling on Graph, OCS, and authenticated HTTP clients.
    * Safe to call once after runtime wires AuthService.
    */
   public attachLinkedPrimaryAccountHandling(
@@ -137,13 +136,9 @@ export class ClientService {
       attachLinkedPrimaryAccountResponseInterceptor(this.ocsAxios, handler)
     }
 
-    this.httpAuthenticatedClient.useResponseErrorInterceptor(async (error: unknown) => {
-      if (isLinkedPrimaryAccountError(error)) {
-        await handler(error)
-        markLinkedPrimaryAuthHandled(error)
-      }
-      return Promise.reject(error)
-    })
+    this.httpAuthenticatedClient.useResponseErrorInterceptor(
+      createLinkedPrimaryRejectionHandler(handler)
+    )
   }
 
   get currentLanguage() {

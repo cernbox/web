@@ -187,7 +187,15 @@ export class UserManager extends OidcUserManager {
 
   private async fetchUserInfo() {
     const graphClient = this.clientService.graphAuthenticated
-    const [graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
+    let graphUser: Awaited<ReturnType<typeof graphClient.users.getMe>>, roles: SettingsBundle[]
+    try {
+      ;[graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
+    } catch (e) {
+      if (e?.response?.status === 409) {
+        throw new ErrorResponse({ error: 'low_assurance_level' } as any)
+      }
+      throw e
+    }
     const role = await this.fetchRole({ graphUser, roles })
 
     this.userStore.setUser({
@@ -307,6 +315,10 @@ export class UserManager extends OidcUserManager {
       user.access_token = revaToken
       user.expires_at = claims.exp
     } catch (e) {
+      // We do not want to fail/raise exception here, even on 409.
+      // If we get a 409 we still want the user to be persisted, so that
+      // we can terminate the session in the SSO as well (on logout).
+      // The 409 will be catched later.
       console.error('Failed to get reva token, continue with sso one', e)
     }
     // end

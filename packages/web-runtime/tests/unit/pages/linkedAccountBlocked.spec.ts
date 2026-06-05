@@ -1,5 +1,7 @@
 import linkedAccountBlocked from '../../../src/pages/linkedAccountBlocked.vue'
+import { authService } from '../../../src/services/auth'
 import { defaultComponentMocks, defaultPlugins, mount } from '@ownclouders/web-test-helpers'
+import { vi } from 'vitest'
 
 describe('linked account blocked page', () => {
   it('renders component', () => {
@@ -50,17 +52,14 @@ describe('linked account blocked page', () => {
     )
   })
 
-  describe('"Log in again" button', () => {
-    it('navigates to "loginUrl" if set in config', () => {
-      const loginUrl = 'https://myidp.int/login'
-      const { wrapper } = getWrapper({ loginUrl })
+  describe('"Log out" button', () => {
+    it('calls authService.logoutUser when clicked', async () => {
+      const logoutUserSpy = vi.spyOn(authService, 'logoutUser').mockResolvedValue(undefined)
+      const { wrapper } = getWrapper()
 
-      const logInAgainButton = wrapper.find('#exitAnchor')
-      const loginAgainUrl = new URL(logInAgainButton.attributes().href)
-      loginAgainUrl.search = ''
+      await wrapper.find('#exitAnchor').trigger('click')
 
-      expect(logInAgainButton.exists()).toBeTruthy()
-      expect(loginAgainUrl.toString()).toEqual(loginUrl)
+      expect(logoutUserSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

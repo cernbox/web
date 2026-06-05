@@ -43,23 +43,19 @@
       size="large"
       appearance="filled"
       variation="primary"
-      v-bind="logoutButtonsAttrs"
+      @click="logout"
     >
-      {{ navigateToLoginText }}
+      {{ logoutButtonText }}
     </oc-button>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, unref } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { storeToRefs } from 'pinia'
-import {
-  queryItemAsString,
-  useConfigStore,
-  useRouteQuery,
-  useThemeStore
-} from '@ownclouders/web-pkg'
+import { useConfigStore, useThemeStore } from '@ownclouders/web-pkg'
+import { authService } from '../services/auth'
 
 const DEFAULT_LINKED_ACCOUNT_DOC_URL =
   'https://auth.docs.cern.ch/user-documentation/verified-guest/'
@@ -71,7 +67,6 @@ export default defineComponent({
     const themeStore = useThemeStore()
     const { currentTheme } = storeToRefs(themeStore)
     const configStore = useConfigStore()
-    const redirectUrlQuery = useRouteQuery('redirectUrl')
 
     const { $gettext } = useGettext()
 
@@ -97,41 +92,23 @@ export default defineComponent({
         'You signed in with an identity that is linked as a primary account elsewhere. This application cannot be used with that account until it is unlinked.'
       )
     })
-    const navigateToLoginText = computed(() => {
-      return $gettext('Log in again')
+    const logoutButtonText = computed(() => {
+      return $gettext('Log out')
     })
-    const logoutButtonsAttrs = computed(() => {
-      const redirectUrl = queryItemAsString(unref(redirectUrlQuery))
-      if (configStore.options.loginUrl) {
-        const configLoginURL = new URL(encodeURI(configStore.options.loginUrl))
-        if (redirectUrl) {
-          configLoginURL.searchParams.append('redirectUrl', redirectUrl)
-        }
-        return {
-          type: 'a',
-          href: configLoginURL.toString()
-        }
-      }
-      return {
-        type: 'router-link',
-        to: {
-          name: 'login',
-          query: {
-            ...(redirectUrl && { redirectUrl })
-          }
-        }
-      }
-    })
+
+    const logout = () => {
+      return authService.logoutUser()
+    }
 
     return {
       logoImg,
       cardTitle,
       cardHint,
       footerSlogan,
-      navigateToLoginText,
+      logoutButtonText,
       linkedAccountDocUrl,
       linkedAccountPortalUrl,
-      logoutButtonsAttrs
+      logout
     }
   }
 })

@@ -10,6 +10,11 @@ import { Language } from 'vue3-gettext'
 import { FetchEventSourceInit } from '@microsoft/fetch-event-source'
 import { sse } from '@ownclouders/web-client/sse'
 import { AuthStore, ConfigStore } from '../../composables'
+import type { AxiosInstance } from 'axios'
+import {
+  attachLinkedPrimaryAccountResponseInterceptor,
+  createLinkedPrimaryRejectionHandler
+} from '../../helpers/auth/linkedPrimaryAccountError'
 
 const createFetchOptions = (authParams: AuthParameters, language: string): FetchEventSourceInit => {
   return {
@@ -39,6 +44,9 @@ export class ClientService {
   private graphClient: Graph
   private ocsClient: OCS
   private webDavClient: WebDAV
+  private graphAxios: AxiosInstance | null = null
+  private ocsAxios: AxiosInstance | null = null
+  private linkedPrimaryInterceptorsAttached = false
 
   public initiatorId = uuidV4()
 
@@ -109,12 +117,37 @@ export class ClientService {
     return this.webDavClient
   }
 
+  /**
+   * Registers linked-primary 409 handling on Graph, OCS, and authenticated HTTP clients.
+   * Safe to call once after runtime wires AuthService.
+   */
+  public attachLinkedPrimaryAccountHandling(
+    handler: (error: unknown) => void | Promise<void>
+  ): void {
+    if (this.linkedPrimaryInterceptorsAttached) {
+      return
+    }
+    this.linkedPrimaryInterceptorsAttached = true
+
+    if (this.graphAxios) {
+      attachLinkedPrimaryAccountResponseInterceptor(this.graphAxios, handler)
+    }
+    if (this.ocsAxios) {
+      attachLinkedPrimaryAccountResponseInterceptor(this.ocsAxios, handler)
+    }
+
+    this.httpAuthenticatedClient.useResponseErrorInterceptor(
+      createLinkedPrimaryRejectionHandler(handler)
+    )
+  }
+
   get currentLanguage() {
     return this.language.current
   }
 
   private initGraphClient() {
     const axiosClient = axios.create({ headers: this.staticHeaders })
+    this.graphAxios = axiosClient
     axiosClient.interceptors.request.use((config) => {
       Object.assign(config.headers, this.getDynamicHeaders())
       return config
@@ -124,6 +157,7 @@ export class ClientService {
 
   private initOcsClient() {
     const axiosClient = axios.create({ headers: this.staticHeaders })
+    this.ocsAxios = axiosClient
     axiosClient.interceptors.request.use((config) => {
       Object.assign(config.headers, this.getDynamicHeaders())
       return config

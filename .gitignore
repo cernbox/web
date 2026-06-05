@@ -59,6 +59,9 @@ tests/report/cucumber_report.html
 # third party licenses
 /third-party-licenses
 
+# Local files (keep in repo root on any branch; do not commit)
+LOCAL_*
+
 # dev setup
 /dev/docker/ocis-ca
 /dev/docker/traefik/certificates

@@ -27,10 +27,11 @@ export const setupAuthGuard = (router: Router) => {
     await authService.initializeContext(to)
 
     // vue-router currently (4.1.6) does not cancel navigations when a new one is triggered
-    // we need to guard this case to be able to show the access denied page
+    // we need to guard this case to be able to show access denied or linked-account blocked
     // and not be redirected to the login page
     if (authService.hasAuthErrorOccurred) {
-      return to.name === 'accessDenied' || { name: 'accessDenied' }
+      const blockRoute = authService.authBlockRouteName
+      return to.name === blockRoute || { name: blockRoute }
     }
 
     if (isPublicLinkContextRequired(router, to)) {
@@ -70,10 +71,11 @@ export const setupAuthGuard = (router: Router) => {
     return true
   })
   router.afterEach((to) => {
-    if (to.name !== 'accessDenied') {
+    if (to.name !== 'accessDenied' && to.name !== 'linkedAccountBlocked') {
       return
     }
     authService.hasAuthErrorOccurred = false
+    authService.authBlockRouteName = 'accessDenied'
   })
 }
 

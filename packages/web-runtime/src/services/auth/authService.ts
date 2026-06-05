@@ -1,3 +1,4 @@
+import { ErrorResponse } from 'oidc-client-ts'
 import { UserManager } from './userManager'
 import { PublicLinkManager } from './publicLinkManager'
 import {
@@ -44,6 +45,7 @@ export class AuthService implements AuthServiceInterface {
   private accessTokenExpiryThreshold = 10
 
   public hasAuthErrorOccurred: boolean
+  public lowAssuranceError: boolean
 
   public initialize(
     configStore: ConfigStore,
@@ -60,6 +62,7 @@ export class AuthService implements AuthServiceInterface {
     this.clientService = clientService
     this.router = router
     this.hasAuthErrorOccurred = false
+    this.lowAssuranceError = false
     this.ability = ability
     this.language = language
     this.userStore = userStore
@@ -165,6 +168,10 @@ export class AuthService implements AuthServiceInterface {
           try {
             await this.userManager.updateContext(user.access_token, fetchUserData)
           } catch (e) {
+            if (this.isLowAssuranceLevelError(e)) {
+              this.lowAssuranceError = true
+              return
+            }
             console.error(e)
             await this.handleAuthError(unref(this.router.currentRoute))
           }
@@ -227,6 +234,10 @@ export class AuthService implements AuthServiceInterface {
             this.tokenTimerInitialized = true
           }
         } catch (e) {
+          if (this.isLowAssuranceLevelError(e)) {
+            this.lowAssuranceError = true
+            return
+          }
           console.error(e)
           await this.handleAuthError(unref(this.router.currentRoute))
         }
@@ -269,6 +280,10 @@ export class AuthService implements AuthServiceInterface {
         ...(redirectRoute.query && { query: redirectRoute.query })
       })
     } catch (e) {
+      if (this.isLowAssuranceLevelError(e)) {
+        this.lowAssuranceError = true
+        return this.router.push({ name: 'accessDenied', query: { reason: 'lowAssuranceLevel' } })
+      }
       console.warn('error during authentication:', e)
       return this.handleAuthError(unref(this.router.currentRoute))
     }
@@ -327,6 +342,10 @@ export class AuthService implements AuthServiceInterface {
     // accessDenied page if hasAuthErrorOccurred is set to true
     // we can't push the route ourselves, see authGuard for details.
     this.hasAuthErrorOccurred = true
+  }
+
+  private isLowAssuranceLevelError(e: unknown): boolean {
+    return e instanceof ErrorResponse && e.error === 'low_assurance_level'
   }
 
   public async resolvePublicLink(

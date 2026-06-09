@@ -278,15 +278,15 @@ export default defineComponent({
           'owncloud-embed:share',
           (succeeded as PromiseFulfilledResult<LinkShare>[]).map(({ value }) => value.webUrl)
         )
+        // Always emit new event with objects, include password only when copyPassword is enabled
+        postMessage<Array<{ url: string; password?: string }>>(
+          'owncloud-embed:share-links',
+          (succeeded as PromiseFulfilledResult<LinkShare>[]).map(({ value }) => ({
+            url: value.webUrl,
+            ...(options.copyPassword && { password: password.value })
+          }))
+        )
       }
-      // Always emit new event with objects, include password only when copyPassword is enabled
-      postMessage<Array<{ url: string; password?: string }>>(
-        'owncloud-embed:share-links',
-        (succeeded as PromiseFulfilledResult<LinkShare>[]).map(({ value }) => ({
-          url: value.webUrl,
-          ...(options.copyPassword && { password: password.value })
-        }))
-      )
 
       const userFacingErrors: Error[] = []
       const failed = result.filter(({ status }) => status === 'rejected')

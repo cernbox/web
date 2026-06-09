@@ -299,7 +299,7 @@ export default defineComponent({
       return action.route({ space, resources: [resource] })
     }
     const emitTileClick = (resource: Resource) => {
-      if (unref(isEmbedModeEnabled) && unref(isFilePicker)) {
+      if (unref(isEmbedModeEnabled) && unref(isFilePicker) && !resource.isFolder) {
         return postMessage<embedModeFilePickMessageData>('owncloud-embed:file-pick', {
           resource: JSON.parse(JSON.stringify(resource)),
           locationQuery: JSON.parse(JSON.stringify(routeToContextQuery(unref(router.currentRoute))))

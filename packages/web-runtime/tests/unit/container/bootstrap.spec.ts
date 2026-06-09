@@ -220,6 +220,26 @@ describe('announceConfiguration', () => {
     expect(configStore.options.defaultLanguage).toStrictEqual('de')
   })
 
+  it('should set delegateAuthenticationOrigin from URL query when param is present without delegateAuthentication', async () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?embed-delegate-authentication-origin=https://parent.test'
+      },
+      writable: true
+    })
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      mock<Response>({
+        status: 200,
+        json: () => Promise.resolve({ theme: '', server: '', options: {} })
+      })
+    )
+    const configStore = useConfigStore()
+    await announceConfiguration({ path: '/config.json', configStore })
+    expect(configStore.options.embed.delegateAuthenticationOrigin).toStrictEqual(
+      'https://parent.test'
+    )
+  })
+
   it('should fallback to navigator language as default language when lang in URL query does not match supported languages', async () => {
     Object.defineProperty(window, 'location', {
       value: {

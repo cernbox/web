@@ -152,10 +152,10 @@ export default defineComponent({
               JSON.stringify(routeToContextQuery(unref(router.currentRoute)))
             )
           })
+        } else {
+          // TODO: adjust type to embedModeLocationPickMessageData later (breaking)
+          postMessage<Resource[]>('owncloud-embed:select', resources)
         }
-
-        // TODO: adjust type to embedModeLocationPickMessageData later (breaking)
-        postMessage<Resource[]>('owncloud-embed:select', resources)
       } finally {
         signing.value = false
       }

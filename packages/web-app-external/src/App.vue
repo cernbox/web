@@ -250,6 +250,12 @@ export default defineComponent({
       }, 2000)
     }
 
+    const showWarningAlert = (message: string) => {
+      showAlert('warning-alert', 'warning', (content) => {
+        content.innerHTML = message
+      })
+    }
+
     const showCollaboraModal = () => {
       const collaboraModal = document.createElement('dialog') as HTMLDialogElement
       collaboraModal.id = 'collabora-modal'
@@ -371,6 +377,10 @@ export default defineComponent({
           // eslint-disable-next-line vue/valid-next-tick
           yield nextTick()
           unref(subm).click()
+        }
+
+        if (response.data.forced_viewmode_reason && response.data.forced_viewmode_reason !== '') {
+          showWarningAlert(response.data.forced_viewmode_reason)
         }
       } catch (e) {
         console.error('web-app-external error', e)

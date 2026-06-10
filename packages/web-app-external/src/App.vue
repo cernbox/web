@@ -135,36 +135,79 @@ export default defineComponent({
       }
     }
 
-    const showOfficeAlert = () => {
-      const officeAlert = document.createElement('div')
-      officeAlert.id = 'office-alert'
-      const officeText = document.createElement('span')
-      officeText.innerHTML = $gettext(
-        'Having connection issues displaying Office files? Try and refresh this page until it loads properly and please&nbsp;'
-      )
-      officeText.innerHTML += `<a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://cern.service-now.com/service-portal?id=sc_cat_item&name=request&se=CERNBox-Service&short_description=MS365%20issue%20feedback"
-        >
-          let us know so we can report the issue
-        </a>!`
-      officeAlert.appendChild(officeText)
-      officeAlert.classList.add('oc-my-xxl', 'oc-mx-xl', 'oc-p-m', 'oc-text-center', 'oc-rounded')
-      officeAlert.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: #f8d7da;
-        color: #721c1c;
+    const getAlertsContainer = () => {
+      let alertsContainer = document.getElementById('app-alerts-container')
+      if (!alertsContainer) {
+        alertsContainer = document.createElement('div')
+        alertsContainer.id = 'app-alerts-container'
+        alertsContainer.classList.add('oc-px-xl', 'oc-pt-xxl', 'oc-mt-xs')
+        alertsContainer.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+        `
+        document.body.appendChild(alertsContainer)
+      }
+      return alertsContainer
+    }
+
+    // remixicon error-warning-fill
+    const alertIcon =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z"></path></svg>'
+
+    const alertStyles = {
+      danger: {
+        background: '#f8d7da',
+        color: '#721c1c'
+      },
+      warning: {
+        background: '#fff3cd',
+        color: '#856404'
+      }
+    }
+
+    const showAlert = (
+      id: string,
+      status: keyof typeof alertStyles,
+      buildContent: (content: HTMLElement) => void,
+      onClose?: () => void
+    ) => {
+      const { background, color } = alertStyles[status]
+
+      const alert = document.createElement('div')
+      alert.id = id
+      alert.classList.add('oc-mb-xs', 'oc-p-m', 'oc-text-center', 'oc-rounded')
+      alert.style.cssText = `
+        background-color: ${background};
+        color: ${color};
         text-align: left;
         font-size: 14px;
-        z-index: 9999;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        box-shadow: 0 3px 8px 1px rgb(0 0 0 / 14%);
       `
+
+      const iconWrapper = document.createElement('span')
+      iconWrapper.innerHTML = alertIcon
+      iconWrapper.style.cssText = `
+        display: flex;
+        align-items: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+      `
+      alert.appendChild(iconWrapper)
+
+      const content = document.createElement('span')
+      content.style.cssText = `
+        flex-grow: 1;
+      `
+      buildContent(content)
+      alert.appendChild(content)
 
       const closeButton = document.createElement('span')
       closeButton.innerHTML = '&times;'
@@ -172,16 +215,38 @@ export default defineComponent({
         font-size: 20px;
         font-weight: bold;
         cursor: pointer;
+        margin-left: 12px;
+        flex-shrink: 0;
       `
-      officeAlert.appendChild(closeButton)
-
       closeButton.onclick = () => {
-        officeAlert.style.display = 'none'
-        localStorage.setItem('officeAlertClosed', 'true')
+        alert.style.display = 'none'
+        onClose?.()
       }
+      alert.appendChild(closeButton)
+
+      getAlertsContainer().appendChild(alert)
+    }
+
+    const showOfficeAlert = () => {
       setTimeout(() => {
         if (unref(successfulLoad)) return
-        document.body.appendChild(officeAlert)
+        showAlert(
+          'office-alert',
+          'danger',
+          (content) => {
+            content.innerHTML = $gettext(
+              'Having connection issues displaying Office files? Try and refresh this page until it loads properly and please&nbsp;'
+            )
+            content.innerHTML += `<a
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://cern.service-now.com/service-portal?id=sc_cat_item&name=request&se=CERNBox-Service&short_description=MS365%20issue%20feedback"
+              >
+                let us know so we can report the issue
+              </a>!`
+          },
+          () => localStorage.setItem('officeAlertClosed', 'true')
+        )
       }, 2000)
     }
 

@@ -60,8 +60,15 @@ export class UserManager extends OidcUserManager {
       prefix: storePrefix,
       store: browserStorage
     })
+    // Always use localStorage for stateStore so popup windows (same-origin)
+    // can access the PKCE state even when window.opener is severed by COOP headers.
+    const stateStore = new WebStorageStateStore({
+      prefix: storePrefix,
+      store: localStorage
+    })
     const openIdConfig: UserManagerSettings = {
       userStore,
+      stateStore,
       redirect_uri: buildUrl(router, '/oidc-callback.html'),
       silent_redirect_uri: buildUrl(router, '/oidc-silent-redirect.html'),
 

@@ -1,6 +1,15 @@
 <template>
-  <div class="oc-login-card oc-position-center">
-    <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
+  <!-- Popup window: bare page, no chrome, just status text -->
+  <div v-if="isPopupCallback" class="popup-callback">
+    <span v-if="error" v-translate>Authentication failed. Please close this window and try again.</span>
+    <span v-else v-translate>Logging you in…</span>
+  </div>
+
+  <!-- Normal / silent redirect: existing login card -->
+  <div v-else class="oc-login-card oc-position-center">
+    <router-link to="/" aria-label="Home">
+      <img class="oc-login-logo" :src="logoImg" alt="" :aria-hidden="true" />
+    </router-link>
     <div v-show="error" class="oc-login-card-body">
       <h2 v-translate class="oc-login-card-title">Authentication failed</h2>
       <p v-translate>Please contact the administrator if this error persists.</p>
@@ -72,6 +81,22 @@ export default defineComponent({
 
       if (unref(route).path === '/web-oidc-silent-redirect') {
         authService.signInSilentCallback()
+      } else if (unref(route).path === '/web-oidc-popup-callback') {
+        authService.signInPopupCallback().catch((e) => {
+          if (e?.message?.includes('window.opener')) {
+            // COOP: window.opener severed by SSO headers — fall back to BroadcastChannel
+            authService
+              .signInCallbackForCOOPFallback()
+              .then(() => window.close())
+              .catch((e2) => {
+                console.error('Popup COOP fallback failed:', e2)
+                error.value = true
+              })
+          } else {
+            console.error('Popup callback failed:', e)
+            error.value = true
+          }
+        })
       } else {
         authService.signInCallback()
       }
@@ -86,11 +111,27 @@ export default defineComponent({
       window.removeEventListener('message', handleRequestedTokenEvent)
     })
 
+    const isPopupCallback = unref(route).path === '/web-oidc-popup-callback'
+
     return {
       error,
+      isPopupCallback,
       logoImg,
       footerSlogan
     }
   }
 })
 </script>
+
+<style lang="scss" scoped>
+.popup-callback {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oc-color-background-default);
+  color: var(--oc-color-text-default);
+  font-size: var(--oc-font-size-medium);
+}
+</style>

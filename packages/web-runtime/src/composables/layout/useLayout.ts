@@ -21,6 +21,7 @@ export const useLayout = (options?: LayoutOptions) => {
       'logout',
       'oidcCallback',
       'oidcSilentRedirect',
+      'oidcPopupCallback',
       'resolvePublicLink',
       'accessDenied'
     ]

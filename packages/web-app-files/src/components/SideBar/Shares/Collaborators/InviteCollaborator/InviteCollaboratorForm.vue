@@ -68,6 +68,7 @@
     </div>
     <div class="oc-flex oc-flex-between oc-flex-wrap oc-mb-l oc-mt-s">
       <role-dropdown
+        :key="currentShareRoleType.id"
         mode="create"
         :show-icon="isRunningOnEos"
         class="role-selection-dropdown"

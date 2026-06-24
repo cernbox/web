@@ -12,8 +12,6 @@ export class UrlSign {
   private axiosClient: AxiosInstance
   private baseURI: string
 
-  private signingKey: string
-
   private ALGORITHM = 'sha512'
   private TTL = 1200
   private HASH_LENGTH = 32
@@ -42,10 +40,6 @@ export class UrlSign {
   }
 
   private async getSignKey(date: string) {
-    if (this.signingKey) {
-      return this.signingKey
-    }
-
     const data = await this.axiosClient.get(
       urlJoin(this.baseURI, `ocs/v1.php/cloud/user/signing-key?OC-Date=${date}`),
       {
@@ -54,8 +48,7 @@ export class UrlSign {
     )
 
     const parsedXML = convert.xml2js(data.data, { compact: true }) as any
-    this.signingKey = parsedXML.ocs.data['signing-key']._text
-    return this.signingKey
+    return parsedXML.ocs.data['signing-key']._text
   }
 
   private createHashedKey(url: string, signignKey: string) {

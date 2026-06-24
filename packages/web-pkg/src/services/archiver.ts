@@ -14,7 +14,7 @@ import { triggerDownloadWithFilename } from '../helpers/download'
 
 import { Ref, ref, computed, unref } from 'vue'
 import { ArchiverCapability } from '@ownclouders/web-client/ocs'
-import { AuthStore, UserStore } from '../composables'
+import { UserStore } from '../composables'
 import { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios'
 
 interface TriggerDownloadOptions {
@@ -29,7 +29,6 @@ interface TriggerDownloadOptions {
 export class ArchiverService {
   clientService: ClientService
   userStore: UserStore
-  authStore: AuthStore
   serverUrl: string
   capability: Ref<ArchiverCapability>
   available: Ref<boolean>
@@ -38,14 +37,12 @@ export class ArchiverService {
   constructor(
     clientService: ClientService,
     userStore: UserStore,
-    authStore: AuthStore,
     serverUrl: string,
     archiverCapabilities: Ref<ArchiverCapability[]> = ref([])
   ) {
     this.clientService = clientService
     this.userStore = userStore
     this.serverUrl = serverUrl
-    this.authStore = authStore
     this.capability = computed(() => {
       const archivers = unref(archiverCapabilities)
         .filter((a) => a.enabled)
@@ -76,16 +73,20 @@ export class ArchiverService {
       throw new RuntimeError('download url could not be built')
     }
 
+    const url = options.publicToken
+      ? downloadUrl
+      : await this.clientService.ocsUserContext.signUrl(
+          downloadUrl,
+          this.userStore.user?.onPremisesSamAccountName
+        )
+
     try {
-      const response = await this.clientService.httpUnAuthenticated.get<ArrayBuffer>(downloadUrl, {
+      const response = await this.clientService.httpUnAuthenticated.get<ArrayBuffer>(url, {
         headers: {
           ...(!!options.publicLinkPassword && {
             Authorization:
               'Basic ' +
               Buffer.from(['public', options.publicLinkPassword].join(':')).toString('base64')
-          }),
-          ...(!options.publicToken && {
-            Authorization: 'Bearer ' + this.authStore.accessToken
           })
         },
         responseType: 'arraybuffer'
@@ -95,7 +96,7 @@ export class ArchiverService {
       const objectUrl = URL.createObjectURL(blob)
       const fileName = this.getFileNameFromResponseHeaders(response.headers)
       triggerDownloadWithFilename(objectUrl, fileName)
-      return downloadUrl
+      return url
     } catch (e) {
       throw new HttpError('archive could not be fetched', e.response)
     }

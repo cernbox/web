@@ -15,7 +15,6 @@ import { triggerDownloadWithFilename } from '../helpers/download'
 import { Ref, ref, computed, unref } from 'vue'
 import { ArchiverCapability } from '@ownclouders/web-client/ocs'
 import { UserStore } from '../composables'
-import { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios'
 
 interface TriggerDownloadOptions {
   dir?: string
@@ -73,6 +72,10 @@ export class ArchiverService {
       throw new RuntimeError('download url could not be built')
     }
 
+    if (options.publicLinkPassword) {
+      return this.fetchAndDownload(downloadUrl, options.publicLinkPassword)
+    }
+
     const url = options.publicToken
       ? downloadUrl
       : await this.clientService.ocsUserContext.signUrl(
@@ -80,22 +83,23 @@ export class ArchiverService {
           this.userStore.user?.onPremisesSamAccountName
         )
 
+    triggerDownloadWithFilename(url, 'download')
+    return url
+  }
+
+  private async fetchAndDownload(url: string, password: string): Promise<string> {
     try {
       const response = await this.clientService.httpUnAuthenticated.get<ArrayBuffer>(url, {
         headers: {
-          ...(!!options.publicLinkPassword && {
-            Authorization:
-              'Basic ' +
-              Buffer.from(['public', options.publicLinkPassword].join(':')).toString('base64')
-          })
+          Authorization: 'Basic ' + Buffer.from(`public:${password}`).toString('base64')
         },
         responseType: 'arraybuffer'
       })
 
       const blob = new Blob([response.data], { type: 'application/octet-stream' })
       const objectUrl = URL.createObjectURL(blob)
-      const fileName = this.getFileNameFromResponseHeaders(response.headers)
-      triggerDownloadWithFilename(objectUrl, fileName)
+      const fileName = response.headers['content-disposition']?.split('"')[1]
+      triggerDownloadWithFilename(objectUrl, fileName ? decodeURI(fileName) : 'download')
       return url
     } catch (e) {
       throw new HttpError('archive could not be fetched', e.response)
@@ -140,10 +144,5 @@ export class ArchiverService {
       return capability.archiver_url
     }
     return urlJoin(this.serverUrl, capability.archiver_url)
-  }
-
-  private getFileNameFromResponseHeaders(headers: RawAxiosResponseHeaders | AxiosResponseHeaders) {
-    const fileName = headers['content-disposition']?.split('"')[1]
-    return decodeURI(fileName)
   }
 }

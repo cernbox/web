@@ -446,19 +446,16 @@ export const announceArchiverService = ({
   app,
   configStore,
   userStore,
-  authStore,
   capabilityStore
 }: {
   app: App
   configStore: ConfigStore
   userStore: UserStore
-  authStore: AuthStore
   capabilityStore: CapabilityStore
 }): void => {
   app.config.globalProperties.$archiverService = new ArchiverService(
     app.config.globalProperties.$clientService,
     userStore,
-    authStore,
     configStore.serverUrl,
     computed(
       () =>

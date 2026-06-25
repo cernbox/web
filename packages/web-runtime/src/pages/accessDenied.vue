@@ -82,7 +82,7 @@ export default defineComponent({
     const cardHint = computed(() => {
       if (unref(lowAssuranceLevelError)) {
         return $gettext(
-          'Please login to your CERN account using the CERN credentials instead of a guest account.'
+          'Please login to a CERN account using the CERN credentials instead of a linked guest account.'
         )
       }
       if (unref(isLoginError)) {

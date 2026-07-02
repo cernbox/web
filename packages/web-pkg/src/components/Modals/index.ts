@@ -1,3 +1,4 @@
+export { default as CreateNewFileModal } from './CreateNewFileModal.vue'
 export { default as ResourceConflictModal } from './ResourceConflictModal.vue'
 export { default as SharingHierarchyConflictModal } from './SharingHierarchyConflictModal.vue'
 export { default as SpaceMoveInfoModal } from './SpaceMoveInfoModal.vue'

@@ -73,6 +73,15 @@ describe('CreateAndUpload component', () => {
       const { wrapper } = getWrapper()
       expect(wrapper.html()).toMatchSnapshot()
     })
+    it('invokes the file action handler directly (app choice, if any, happens inside its own modal)', async () => {
+      const txtHandler = vi.fn()
+      const txtAction = mock<FileAction>({ ext: 'txt', handler: txtHandler })
+      const { wrapper } = getWrapper({ createActions: [txtAction] })
+
+      await wrapper.vm.onCreateFileClick(txtAction)
+
+      expect(txtHandler).toHaveBeenCalled()
+    })
   })
   describe('clipboard buttons', () => {
     it('should show if clipboard is empty', () => {

@@ -8,6 +8,7 @@
         :model-value="selectedCollaborators"
         :options="autocompleteResults"
         :loading="searchInProgress"
+        :disabled="resolvingEmails"
         :multiple="true"
         :filter="filterRecipients"
         :label="selectedCollaboratorsLabel"
@@ -172,12 +173,13 @@ import {
 import { computed, defineComponent, inject, ref, unref, watch, onMounted, nextTick, Ref } from 'vue'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { DateTime } from 'luxon'
-import { OcDrop } from '@ownclouders/design-system/components'
+import { OcDrop, OcSelect } from '@ownclouders/design-system/components'
 import { useTask } from 'vue-concurrency'
 import { useGettext } from 'vue3-gettext'
 import { isProjectSpaceResource } from '@ownclouders/web-client'
 import { Group } from '@ownclouders/web-client/graph/generated'
 import ExpirationDateIndicator from '../../ExpirationDateIndicator.vue'
+import { isEmailListPaste, parseEmailList } from '../../../../../helpers/share'
 
 // just a dummy function to trick gettext tools
 const $gettext = (str: string) => {
@@ -230,7 +232,9 @@ export default defineComponent({
 
     const searchQuery = ref('')
     const searchInProgress = ref(false)
+    const resolvingEmails = ref(false)
     const autocompleteResults = ref<CollaboratorAutoCompleteItem[]>([])
+    const ocSharingAutocomplete = ref<InstanceType<typeof OcSelect>>()
 
     const saving = ref(false)
     const savingDelayed = ref(false)
@@ -300,6 +304,19 @@ export default defineComponent({
       return configStore.options.concurrentRequests.shares.create
     })
 
+    const isEligibleCollaborator = (collaborator: CollaboratorAutoCompleteItem) => {
+      if (collaborator.id === userStore.user.id) {
+        // filter current user
+        return false
+      }
+
+      const selected = unref(selectedCollaborators).some(({ id }) => collaborator.id === id)
+      const existingShares = unref(collaboratorShares).filter((c) => !c.indirect)
+      const exists = existingShares.some((s) => s.sharedWith.id === collaborator.id)
+
+      return !selected && !exists
+    }
+
     const fetchRecipientsTask = useTask(function* (signal, query: string) {
       let filter: string
       if (unref(isExternalShareRoleType)) {
@@ -344,16 +361,7 @@ export default defineComponent({
 
       autocompleteResults.value = [...users, ...groups].filter(
         (collaborator: CollaboratorAutoCompleteItem) => {
-          if (collaborator.id === userStore.user.id) {
-            // filter current user
-            return false
-          }
-
-          const selected = unref(selectedCollaborators).some(({ id }) => collaborator.id === id)
-          const existingShares = unref(collaboratorShares).filter((c) => !c.indirect)
-          const exists = existingShares.some((s) => s.sharedWith.id === collaborator.id)
-
-          if (selected || exists) {
+          if (!isEligibleCollaborator(collaborator)) {
             return false
           }
 
@@ -367,6 +375,81 @@ export default defineComponent({
 
     const fetchRecipients = async (query: string) => {
       await fetchRecipientsTask.perform(query)
+    }
+
+    const clearSearchBox = () => {
+      searchQuery.value = ''
+      // vue-select owns the visible search text; it isn't cleared automatically since
+      // auto-resolved collaborators are pushed in directly instead of picked from the dropdown
+      const vueSelectInstance = unref(ocSharingAutocomplete)?.select as
+        | { search?: string }
+        | undefined
+      if (vueSelectInstance) {
+        vueSelectInstance.search = ''
+      }
+    }
+
+    /** Resolves a pasted list of email addresses to known users and selects the matching ones. */
+    const resolveEmailList = async (emails: string[]) => {
+      resolvingEmails.value = true
+      searchInProgress.value = true
+      autocompleteResults.value = []
+
+      const client = clientService.graphAuthenticated
+      const shareType = unref(isExternalShareRoleType)
+        ? ShareTypes.remote.value
+        : ShareTypes.user.value
+
+      const matches = await Promise.all(
+        emails.map(async (email) => {
+          try {
+            const users = await client.users.listUsers({ search: `"${email}"` })
+            return (users || []).find((u) => u.mail?.toLowerCase() === email.toLowerCase())
+          } catch (error) {
+            console.error(error)
+            return undefined
+          }
+        })
+      )
+
+      const notFoundCount = matches.filter((match) => !match).length
+      const newlySelected: CollaboratorAutoCompleteItem[] = []
+
+      matches.forEach((match) => {
+        if (!match) {
+          return
+        }
+
+        const collaborator = { ...match, shareType } as CollaboratorAutoCompleteItem
+        const alreadyQueued = newlySelected.some(({ id }) => id === collaborator.id)
+
+        if (alreadyQueued || !isEligibleCollaborator(collaborator)) {
+          return
+        }
+
+        newlySelected.push(collaborator)
+      })
+
+      if (newlySelected.length) {
+        selectedCollaborators.value = [...unref(selectedCollaborators), ...newlySelected]
+      }
+
+      clearSearchBox()
+      autocompleteResults.value = []
+      searchInProgress.value = false
+      resolvingEmails.value = false
+
+      if (notFoundCount) {
+        showErrorMessage({
+          title: $gettext(
+            'Could not find a matching user for %{count} of the pasted email addresses',
+            { count: `${notFoundCount}` }
+          )
+        })
+      }
+
+      await nextTick()
+      focusShareInput()
     }
 
     const getRecipientType = (shareType: number): string => {
@@ -602,6 +685,8 @@ export default defineComponent({
       savingDelayed,
       ...useMessages(),
       searchInProgress,
+      resolvingEmails,
+      ocSharingAutocomplete,
       searchQuery,
       autocompleteResults,
       onOpen,
@@ -611,6 +696,7 @@ export default defineComponent({
       announcement,
       selectedCollaborators,
       fetchRecipients,
+      resolveEmailList,
       share,
       shareRoleTypes,
       currentShareRoleType,
@@ -649,6 +735,12 @@ export default defineComponent({
     onSearch(query: string) {
       this.autocompleteResults = []
       this.searchQuery = query
+
+      const emails = parseEmailList(query)
+      if (isEmailListPaste(query, emails)) {
+        this.resolveEmailList(emails)
+        return
+      }
 
       if (query.length < this.minSearchLength) {
         this.searchInProgress = false

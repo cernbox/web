@@ -50,6 +50,7 @@ import {
   useRequest,
   useAppProviderService,
   useRoute,
+  useRouter,
   queryItemAsString,
   useRouteQuery
 } from '@ownclouders/web-pkg'
@@ -73,6 +74,7 @@ export default defineComponent({
     const capabilityStore = useCapabilityStore()
     const configStore = useConfigStore()
     const route = useRoute()
+    const router = useRouter()
     const appProviderService = useAppProviderService()
     const { makeRequest } = useRequest()
     const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
@@ -96,6 +98,15 @@ export default defineComponent({
         (appName) => appName.toLowerCase() === lowerCaseAppName
       )
     })
+
+    // navigates to the same resource, opened with a different external app
+    const switchToApp = (targetAppName: string) => {
+      router.push({
+        name: `external-${targetAppName.toLowerCase()}-apps`,
+        params: unref(route).params,
+        query: unref(route).query
+      })
+    }
 
     const appUrl = ref()
     const formParameters = ref({})
@@ -174,7 +185,8 @@ export default defineComponent({
       id: string,
       status: keyof typeof alertStyles,
       buildContent: (content: HTMLElement) => void,
-      onClose?: () => void
+      onClose?: () => void,
+      action?: { label: string; onClick: () => void }
     ) => {
       const { background, color } = alertStyles[status]
 
@@ -202,12 +214,41 @@ export default defineComponent({
       `
       alert.appendChild(iconWrapper)
 
-      const content = document.createElement('span')
-      content.style.cssText = `
+      const contentWrapper = document.createElement('span')
+      contentWrapper.style.cssText = `
+        display: flex;
+        align-items: center;
         flex-grow: 1;
       `
+
+      const content = document.createElement('span')
       buildContent(content)
-      alert.appendChild(content)
+      contentWrapper.appendChild(content)
+
+      if (action) {
+        const actionButton = document.createElement('button')
+        actionButton.type = 'button'
+        actionButton.textContent = action.label
+        actionButton.style.cssText = `
+          font: inherit;
+          font-weight: bold;
+          background: none;
+          border: 1px solid currentColor;
+          border-radius: 16px;
+          color: inherit;
+          cursor: pointer;
+          padding: 4px 12px;
+          margin-left: 12px;
+          flex-shrink: 0;
+        `
+        actionButton.onclick = () => {
+          alert.remove()
+          action.onClick()
+        }
+        contentWrapper.appendChild(actionButton)
+      }
+
+      alert.appendChild(contentWrapper)
 
       const closeButton = document.createElement('span')
       closeButton.innerHTML = '&times;'
@@ -219,7 +260,7 @@ export default defineComponent({
         flex-shrink: 0;
       `
       closeButton.onclick = () => {
-        alert.style.display = 'none'
+        alert.remove()
         onClose?.()
       }
       alert.appendChild(closeButton)
@@ -250,10 +291,16 @@ export default defineComponent({
       }, 2000)
     }
 
-    const showWarningAlert = (message: string) => {
-      showAlert('warning-alert', 'warning', (content) => {
-        content.innerHTML = message
-      })
+    const showWarningAlert = (message: string, action?: { label: string; onClick: () => void }) => {
+      showAlert(
+        'warning-alert',
+        'warning',
+        (content) => {
+          content.innerHTML = message
+        },
+        undefined,
+        action
+      )
     }
 
     const showCollaboraModal = () => {
@@ -380,7 +427,27 @@ export default defineComponent({
         }
 
         if (response.data.forced_viewmode_reason && response.data.forced_viewmode_reason !== '') {
-          showWarningAlert(response.data.forced_viewmode_reason)
+          // Check if an alternative app can be used in Web to open in write mode
+          // We will suggest the user changing to that app
+          const lockedByAppName = response.data.app_for_editing as string | undefined
+          const matchedAppName = lockedByAppName
+            ? appProviderService.appNames.find(
+                (name) => name.toLowerCase() === lockedByAppName.toLowerCase()
+              )
+            : undefined
+
+          const canSwitchToApp =
+            matchedAppName && matchedAppName.toLowerCase() !== unref(appName)?.toLowerCase()
+
+          showWarningAlert(
+            response.data.forced_viewmode_reason,
+            canSwitchToApp
+              ? {
+                  label: $gettext('Switch to %{appName}', { appName: matchedAppName }),
+                  onClick: () => switchToApp(matchedAppName)
+                }
+              : undefined
+          )
         }
       } catch (e) {
         console.error('web-app-external error', e)

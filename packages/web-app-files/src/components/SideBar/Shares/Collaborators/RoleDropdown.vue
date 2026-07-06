@@ -158,30 +158,28 @@ export default defineComponent({
       return unref(roles)
     })
 
-    let initialSelectedRole: ShareRole
     const hasExistingShareRole = computed(() => !!props.existingShareRole)
     const hasExistingSharePermissions = computed(() => !!props.existingSharePermissions.length)
     const isDisabledRole = computed(
       () => !unref(hasExistingShareRole) && unref(hasExistingSharePermissions)
     )
-    switch (true) {
-      // if no role is set and no permissions are set, we use the first available role as the default
-      case !unref(hasExistingShareRole) && !unref(hasExistingSharePermissions):
-        initialSelectedRole = unref(availableRoles)[0]
-        break
-      // in the rare case that a role is disabled and permissions are set aka a disabled unified role ...
-      case unref(isDisabledRole):
-        // ... we need to create a fake role as an indicator that the permissions are custom
-        initialSelectedRole = {
-          displayName: $gettext('Custom permissions')
-        }
-        break
-      default:
-        initialSelectedRole = props.existingShareRole
-        break
+
+    // if a role is set, use it; if permissions are set without a role (a disabled unified role),
+    // show a fake role as an indicator that the permissions are custom; otherwise default to the
+    // first available role
+    const resolveRoleForExistingState = (): ShareRole => {
+      if (unref(hasExistingShareRole)) {
+        return props.existingShareRole!
+      }
+
+      if (unref(isDisabledRole)) {
+        return { displayName: $gettext('Custom permissions') }
+      }
+
+      return unref(availableRoles)[0]
     }
 
-    const selectedRole = ref<ShareRole>(initialSelectedRole)
+    const selectedRole = ref<ShareRole>(resolveRoleForExistingState())
     const isSelectedRole = (role: ShareRole) => {
       return unref(selectedRole).id === role.id
     }
@@ -190,6 +188,23 @@ export default defineComponent({
       selectedRole.value = role
       emit('optionChange', unref(selectedRole))
     }
+
+    const revertToExistingRole = () => {
+      if (props.mode !== 'edit') {
+        return
+      }
+
+      selectedRole.value = resolveRoleForExistingState()
+    }
+
+    watch(
+      () => props.existingShareRole,
+      (role) => {
+        if (props.mode === 'edit' && role) {
+          selectedRole.value = role
+        }
+      }
+    )
 
     watch(
       () => props.isExternal,
@@ -211,6 +226,7 @@ export default defineComponent({
       availableRoles,
       isSelectedRole,
       selectRole,
+      revertToExistingRole,
       isDisabledRole
     }
   },

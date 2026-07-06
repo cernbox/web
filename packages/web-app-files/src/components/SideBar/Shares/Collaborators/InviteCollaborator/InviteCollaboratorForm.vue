@@ -151,7 +151,11 @@ import {
   CollaboratorShare,
   ShareRole,
   ShareTypes,
-  call
+  call,
+  isSharingHierarchyConflictPendingError,
+  isSharingHierarchyConflictUserAbortError,
+  shareHierarchyForceRequestOptions,
+  type SharingHierarchyConflict
 } from '@ownclouders/web-client'
 import {
   useCapabilityStore,
@@ -160,7 +164,9 @@ import {
   useSpacesStore,
   useConfigStore,
   useSharesStore,
-  useUserStore
+  useUserStore,
+  useSharingHierarchyConflictsConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
 
 import { computed, defineComponent, inject, ref, unref, watch, onMounted, nextTick, Ref } from 'vue'
@@ -218,6 +224,9 @@ export default defineComponent({
     const sharesStore = useSharesStore()
     const { addShare } = sharesStore
     const { collaboratorShares } = storeToRefs(sharesStore)
+
+    const confirmSharingHierarchyConflicts = useSharingHierarchyConflictsConfirm()
+    const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
 
     const searchQuery = ref('')
     const searchInProgress = ref(false)
@@ -377,46 +386,97 @@ export default defineComponent({
       const savePromises: Promise<void>[] = []
       const errors: { displayName: string; error: Error }[] = []
       const addedShares: CollaboratorShare[] = []
+      const pendingForceShares: {
+        displayName: string
+        conflict: SharingHierarchyConflict
+        addShareParams: Parameters<typeof addShare>[0]
+      }[] = []
+
+      const finishAddedShare = (share: CollaboratorShare) => {
+        addedShares.push(share)
+
+        if (unref(notifyEnabled)) {
+          clientService.httpAuthenticated.get(
+            `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
+          ) as any
+        }
+      }
 
       unref(selectedCollaborators).forEach(({ id, shareType, displayName }) => {
         const type = getRecipientType(shareType)
+        const addShareParams = {
+          clientService,
+          space: unref(space),
+          resource: unref(resource),
+          options: {
+            roles: [unref(selectedRole).id],
+            expirationDateTime: unref(expirationDate),
+            recipients: [
+              {
+                objectId: id,
+                '@libre.graph.recipient.type': type
+              }
+            ]
+          }
+        }
 
         savePromises.push(
           saveQueue.add(async () => {
             try {
               const share = await addShare({
-                clientService,
-                space: unref(space),
-                resource: unref(resource),
-                options: {
-                  roles: [unref(selectedRole).id],
-                  expirationDateTime: unref(expirationDate),
-                  recipients: [
-                    {
-                      objectId: id,
-                      '@libre.graph.recipient.type': type
-                    }
-                  ]
-                }
+                ...addShareParams,
+                informSharingHierarchyConflict,
+                deferSharingHierarchyConflictConfirm: true
               })
 
-              addedShares.push(share)
-
-              if (unref(notifyEnabled)) {
-                clientService.httpAuthenticated.get(
-                  `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
-                ) as any
-              }
+              finishAddedShare(share)
             } catch (error) {
+              if (isSharingHierarchyConflictPendingError(error)) {
+                pendingForceShares.push({
+                  displayName,
+                  conflict: error.conflict,
+                  addShareParams
+                })
+                return
+              }
+              if (isSharingHierarchyConflictUserAbortError(error)) {
+                return
+              }
               console.error(error)
-              errors.push({ displayName, error })
+              errors.push({ displayName, error: error as Error })
               throw error
             }
           })
         )
       })
 
-      const results = await Promise.allSettled(savePromises)
+      await Promise.allSettled(savePromises)
+
+      if (pendingForceShares.length > 0) {
+        const proceed = await confirmSharingHierarchyConflicts(
+          pendingForceShares.map(({ conflict }) => conflict)
+        )
+
+        if (proceed) {
+          for (const { displayName, addShareParams } of pendingForceShares) {
+            try {
+              const share = await addShare({
+                ...addShareParams,
+                informSharingHierarchyConflict,
+                graphRequestOptions: shareHierarchyForceRequestOptions()
+              })
+
+              finishAddedShare(share)
+            } catch (error) {
+              if (isSharingHierarchyConflictUserAbortError(error)) {
+                continue
+              }
+              console.error(error)
+              errors.push({ displayName, error: error as Error })
+            }
+          }
+        }
+      }
 
       if (isProjectSpaceResource(unref(resource))) {
         const updatedSpace = await clientService.graphAuthenticated.drives.getDrive(
@@ -427,7 +487,7 @@ export default defineComponent({
         upsertSpace(updatedSpace)
       }
 
-      if (results.length !== errors.length) {
+      if (addedShares.length > 0) {
         showMessage({ title: $gettext('Share was added successfully') })
       }
 

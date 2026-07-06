@@ -145,18 +145,16 @@ describe('Collaborator ListItem component', () => {
       const resource = mock<SpaceResource>({ driveType: 'project' })
       vi.spyOn(console, 'error').mockImplementation(() => undefined)
       const { wrapper } = createWrapper()
-      vi.spyOn(wrapper.vm, 'saveShareChanges').mockImplementation(() => {
-        throw new Error()
-      })
+      const sharesStore = useSharesStore()
+      vi.mocked(sharesStore.updateShare).mockRejectedValueOnce(new Error('update failed'))
       wrapper.findComponent<typeof RoleDropdown>('role-dropdown-stub').vm.$emit('optionChange', {
-        share: getShareMock({ shareType: ShareTypes.user.value }),
-        resource
+        id: 'editor',
+        displayName: 'Can edit'
       })
 
       await nextTicks(4)
 
-      const sharesStore = useSharesStore()
-      expect(sharesStore.updateShare).not.toHaveBeenCalled()
+      expect(sharesStore.updateShare).toHaveBeenCalled()
       const messagesStore = useMessages()
       expect(messagesStore.showErrorMessage).toHaveBeenCalled()
     })
@@ -172,19 +170,21 @@ describe('Collaborator ListItem component', () => {
       const sharesStore = useSharesStore()
       expect(sharesStore.updateShare).toHaveBeenCalled()
     })
-    it('shows a message on error', () => {
+    it('shows a message on error', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => undefined)
       const { wrapper } = createWrapper()
-      vi.spyOn(wrapper.vm, 'saveShareChanges').mockImplementation(() => {
-        throw new Error()
-      })
+      const sharesStore = useSharesStore()
+      vi.mocked(sharesStore.updateShare).mockRejectedValueOnce(new Error('update failed'))
+
       wrapper
         .findComponent<typeof EditDropdown>('edit-dropdown-stub')
         .vm.$emit('expirationDateChanged', {
           shareExpirationChanged: new Date()
         })
-      const sharesStore = useSharesStore()
-      expect(sharesStore.updateShare).not.toHaveBeenCalled()
+
+      await nextTicks(4)
+
+      expect(sharesStore.updateShare).toHaveBeenCalled()
       const messagesStore = useMessages()
       expect(messagesStore.showErrorMessage).toHaveBeenCalled()
     })

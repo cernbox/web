@@ -108,7 +108,9 @@ import {
   useConfigStore,
   useSharesStore,
   useResourcesStore,
-  useCanShare
+  useCanShare,
+  useSharingHierarchyConflictConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
 import { isLocationSharesActive } from '@ownclouders/web-pkg'
 import { textUtils } from '../../../helpers/textUtils'
@@ -122,7 +124,8 @@ import {
   Resource,
   SpaceResource,
   CollaboratorShare,
-  isSpaceResource
+  isSpaceResource,
+  isSharingHierarchyConflictUserAbortError
 } from '@ownclouders/web-client'
 import { getSharedAncestorRoute } from '@ownclouders/web-pkg'
 import CopyPrivateLink from '../../Shares/CopyPrivateLink.vue'
@@ -152,6 +155,9 @@ export default defineComponent({
 
     const sharesStore = useSharesStore()
     const { addShare, deleteShare } = sharesStore
+
+    const confirmSharingHierarchyConflict = useSharingHierarchyConflictConfirm()
+    const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
 
     const { user } = storeToRefs(userStore)
 
@@ -208,6 +214,8 @@ export default defineComponent({
     return {
       addShare,
       deleteShare,
+      confirmSharingHierarchyConflict,
+      informSharingHierarchyConflict,
       user,
       resource,
       space,
@@ -335,12 +343,17 @@ export default defineComponent({
             clientService: this.$clientService,
             space: this.space,
             resource: this.resource,
-            options: {}
+            options: {},
+            confirmSharingHierarchyConflict: this.confirmSharingHierarchyConflict,
+            informSharingHierarchyConflict: this.informSharingHierarchyConflict
           })
           this.showMessage({
             title: this.$gettext('Access was denied successfully')
           })
         } catch (e) {
+          if (isSharingHierarchyConflictUserAbortError(e)) {
+            return
+          }
           console.error(e)
           this.showErrorMessage({
             title: this.$gettext('Failed to deny access'),
@@ -356,12 +369,17 @@ export default defineComponent({
             collaboratorShare: isSpaceResource(this.resource)
               ? this.getDeniedSpaceMember(share)
               : this.getDeniedShare(share),
-            loadIndicators: false
+            loadIndicators: false,
+            confirmSharingHierarchyConflict: this.confirmSharingHierarchyConflict,
+            informSharingHierarchyConflict: this.informSharingHierarchyConflict
           })
           this.showMessage({
             title: this.$gettext('Access was granted successfully')
           })
         } catch (e) {
+          if (isSharingHierarchyConflictUserAbortError(e)) {
+            return
+          }
           console.error(e)
           this.showErrorMessage({
             title: this.$gettext('Failed to grant access'),
@@ -388,7 +406,9 @@ export default defineComponent({
               space: this.space,
               resource: this.resource,
               collaboratorShare,
-              loadIndicators
+              loadIndicators,
+              confirmSharingHierarchyConflict: this.confirmSharingHierarchyConflict,
+              informSharingHierarchyConflict: this.informSharingHierarchyConflict
             })
 
             this.showMessage({
@@ -398,6 +418,9 @@ export default defineComponent({
               this.removeResources([{ id: lastShareId }] as Resource[])
             }
           } catch (error) {
+            if (isSharingHierarchyConflictUserAbortError(error)) {
+              return
+            }
             console.error(error)
             this.showErrorMessage({
               title: this.$gettext('Failed to remove share'),

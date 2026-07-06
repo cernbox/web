@@ -66,6 +66,7 @@
             <template v-else>
               <div v-if="modifiable" class="oc-flex oc-flex-nowrap oc-flex-middle">
                 <role-dropdown
+                  ref="roleDropdownRef"
                   :dom-selector="shareDomSelector"
                   :existing-share-role="share.role"
                   :existing-share-permissions="share.permissions"
@@ -128,7 +129,13 @@ import { DateTime } from 'luxon'
 
 import EditDropdown from './EditDropdown.vue'
 import RoleDropdown from './RoleDropdown.vue'
-import { CollaboratorShare, ShareRole, ShareTypes } from '@ownclouders/web-client'
+import {
+  CollaboratorShare,
+  ShareRole,
+  ShareTypes,
+  isSharingHierarchyConflictRemoveShareError,
+  isSharingHierarchyConflictUserAbortError
+} from '@ownclouders/web-client'
 import {
   queryItemAsString,
   useMessages,
@@ -136,10 +143,12 @@ import {
   useSpacesStore,
   useUserStore,
   useSharesStore,
-  useConfigStore
+  useConfigStore,
+  useSharingHierarchyConflictConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
 import { Resource, extractDomSelector } from '@ownclouders/web-client'
-import { computed, defineComponent, inject, PropType, Ref, unref } from 'vue'
+import { computed, defineComponent, inject, PropType, Ref, ref, unref } from 'vue'
 import { formatDateFromDateTime } from '@ownclouders/web-pkg'
 import { useClientService } from '@ownclouders/web-pkg'
 import { RouteLocationNamedRaw } from 'vue-router'
@@ -204,7 +213,15 @@ export default defineComponent({
 
     const sharesStore = useSharesStore()
     const { graphRoles } = storeToRefs(sharesStore)
-    const { updateShare } = sharesStore
+    const { updateShare, deleteShare } = sharesStore
+    const confirmSharingHierarchyConflict = useSharingHierarchyConflictConfirm({
+      introVariant: 'update-share'
+    })
+    const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
+    const informRoleUpdateHierarchyConflict = useSharingHierarchyConflictInform({
+      offerRemoveShare: true
+    })
+    const roleDropdownRef = ref<InstanceType<typeof RoleDropdown> | null>(null)
     const { upsertSpace } = useSpacesStore()
 
     const { user } = storeToRefs(userStore)
@@ -235,7 +252,9 @@ export default defineComponent({
     }
     const notifyShare = async () => {
       try {
-        const resp = await clientService.httpAuthenticated.get(`/ocs/v1.php/apps/files_sharing/api/v1/shares/${props.share.id}/notify`) as any
+        const resp = (await clientService.httpAuthenticated.get(
+          `/ocs/v1.php/apps/files_sharing/api/v1/shares/${props.share.id}/notify`
+        )) as any
         showMessage({
           title: $gettext(`Reminder sent to ${resp.data.recipients[0]}`)
         })
@@ -248,6 +267,10 @@ export default defineComponent({
       }
     }
 
+    const revertRoleDropdown = () => {
+      roleDropdownRef.value?.revertToExistingRole?.()
+    }
+
     const sharedViaTooltip = computed(() =>
       $gettext('Shared via the parent folder "%{sharedParentDir}"', {
         sharedParentDir: unref(sharedParentDir)
@@ -257,6 +280,12 @@ export default defineComponent({
       resource: inject<Ref<Resource>>('resource'),
       space: inject<Ref<SpaceResource>>('space'),
       updateShare,
+      deleteShare,
+      confirmSharingHierarchyConflict,
+      informSharingHierarchyConflict,
+      informRoleUpdateHierarchyConflict,
+      roleDropdownRef,
+      revertRoleDropdown,
       user,
       clientService,
       cernFeatures,
@@ -378,44 +407,50 @@ export default defineComponent({
 
     async shareRoleChanged(role: ShareRole) {
       const expirationDateTime = this.share.expirationDateTime
-      try {
-        await this.saveShareChanges({ role, expirationDateTime })
-      } catch (e) {
-        console.error(e)
-        this.showErrorMessage({
-          title: this.$gettext('Failed to apply new permissions'),
-          errors: [e]
-        })
-      }
+      await this.saveShareChanges({
+        role,
+        expirationDateTime,
+        offerRemoveShareOnConflict: !this.share.indirect
+      })
     },
 
     async shareExpirationChanged({ expirationDateTime }: { expirationDateTime: string }) {
       const role = this.share.role
-      try {
-        await this.saveShareChanges({ role, expirationDateTime })
-      } catch (e) {
-        console.error(e)
-        this.showErrorMessage({
-          title: this.$gettext('Failed to apply expiration date'),
-          errors: [e]
-        })
+      await this.saveShareChanges({ role, expirationDateTime })
+    },
+
+    handleShareConflictError(error: Error, title: string) {
+      if (isSharingHierarchyConflictUserAbortError(error)) {
+        this.revertRoleDropdown()
+        return
       }
+      console.error(error)
+      this.revertRoleDropdown()
+      this.showErrorMessage({ title, errors: [error] })
     },
 
     async saveShareChanges({
       role,
-      expirationDateTime
+      expirationDateTime,
+      offerRemoveShareOnConflict = false
     }: {
       role: ShareRole
       expirationDateTime?: string
+      offerRemoveShareOnConflict?: boolean
     }) {
+      const informSharingHierarchyConflict = offerRemoveShareOnConflict
+        ? this.informRoleUpdateHierarchyConflict
+        : this.informSharingHierarchyConflict
+
       try {
         await this.updateShare({
           clientService: this.$clientService,
           space: this.space,
           resource: this.resource,
           collaboratorShare: this.share,
-          options: { roles: [role.id], expirationDateTime }
+          options: { roles: [role.id], expirationDateTime },
+          confirmSharingHierarchyConflict: this.confirmSharingHierarchyConflict,
+          informSharingHierarchyConflict
         })
 
         if (isProjectSpaceResource(this.resource)) {
@@ -427,11 +462,28 @@ export default defineComponent({
 
         this.showMessage({ title: this.$gettext('Share successfully changed') })
       } catch (e) {
-        console.error(e)
-        this.showErrorMessage({
-          title: this.$gettext('Error while editing the share.'),
-          errors: [e]
-        })
+        if (isSharingHierarchyConflictRemoveShareError(e)) {
+          try {
+            await this.deleteShare({
+              clientService: this.clientService,
+              space: this.space,
+              resource: this.resource,
+              collaboratorShare: this.share,
+              loadIndicators: true,
+              confirmSharingHierarchyConflict: this.confirmSharingHierarchyConflict,
+              informSharingHierarchyConflict: this.informSharingHierarchyConflict
+            })
+            this.showMessage({ title: this.$gettext('Share successfully removed') })
+          } catch (deleteError) {
+            this.handleShareConflictError(
+              deleteError,
+              this.$gettext('Error while removing the share.')
+            )
+          }
+          return
+        }
+
+        this.handleShareConflictError(e, this.$gettext('Error while editing the share.'))
       }
     }
   }

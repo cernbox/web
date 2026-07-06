@@ -110,6 +110,19 @@ describe('InviteCollaboratorForm', () => {
 
       expect(wrapper.vm.autocompleteResults.length).toBe(1)
     })
+    it('does not filter out existing indirect shares, since their role can still be increased', async () => {
+      const { wrapper } = getWrapper({
+        users: [{ id: '2' } as User],
+        groups: [{ id: '3' }],
+        existingCollaborators: [
+          mock<CollaboratorShare>({ sharedWith: { id: '2' }, indirect: true })
+        ]
+      })
+
+      await wrapper.vm.fetchRecipientsTask.last
+
+      expect(wrapper.vm.autocompleteResults.length).toBe(2)
+    })
   })
   describe('share action', () => {
     it('clicking the invite-sharees button calls the "share"-action', async () => {

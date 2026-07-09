@@ -9,7 +9,12 @@ import {
 import { useGettext } from 'vue3-gettext'
 import { computed } from 'vue'
 import { Extension } from '@ownclouders/web-pkg'
-import { OCM_PROVIDER_ID, urlJoin } from '@ownclouders/web-client'
+import {
+  isShareResource,
+  OCM_PROVIDER_ID,
+  ShareTypes,
+  urlJoin
+} from '@ownclouders/web-client'
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
@@ -128,9 +133,17 @@ export const extensions = (appInfo: ApplicationInformation) => {
           if (!resources?.length) {
             return false
           }
+          if (!configStore.options.ocm.openRemotely) {
+            return false
+          }
+          // Detect an OCM/federated resource the same way useGetMatchingSpace
+          // does: reva-backed received shares mount under the sciencemesh
+          // provider and never carry the oCIS OCM_PROVIDER_ID storage id, so we
+          // also accept remote-typed share resources.
+          const resource = resources[0]
           return (
-            configStore.options.ocm.openRemotely &&
-            resources[0]?.storageId?.startsWith(OCM_PROVIDER_ID)
+            resource?.storageId?.startsWith(OCM_PROVIDER_ID) ||
+            (isShareResource(resource) && resource.shareTypes?.includes(ShareTypes.remote.value))
           )
         },
         class: 'oc-files-actions-open-file-remote'

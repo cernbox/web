@@ -276,6 +276,7 @@ import {
   useGetMatchingSpace,
   useFolderLink,
   useEmbedMode,
+  useEmbedModeDownloadUrl,
   useAuthStore,
   useCapabilityStore,
   useConfigStore,
@@ -552,6 +553,7 @@ export default defineComponent({
       isEnabled: isEmbedModeEnabled,
       fileTypes: embedModeFileTypes
     } = useEmbedMode()
+    const { withDownloadUrl } = useEmbedModeDownloadUrl()
     const { getDefaultAction } = useFileActions()
     const configStore = useConfigStore()
     const { options: configOptions } = storeToRefs(configStore)
@@ -683,6 +685,7 @@ export default defineComponent({
       ),
       ...folderLinkUtils,
       postMessage,
+      withDownloadUrl,
       isFilePicker,
       isInlineAttach,
       isLocationPicker,
@@ -1091,7 +1094,7 @@ export default defineComponent({
        */
       this.$emit('rowMounted', resource, component, this.constants.ImageDimension.Thumbnail)
     },
-    fileClicked(data: [Resource, MouseEvent, boolean]) {
+    async fileClicked(data: [Resource, MouseEvent, boolean]) {
       /**
        * Triggered when the file row is clicked
        * @property {object} resource The resource for which the event is triggered
@@ -1103,8 +1106,10 @@ export default defineComponent({
       }
 
       if (this.isEmbedModeEnabled && this.isFilePicker && !resource.isFolder) {
+        const clonedResource = JSON.parse(JSON.stringify(resource))
+        const resourceWithUrl = await this.withDownloadUrl(this.space, clonedResource)
         return this.postMessage<embedModeFilePickMessageData>('owncloud-embed:file-pick', {
-          resource: JSON.parse(JSON.stringify(resource)),
+          resource: resourceWithUrl,
           locationQuery: JSON.parse(
             JSON.stringify(routeToContextQuery(unref(this.router.currentRoute)))
           )

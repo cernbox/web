@@ -21,16 +21,23 @@ import { Identity } from '@ownclouders/web-client/graph/generated'
 import { describe } from 'vitest'
 import { useFileActionsRename } from '../../../../src/composables/actions/files'
 import { FileAction } from '../../../../src/composables/actions/types'
+import { flushPromises } from '@vue/test-utils'
 
 const mockUseEmbedMode = vi.fn().mockReturnValue({
   isLocationPicker: computed(() => false),
   isFilePicker: computed(() => false),
   isEnabled: computed(() => false)
 })
+const mockWithDownloadUrl = vi
+  .fn()
+  .mockImplementation((space: unknown, resource: Resource) => Promise.resolve(resource))
 
 vi.mock('../../../../src/helpers/contextMenuDropdown')
 vi.mock('../../../../src/composables/embedMode', () => ({
-  useEmbedMode: vi.fn().mockImplementation(() => mockUseEmbedMode())
+  useEmbedMode: vi.fn().mockImplementation(() => mockUseEmbedMode()),
+  useEmbedModeDownloadUrl: vi
+    .fn()
+    .mockImplementation(() => ({ withDownloadUrl: mockWithDownloadUrl }))
 }))
 
 vi.mock('../../../../src/composables/resources', async (importOriginal) => ({
@@ -444,6 +451,53 @@ describe('ResourceTable', () => {
         expect(wrapper.find('.resource-table-select-all').exists()).toBe(false)
         expect(wrapper.find('.resource-table-select-all .oc-checkbox').exists()).toBe(false)
       })
+    })
+  })
+
+  describe('embed mode file picker', () => {
+    it('posts a file-pick message with the download URL resolved by withDownloadUrl', async () => {
+      const postMessageMock = vi.fn()
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => true),
+        postMessage: postMessageMock
+      })
+      mockWithDownloadUrl.mockImplementation((space: unknown, resource: Resource) =>
+        Promise.resolve({ ...resource, downloadURL: 'https://example.test/signed' })
+      )
+
+      const { wrapper } = getMountedWrapper()
+      const tr = await wrapper.find('.oc-tbody-tr-forest .oc-resource-name')
+      await tr.trigger('click')
+      await flushPromises()
+
+      expect(mockWithDownloadUrl).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ name: 'forest.jpg' })
+      )
+      expect(postMessageMock).toHaveBeenCalledWith(
+        'owncloud-embed:file-pick',
+        expect.objectContaining({
+          resource: expect.objectContaining({ downloadURL: 'https://example.test/signed' })
+        })
+      )
+    })
+
+    it('does not post a file-pick message when embed mode is not a file picker', async () => {
+      const postMessageMock = vi.fn()
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => false),
+        isFilePicker: computed(() => false),
+        postMessage: postMessageMock
+      })
+
+      const { wrapper } = getMountedWrapper()
+      const tr = await wrapper.find('.oc-tbody-tr-forest .oc-resource-name')
+      await tr.trigger('click')
+      await flushPromises()
+
+      expect(mockWithDownloadUrl).not.toHaveBeenCalled()
+      expect(postMessageMock).not.toHaveBeenCalled()
     })
   })
 

@@ -8,6 +8,7 @@ import { extractDomSelector } from '@ownclouders/web-client'
 import { useCanBeOpenedWithSecureView } from '../../../../src/composables/resources'
 import { displayPositionedDropdown } from '../../../../src/helpers/contextMenuDropdown'
 import { OcSelect } from '@ownclouders/design-system/components'
+import { flushPromises } from '@vue/test-utils'
 
 vi.mock('../../../../src/helpers/contextMenuDropdown')
 vi.mock('../../../../src/composables/viewMode', async (importOriginal) => ({
@@ -18,8 +19,14 @@ vi.mock('../../../../src/composables/viewMode', async (importOriginal) => ({
 }))
 
 const mockUseEmbedMode = vi.fn().mockReturnValue({ isEnabled: computed(() => false) })
+const mockWithDownloadUrl = vi
+  .fn()
+  .mockImplementation((space: unknown, resource: Resource) => Promise.resolve(resource))
 vi.mock('../../../../src/composables/embedMode', () => ({
-  useEmbedMode: vi.fn().mockImplementation(() => mockUseEmbedMode())
+  useEmbedMode: vi.fn().mockImplementation(() => mockUseEmbedMode()),
+  useEmbedModeDownloadUrl: vi
+    .fn()
+    .mockImplementation(() => ({ withDownloadUrl: mockWithDownloadUrl }))
 }))
 
 vi.mock('../../../../src/composables/resources', async (importOriginal) => ({
@@ -82,6 +89,9 @@ describe('ResourceTiles component', () => {
   const originalGetComputedStyle = window.getComputedStyle
   beforeEach(() => {
     mockUseEmbedMode.mockReturnValue({ isEnabled: computed(() => false) })
+    mockWithDownloadUrl.mockImplementation((space: unknown, resource: Resource) =>
+      Promise.resolve(resource)
+    )
     const mockElement = {
       clientWidth: 800
     } as HTMLElement
@@ -156,11 +166,38 @@ describe('ResourceTiles component', () => {
       })
       const { wrapper } = getWrapper({ props: { resources } })
       await wrapper.find('.oc-tiles-item .oc-resource-name').trigger('click')
+      await flushPromises()
 
+      expect(mockWithDownloadUrl).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ name: 'forest.jpg' })
+      )
       expect(postMessageMock).toHaveBeenCalledWith(
         'owncloud-embed:file-pick',
         expect.objectContaining({
           resource: expect.objectContaining({ name: 'forest.jpg' })
+        })
+      )
+    })
+
+    it('posts the download URL resolved by withDownloadUrl, not the raw clicked resource', async () => {
+      const postMessageMock = vi.fn()
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: ref(true),
+        isFilePicker: ref(true),
+        postMessage: postMessageMock
+      })
+      mockWithDownloadUrl.mockImplementation((space: unknown, resource: Resource) =>
+        Promise.resolve({ ...resource, downloadURL: 'https://example.test/signed' })
+      )
+      const { wrapper } = getWrapper({ props: { resources } })
+      await wrapper.find('.oc-tiles-item .oc-resource-name').trigger('click')
+      await flushPromises()
+
+      expect(postMessageMock).toHaveBeenCalledWith(
+        'owncloud-embed:file-pick',
+        expect.objectContaining({
+          resource: expect.objectContaining({ downloadURL: 'https://example.test/signed' })
         })
       )
     })

@@ -1,11 +1,12 @@
 <template>
   <iframe
     v-if="appUrl && method === 'GET'"
+    ref="appIframeRef"
     :src="appUrl"
     class="oc-width-1-1 oc-height-1-1"
     :title="iFrameTitle"
     allowfullscreen
-    allow="camera"
+    allow="camera; clipboard-read *; clipboard-write *"
   />
   <div v-if="appUrl && method === 'POST' && formParameters" class="oc-height-1-1 oc-width-1-1">
     <form :action="appUrl" target="app-iframe" method="post">
@@ -15,11 +16,12 @@
       </div>
     </form>
     <iframe
+      ref="appIframeRef"
       name="app-iframe"
       class="oc-width-1-1 oc-height-1-1"
       :title="iFrameTitle"
       allowfullscreen
-      allow="camera"
+      allow="camera; clipboard-read *; clipboard-write *"
     />
   </div>
 </template>
@@ -33,9 +35,11 @@ import {
   unref,
   nextTick,
   ref,
+  toRef,
   watch,
   VNodeRef,
-  onMounted
+  onMounted,
+  onBeforeUnmount
 } from 'vue'
 import { useTask } from 'vue-concurrency'
 import { useGettext } from 'vue3-gettext'
@@ -52,13 +56,16 @@ import {
   useRoute,
   useRouter,
   queryItemAsString,
-  useRouteQuery
+  useRouteQuery,
+  useThemeStore,
+  isSameResource
 } from '@ownclouders/web-pkg'
 import {
   isProjectSpaceResource,
   isPublicSpaceResource,
   isShareSpaceResource
 } from '@ownclouders/web-client'
+import { useOfficeAlert, useOfficePostMessageRegistry } from './composables'
 
 export default defineComponent({
   name: 'ExternalApp',
@@ -78,6 +85,7 @@ export default defineComponent({
     const appProviderService = useAppProviderService()
     const { makeRequest } = useRequest()
     const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
+    const themeStore = useThemeStore()
 
     const viewModeQuery = useRouteQuery('view_mode')
     const viewModeQueryValue = computed(() => {
@@ -112,6 +120,7 @@ export default defineComponent({
     const formParameters = ref({})
     const method = ref()
     const subm: VNodeRef = ref()
+    const appIframeRef: VNodeRef = ref()
 
     const iFrameTitle = computed(() => {
       return $gettext('"%{appName}" app content area', {
@@ -125,25 +134,6 @@ export default defineComponent({
         desc: error,
         errors: [new Error(error)]
       })
-    }
-
-    const successfulLoad = ref(false)
-    const isOfficeAlertClosed = computed(() => {
-      return localStorage.getItem('officeAlertClosed')
-    })
-    const isCollaboraModalClosed = computed(() => {
-      const currentDate = new Date().toLocaleDateString()
-      return localStorage.getItem('collaboraModalClosed') === currentDate
-    })
-
-    const removeAlertOnSuccessfulLoad = (event: MessageEvent) => {
-      const data = JSON.parse(event.data)
-      if (data.MessageId === 'App_LoadingStatus') {
-        successfulLoad.value = true
-        if (document.getElementById('office-alert')) {
-          document.getElementById('office-alert').style.display = 'none'
-        }
-      }
     }
 
     const getAlertsContainer = () => {
@@ -268,28 +258,7 @@ export default defineComponent({
       getAlertsContainer().appendChild(alert)
     }
 
-    const showOfficeAlert = () => {
-      setTimeout(() => {
-        if (unref(successfulLoad)) return
-        showAlert(
-          'office-alert',
-          'danger',
-          (content) => {
-            content.innerHTML = $gettext(
-              'Having connection issues displaying Office files? Try and refresh this page until it loads properly and please&nbsp;'
-            )
-            content.innerHTML += `<a
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://cern.service-now.com/service-portal?id=sc_cat_item&name=request&se=CERNBox-Service&short_description=MS365%20issue%20feedback"
-              >
-                let us know so we can report the issue
-              </a>!`
-          },
-          () => localStorage.setItem('officeAlertClosed', 'true')
-        )
-      }, 2000)
-    }
+    const { isOfficeAlertClosed, showOfficeAlert } = useOfficeAlert(showAlert)
 
     const showWarningAlert = (message: string, action?: { label: string; onClick: () => void }) => {
       showAlert(
@@ -301,66 +270,6 @@ export default defineComponent({
         undefined,
         action
       )
-    }
-
-    const showCollaboraModal = () => {
-      const collaboraModal = document.createElement('dialog') as HTMLDialogElement
-      collaboraModal.id = 'collabora-modal'
-      collaboraModal.innerHTML = `
-        <form method="dialog" class="oc-p-m">
-          <div class="oc-flex oc-flex-around oc-flex-middle oc-mb-m">
-            <img src="https://cernbox.docs.cern.ch/assets/images/logo-full.png" height="100"/>
-            <img src="https://www.collaboraonline.com/wp-content/uploads/2023/06/collabora-online-primary300-e1709657485501.png" height="70"/>
-          </div>
-          <h3>Collabora Online</h3>
-          <p>
-            The Collabora integration in CERNBox is
-              <span class="oc-text-bold oc-background-highlight">experimental</span>,
-              <span class="oc-text-bold oc-background-highlight">time-limited</span>, and is provided for
-              <span class="oc-text-bold oc-background-highlight">testing</span>
-              and <span class="oc-text-bold oc-background-highlight">evaluation purposes only</span>
-            (<a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://cernbox.docs.cern.ch/web/apps/collabora/"
-            >know more here</a>).
-          </p>
-          <p>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://indico.cern.ch/event/1652846/surveys/7168"
-            >Please provide feedback via this survey!</a>
-          </p>
-          <menu class="oc-flex oc-flex-center oc-m-rm oc-px-rm">
-            <button class="oc-button oc-button-m oc-button-primary oc-button-primary-filled oc-rounded oc-py-s oc-px-xxl" id="collabora-close-button">
-              ${$gettext('I understand')}
-            </button>
-          </menu>
-        </form>
-      `
-      collaboraModal.style.cssText = `
-        background-color: var(--oc-color-background-default);
-        border: none;
-        border-radius: 16px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        min-width: min-content;
-        width: 30vw;
-        max-width: 80vw;
-        padding: 20px;
-      `
-      const closeButton = collaboraModal.querySelector(
-        '#collabora-close-button'
-      ) as HTMLButtonElement
-      closeButton.onclick = () => {
-        const currentDate = new Date().toLocaleDateString()
-        console.log('Collabora modal closed')
-        localStorage.setItem('collaboraModalClosed', currentDate)
-      }
-      setTimeout(() => {
-        document.body.appendChild(collaboraModal)
-        collaboraModal.showModal()
-      }, 2000)
     }
 
     const loadAppUrl = useTask(function* (signal, viewMode: string) {
@@ -382,6 +291,7 @@ export default defineComponent({
         const query = stringify({
           file_id: fileId,
           lang: language.current,
+          ui_theme: themeStore.currentTheme.isDark ? 'dark' : 'light',
           ...(unref(appName) && { app_name: encodeURIComponent(unref(appName)) }),
           ...(viewMode && { view_mode: viewMode }),
           ...(unref(templateIdQueryValue) && { template_id: unref(templateIdQueryValue) })
@@ -462,27 +372,63 @@ export default defineComponent({
       )
     }
 
-    // switch to write mode when edit is clicked
-    const catchClickMicrosoftEdit = (event: MessageEvent) => {
+    // origin of the office app iframe, once known; used to validate incoming postMessages.
+    // fails open (skips the check) until appUrl resolves, mirroring
+    // useEmbedMode().verifyDelegatedAuthenticationOrigin's "if not configured, allow" discipline.
+    const expectedOfficeAppOrigin = computed(() => {
       try {
-        if (JSON.parse(event.data)?.MessageId === 'UI_Edit') {
-          loadAppUrl.perform('write')
-        }
-      } catch {}
+        return unref(appUrl) ? new URL(unref(appUrl)).origin : null
+      } catch {
+        return null
+      }
+    })
+
+    const {
+      register: registerOfficePostMessageHandler,
+      unregister: unregisterOfficePostMessageHandler,
+      handleMessage: handleOfficePostMessage,
+      notifyResourceChanged: notifyOfficePostMessageResourceChanged,
+      isAppLoaded: isOfficeAppLoaded,
+      hasPendingMentions: hasPendingOfficeMentions
+    } = useOfficePostMessageRegistry(appName, {
+      space: toRef(props, 'space'),
+      resource: toRef(props, 'resource'),
+      appIframeRef,
+      switchToWriteMode: () => loadAppUrl.perform('write')
+    })
+
+    const catchOfficePostMessage = (event: MessageEvent) => {
+      if (unref(expectedOfficeAppOrigin) && event.origin !== unref(expectedOfficeAppOrigin)) {
+        return
+      }
+      handleOfficePostMessage(event)
     }
+
+    // warns before leaving the tab if @mentions are queued but not yet flushed to
+    // notifyMentionedUsers - can't block/wait for the flush itself, browsers don't allow that,
+    // this only gives the user a chance to cancel and let it happen naturally
+    const warnAboutPendingMentions = (event: BeforeUnloadEvent) => {
+      if (!unref(hasPendingOfficeMentions)) {
+        return
+      }
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
     onMounted(() => {
-      if (determineOpenAsPreview(unref(appName))) {
-        window.addEventListener('message', catchClickMicrosoftEdit)
-      } else {
-        window.removeEventListener('message', catchClickMicrosoftEdit)
-      }
       if (unref(appName) === 'MS365' && !unref(isOfficeAlertClosed)) {
-        window.addEventListener('message', removeAlertOnSuccessfulLoad)
-        showOfficeAlert()
+        showOfficeAlert(isOfficeAppLoaded)
       }
-      if (unref(appName) === 'Collabora' && !unref(isCollaboraModalClosed)) {
-        showCollaboraModal()
-      }
+
+      window.addEventListener('message', catchOfficePostMessage)
+      window.addEventListener('beforeunload', warnAboutPendingMentions)
+      registerOfficePostMessageHandler()
+    })
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('message', catchOfficePostMessage)
+      window.removeEventListener('beforeunload', warnAboutPendingMentions)
+      unregisterOfficePostMessageHandler()
     })
 
     watch(
@@ -491,9 +437,11 @@ export default defineComponent({
         if (!newProps || !newProps.resource || !newProps.space) {
           return
         }
-        // if (isSameResource(newResource, oldResource)) {
-        //   return
-        // }
+        if (isSameResource(newProps.resource, oldProps?.resource)) {
+          return
+        }
+
+        notifyOfficePostMessageResourceChanged()
 
         let viewMode = 'view'
 
@@ -521,7 +469,8 @@ export default defineComponent({
       formParameters,
       iFrameTitle,
       method,
-      subm
+      subm,
+      appIframeRef
     }
   }
 })

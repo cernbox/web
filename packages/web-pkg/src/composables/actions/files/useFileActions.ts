@@ -272,9 +272,25 @@ export const useFileActions = () => {
   const getAllAvailableActions = (options: GetFileActionsOptions) => {
     const filterCallback = (action: FileAction) => action.isVisible(options)
 
+    // TEMPORARY: browser-local override for which app opens office files by default, written
+    // to localStorage by the office-app-feedback extension. Read raw/inline on purpose - this
+    // is meant to be ripped out in a couple of months, not grown into a proper store.
+    const preferredAppName = localStorage.getItem('preferredOfficeAppName')
+    const preferredActionName = preferredAppName
+      ? `editor-external-${preferredAppName.toLowerCase()}`
+      : null
+
     const primaryActions = [...unref(defaultActions), ...unref(editorActions)]
       .filter(filterCallback)
-      .sort((a, b) => Number(b.hasPriority) - Number(a.hasPriority))
+      .sort((a, b) => {
+        if (
+          preferredActionName &&
+          (a.name === preferredActionName || b.name === preferredActionName)
+        ) {
+          return a.name === preferredActionName ? -1 : 1
+        }
+        return Number(b.hasPriority) - Number(a.hasPriority)
+      })
 
     const secondaryActions = options.omitSystemActions
       ? []

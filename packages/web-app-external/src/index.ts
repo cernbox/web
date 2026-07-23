@@ -59,8 +59,6 @@ export default defineWebApplication({
         let visible_name = provider.name
         if (provider.name === 'MS365') {
           visible_name = 'Microsoft Office 365'
-        } else if (provider.name === 'Collabora') {
-          visible_name = 'Collabora (experimental)'
         }
         return {
           extension: mimeType.ext,

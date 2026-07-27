@@ -1,7 +1,13 @@
 import ResolvePublicLink from '../../../src/pages/resolvePublicLink.vue'
 import { defaultPlugins, defaultComponentMocks, shallowMount } from '@ownclouders/web-test-helpers'
 import { mockDeep } from 'vitest-mock-extended'
-import { CapabilityStore, ClientService, useRouteParam, useRouteQuery } from '@ownclouders/web-pkg'
+import {
+  CapabilityStore,
+  ClientService,
+  useRouteParam,
+  useRouteQuery,
+  useSpacesStore
+} from '@ownclouders/web-pkg'
 import { DavHttpError, SpaceResource } from '@ownclouders/web-client'
 import { authService } from '../../../src/services/auth'
 import { ref } from 'vue'
@@ -93,6 +99,16 @@ describe('resolvePublicLink', () => {
       expect(wrapper.find('.oc-link-resolve-error-message').text()).toContain(
         'The resource could not be located, it may not exist anymore.'
       )
+    })
+  })
+  describe('redirect url', () => {
+    it('registers the resolved space before navigating away, so re-resolving it later still finds it', async () => {
+      const { wrapper } = getWrapper()
+      await wrapper.vm.loadPublicSpaceTask.last
+      await wrapper.vm.resolvePublicLinkTask.last
+
+      const spacesStore = useSpacesStore()
+      expect(spacesStore.upsertSpace).toHaveBeenCalled()
     })
   })
   describe('internal link', () => {

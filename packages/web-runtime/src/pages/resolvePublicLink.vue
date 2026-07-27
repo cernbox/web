@@ -216,6 +216,10 @@ export default defineComponent({
         }
       }
 
+      // must happen before any early return below (e.g. redirectUrl), otherwise the space
+      // never gets registered and resolving it again later fails with "resource not found"
+      spacesStore.upsertSpace(unref(loadedSpace))
+
       const url = queryItemAsString(unref(redirectUrl))
       if (url) {
         router.push({ path: url })
@@ -243,8 +247,6 @@ export default defineComponent({
         scrollTo = unref(loadedSpace).fileId
         path = dirname(unref(item))
       }
-
-      spacesStore.upsertSpace(unref(loadedSpace))
 
       const driveAliasAndItem = urlJoin(unref(isOcmLink) ? `ocm/` : `public/`, unref(token), path)
       const targetLocation: RouteLocationNamedRaw = {

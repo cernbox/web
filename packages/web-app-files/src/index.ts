@@ -145,6 +145,18 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       route: {
         path: `/${appInfo.id}/spaces/projects`
       },
+      isActive: () => {
+        // the eos explorer space's driveAlias ('eos') is a url-prefix of real eos-backed
+        // personal/project driveAliases (`eos/user/...`, `eos/project/...`), so activeFor's
+        // href-prefix match below would otherwise also fire while browsing those unrelated
+        // spaces. Gate on the actually resolved current space first.
+        const currentSpace = spacesStores.currentSpace
+        return (
+          !currentSpace ||
+          isProjectSpaceResource(currentSpace) ||
+          currentSpace.driveType === 'explorer'
+        )
+      },
       activeFor: () => {
         const projects = [{ path: `/${appInfo.id}/spaces/project` }]
         spacesStores.spaces.forEach((drive) => {

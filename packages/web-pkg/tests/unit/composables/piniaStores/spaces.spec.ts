@@ -2,12 +2,15 @@ import { getComposableWrapper } from '@ownclouders/web-test-helpers'
 import {
   useSpacesStore,
   sortSpaceMembers,
-  useSharesStore
+  useSharesStore,
+  useConfigStore,
+  useUserStore
 } from '../../../../src/composables/piniaStores'
 import { createPinia, setActivePinia } from 'pinia'
 import { mock, mockDeep } from 'vitest-mock-extended'
 import { CollaboratorShare, GraphSharePermission, SpaceResource } from '@ownclouders/web-client'
 import { Graph } from '@ownclouders/web-client/graph'
+import { User } from '@ownclouders/web-client/graph/generated'
 
 describe('spaces', () => {
   beforeEach(() => {
@@ -203,6 +206,44 @@ describe('spaces', () => {
           expect(instance.spaces.length).toBe(2)
           expect(instance.spacesLoading).toBeFalsy()
           expect(instance.spacesInitialized).toBeTruthy()
+          expect(instance.spaces.some((s) => s.driveType === 'explorer')).toBeFalsy()
+        }
+      })
+    })
+    it('does not add an eos explorer space when runningOnEos is disabled', () => {
+      getWrapper({
+        setup: async (instance) => {
+          const spaces = [mock<SpaceResource>({ id: '1' })]
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue(spaces)
+          const configStore = useConfigStore()
+          configStore.options.runningOnEos = false
+
+          await instance.loadSpaces({ graphClient })
+
+          expect(instance.spaces.length).toBe(2)
+          expect(instance.spaces.some((s) => s.driveType === 'explorer')).toBeFalsy()
+        }
+      })
+    })
+    it('adds an eos explorer space when runningOnEos is enabled', () => {
+      getWrapper({
+        setup: async (instance) => {
+          const spaces = [mock<SpaceResource>({ id: '1' })]
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue(spaces)
+          const configStore = useConfigStore()
+          configStore.options.runningOnEos = true
+          const userStore = useUserStore()
+          userStore.setUser(mock<User>({ onPremisesSamAccountName: 'jdoe' }))
+
+          await instance.loadSpaces({ graphClient })
+
+          expect(instance.spaces.length).toBe(3)
+          const explorerSpace = instance.spaces.find((s) => s.driveType === 'explorer')
+          expect(explorerSpace).toBeDefined()
+          expect(explorerSpace.driveAlias).toBe('eos')
+          expect(explorerSpace.webDavPath).toBe('/files/jdoe/eos')
         }
       })
     })

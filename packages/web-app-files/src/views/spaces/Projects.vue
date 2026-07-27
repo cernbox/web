@@ -471,20 +471,20 @@ export default defineComponent({
     }
 
     const getTotalQuota = (space: SpaceResource) => {
-      if (space.spaceQuota.total === 0) {
+      if (space.spaceQuota?.total === 0) {
         return $gettext('Unrestricted')
       }
 
-      return formatFileSize(space.spaceQuota.total, language.current)
+      return formatFileSize(space.spaceQuota?.total, language.current)
     }
     const getUsedQuota = (space: SpaceResource) => {
-      if (space.spaceQuota.used === undefined) {
+      if (space.spaceQuota?.used === undefined) {
         return '-'
       }
       return formatFileSize(space.spaceQuota.used, language.current)
     }
     const getRemainingQuota = (space: SpaceResource) => {
-      if (space.spaceQuota.remaining === undefined) {
+      if (space.spaceQuota?.remaining === undefined) {
         return '-'
       }
       return formatFileSize(space.spaceQuota.remaining, language.current)

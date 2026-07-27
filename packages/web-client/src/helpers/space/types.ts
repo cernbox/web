@@ -16,6 +16,7 @@ import { Ability, Resource } from '../resource'
 
 export const SHARE_JAIL_ID = 'a0ca6a90-a365-4782-871e-d44447bbc668'
 export const OCM_PROVIDER_ID = '89f37a33-858b-45fa-8890-a1f2b27d90e1'
+export const EOS_EXPLORER_SPACE_ID = 'f6b1a2c3-7d4e-4b8a-9c2f-3e5d6a7b8c9d'
 
 export type SpaceMember = {
   grantedTo: SharePointIdentitySet

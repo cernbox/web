@@ -1,4 +1,4 @@
-import { buildSpace } from '../../../../src/helpers/space'
+import { buildEosExplorerSpace, buildSpace, EOS_EXPLORER_SPACE_ID } from '../../../../src/helpers/space'
 import { mock } from 'vitest-mock-extended'
 import { Ability, GraphSharePermission, ShareRole } from '@ownclouders/web-client'
 import { Drive, User } from '@ownclouders/web-client/graph/generated'
@@ -395,4 +395,33 @@ describe('buildSpace', () => {
       }
     )
   })
+})
+
+describe('buildEosExplorerSpace', () => {
+  const userName = 'jdoe'
+  const serverUrl = 'https://example.com'
+
+  it('builds a synthetic space with the expected identity and webdav path', () => {
+    const space = buildEosExplorerSpace({ userName, serverUrl })
+    expect(space.id).toBe(EOS_EXPLORER_SPACE_ID)
+    expect(space.driveType).toBe('explorer')
+    expect(space.driveAlias).toBe('eos')
+    expect(space.webDavPath).toBe('/files/jdoe/eos')
+    expect(space.mimeType).toBe('eos')
+  })
+
+  it('resolves the webdav url through the legacy per-user files endpoint', () => {
+    const space = buildEosExplorerSpace({ userName, serverUrl })
+    expect(space.getWebDavUrl({ path: '' })).toBe(
+      'https://example.com/remote.php/dav/files/jdoe/eos'
+    )
+  })
+
+  it.each(['canRename', 'canBeDeleted', 'canShare'] as const)(
+    '%s is false given no user/membership',
+    (method) => {
+      const space = buildEosExplorerSpace({ userName, serverUrl })
+      expect(space[method]()).toBeFalsy()
+    }
+  )
 })

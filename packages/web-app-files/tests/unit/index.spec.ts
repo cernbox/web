@@ -30,5 +30,21 @@ describe('Web app files', () => {
         expect(items[0].isVisible()).toBeFalsy()
       })
     })
+    describe('Spaces', () => {
+      it.each([
+        { currentSpace: undefined, expectedResult: true },
+        { currentSpace: mock<SpaceResource>({ driveType: 'project' }), expectedResult: true },
+        { currentSpace: mock<SpaceResource>({ driveType: 'explorer' }), expectedResult: true },
+        { currentSpace: mock<SpaceResource>({ driveType: 'personal' }), expectedResult: false }
+      ])(
+        'is active only for project/explorer spaces, not for other eos-backed spaces like personal',
+        ({ currentSpace, expectedResult }) => {
+          const spacesStore = useSpacesStore()
+          spacesStore.currentSpace = currentSpace
+          const items = navItems(undefined)
+          expect(items[4].isActive()).toBe(expectedResult)
+        }
+      )
+    })
   })
 })

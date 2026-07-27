@@ -151,4 +151,76 @@ describe('buildResource', () => {
       expect(resource.canEditTags()).toBeFalsy()
     }
   )
+
+  describe('path', () => {
+    it('resolves to "/" when the filename is an exact match of webDavBasePath', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc',
+        basename: 'abc',
+        props: {}
+      })
+      const resource = buildResource(webDavResponse, '/spaces/abc')
+      expect(resource.path).toBe('/')
+    })
+
+    it('strips webDavBasePath as a prefix when the filename is nested underneath it', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc/sub/dir/file.txt',
+        basename: 'file.txt',
+        props: {}
+      })
+      const resource = buildResource(webDavResponse, '/spaces/abc')
+      expect(resource.path).toBe('/sub/dir/file.txt')
+    })
+
+    it('falls back to the legacy heuristic when webDavBasePath only shares a string prefix, not a real path segment', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abcdef/foo',
+        basename: 'foo',
+        props: {}
+      })
+      const resource = buildResource(webDavResponse, '/spaces/abc')
+      // '/spaces/abc' doesn't actually match '/spaces/abcdef/foo' (different space id), so this
+      // falls through to the legacy heuristic rather than being falsely treated as a prefix match
+      expect(resource.path).toBe('/foo')
+    })
+
+    it('falls back to the legacy /files-or/space heuristic when no webDavBasePath is given', () => {
+      const webDavResponse = buildMockWebDavResponse({})
+      const resource = buildResource(webDavResponse)
+      expect(resource.path).toBe('/file.txt')
+    })
+  })
+
+  describe('isShareRoot', () => {
+    it('is false when the ShareRoot prop is absent', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc',
+        basename: 'abc',
+        props: { [DavProperty.ShareRoot]: undefined }
+      })
+      const resource = buildResource(webDavResponse, '/spaces/abc')
+      expect(resource.isShareRoot()).toBeFalsy()
+    })
+
+    it('is true when the ShareRoot prop is present and the resource is the root', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc',
+        basename: 'abc',
+        props: { [DavProperty.ShareRoot]: '/some/remote/path' }
+      })
+      const resource = buildResource(webDavResponse, '/spaces/abc')
+      expect(resource.isShareRoot()).toBeTruthy()
+    })
+
+    it('is false when the ShareRoot prop is present but the resource is a descendant of the root', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc/sub',
+        basename: 'sub',
+        props: { [DavProperty.ShareRoot]: '/some/remote/path' }
+      })
+      const resource = buildResource(webDavResponse, '/spaces/abc')
+      expect(resource.isShareRoot()).toBeFalsy()
+    })
+  })
 })

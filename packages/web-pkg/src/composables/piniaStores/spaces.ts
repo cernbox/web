@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, unref } from 'vue'
 import {
+  buildEosExplorerSpace,
   buildShareSpaceResource,
   isMountPointSpaceResource,
   SpaceResource
@@ -214,7 +215,16 @@ export const useSpacesStore = defineStore('spaces', () => {
         })
       ])
 
-      addSpaces([...personalSpaces, ...projectSpaces])
+      const eosExplorerSpaces = configStore.options.runningOnEos
+        ? [
+            buildEosExplorerSpace({
+              userName: userStore.user.onPremisesSamAccountName,
+              serverUrl: configStore.serverUrl
+            })
+          ]
+        : []
+
+      addSpaces([...personalSpaces, ...projectSpaces, ...eosExplorerSpaces])
       spacesInitialized.value = true
     } finally {
       spacesLoading.value = false

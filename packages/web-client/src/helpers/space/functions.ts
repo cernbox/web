@@ -8,6 +8,7 @@ import {
   ResourceIndicator
 } from '../resource'
 import {
+  EOS_EXPLORER_SPACE_ID,
   isPersonalSpaceResource,
   isPublicSpaceResource,
   PublicSpaceResource,
@@ -127,6 +128,32 @@ export function buildShareSpaceResource({
     space.driveAlias = `${driveAliasPrefix}/${newName}`
     space.name = newName
   }
+  return space
+}
+
+export function buildWebDavEosExplorerPath(userName: string) {
+  return urlJoin('files', userName, 'eos', { leadingSlash: true })
+}
+
+export function buildEosExplorerSpace({
+  userName,
+  serverUrl
+}: {
+  userName: string
+  serverUrl: string
+}): SpaceResource {
+  const space = buildSpace(
+    {
+      id: EOS_EXPLORER_SPACE_ID,
+      name: 'EOS',
+      driveType: 'explorer',
+      driveAlias: 'eos',
+      webDavPath: buildWebDavEosExplorerPath(userName),
+      serverUrl
+    },
+    {}
+  )
+  space.mimeType = 'eos'
   return space
 }
 

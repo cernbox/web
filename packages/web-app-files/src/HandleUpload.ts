@@ -213,6 +213,7 @@ export class HandleUpload extends BasePlugin {
       if (
         !targetUploadSpace ||
         isShareSpaceResource(targetUploadSpace) ||
+        targetUploadSpace.driveType === 'explorer' ||
         (isPersonalSpaceResource(targetUploadSpace) &&
           !targetUploadSpace.isOwner(this.userStore.user))
       ) {

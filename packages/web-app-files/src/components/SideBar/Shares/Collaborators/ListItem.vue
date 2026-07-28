@@ -252,7 +252,7 @@ export default defineComponent({
     }
     const notifyShare = async () => {
       try {
-        const resp = (await clientService.httpAuthenticated.get(
+        const resp = (await clientService.httpAuthenticated.post(
           `/ocs/v1.php/apps/files_sharing/api/v1/shares/${props.share.id}/notify`
         )) as any
         showMessage({

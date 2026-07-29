@@ -222,7 +222,10 @@
       </oc-button>
     </template>
     <template #actions="{ item }">
-      <div v-if="!isResourceDisabled(item)" class="resource-table-actions">
+      <div
+        v-if="!isResourceDisabled(item) && !(isEmbedModeEnabled && isFilePicker)"
+        class="resource-table-actions"
+      >
         <!-- @slot Add quick actions before the `context-menu / three dot` button in the actions column -->
         <slot name="quickActions" :resource="item" />
         <context-menu-quick-action
@@ -873,6 +876,13 @@ export default defineComponent({
               return false
             }
 
+            // clicking the shared-with avatars would also trigger the row's own @highlight
+            // handler (the file-pick postMessage), same reason context menu/rename are
+            // hidden in this mode - see isEmbedModeEnabled/isFilePicker usages below
+            if (field.name === 'sharedWith' && this.isEmbedModeEnabled && this.isFilePicker) {
+              return false
+            }
+
             let hasField: boolean
             if (field.prop) {
               hasField = get(firstResource, field.prop) !== undefined
@@ -965,6 +975,9 @@ export default defineComponent({
       return item.id === this.latestSelectedId
     },
     hasRenameAction(item: Resource) {
+      if (this.isEmbedModeEnabled && this.isFilePicker) {
+        return false
+      }
       if (isProjectSpaceResource(item)) {
         return this.renameActionsSpace.filter((menuItem) =>
           menuItem.isVisible({ resources: [item] })
@@ -1158,6 +1171,13 @@ export default defineComponent({
       )
     },
     emitFileClick(resource: Resource) {
+      // in single-file embed mode, the row's own @highlight handler (fileClicked) already
+      // handles the click (file-pick postMessage) - the default-action dispatch this
+      // triggers (e.g. falling back to download-file) is unwanted and would run alongside it
+      if (this.isEmbedModeEnabled && this.isFilePicker) {
+        return
+      }
+
       const space = this.getMatchingSpace(resource)
 
       /**

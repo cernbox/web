@@ -315,6 +315,16 @@ const processingResourcesWithAllFields = [
 ] as IncomingShareResource[]
 
 describe('ResourceTable', () => {
+  afterEach(() => {
+    // several tests below override this with mockReturnValue (not mockReturnValueOnce),
+    // which otherwise leaks into unrelated, later tests
+    mockUseEmbedMode.mockReturnValue({
+      isLocationPicker: computed(() => false),
+      isFilePicker: computed(() => false),
+      isEnabled: computed(() => false)
+    })
+  })
+
   it('displays all known fields of the resources', () => {
     const { wrapper } = getMountedWrapper()
     for (const field of fields) {
@@ -530,6 +540,20 @@ describe('ResourceTable', () => {
       expect(wrapper.emitted().fileClick).toBeUndefined()
     })
 
+    it('does not emit fileClick in embed mode file picker (unlike the non-picker case, the name is still clickable there)', async () => {
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => true),
+        postMessage: vi.fn()
+      })
+      const { wrapper } = getMountedWrapper()
+      const tr = await wrapper.find('.oc-tbody-tr-forest .oc-resource-name')
+      await tr.trigger('click')
+      await flushPromises()
+
+      expect(wrapper.emitted().fileClick).toBeUndefined()
+    })
+
     it('does not emit fileClick event if file can not be opened via secure view', async () => {
       const { wrapper } = getMountedWrapper({
         canBeOpenedWithSecureView: false,
@@ -629,6 +653,35 @@ describe('ResourceTable', () => {
       ).toBeFalsy()
     })
 
+    it('does not show the three-dot icon in single-file embed mode', () => {
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => true)
+      })
+      const { wrapper } = getMountedWrapper()
+      expect(wrapper.find('.resource-table-btn-action-dropdown').exists()).toBeFalsy()
+    })
+
+    it('does not open the context menu on right-click in single-file embed mode', async () => {
+      const spyDisplayPositionedDropdown = vi.mocked(displayPositionedDropdown)
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => true)
+      })
+      const { wrapper } = getMountedWrapper()
+      await wrapper.find('.oc-tbody-tr').trigger('contextmenu')
+      expect(spyDisplayPositionedDropdown).not.toHaveBeenCalled()
+    })
+
+    it('still shows the three-dot icon in non-file-picker embed mode', () => {
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => false)
+      })
+      const { wrapper } = getMountedWrapper()
+      expect(wrapper.find('.resource-table-btn-action-dropdown').exists()).toBeTruthy()
+    })
+
     it('removes invalid chars from item ids for usage in html template', async () => {
       const { wrapper } = getMountedWrapper()
       const contextMenuTriggers = await wrapper.findAll('.resource-table-btn-action-dropdown')
@@ -726,6 +779,19 @@ describe('ResourceTable', () => {
       expect(wrapper.find('.resource-table-shared-with').exists()).toBeTruthy()
       expect(wrapper.findAll('.resource-table-shared-with .oc-avatar').length).toBe(1)
     })
+
+    it('is hidden in single-file embed mode - clicking it would also trigger the row pick', () => {
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => true)
+      })
+      const resource = mock<OutgoingShareResource>({ id: '1' })
+      resource.sharedWith = [{ id: 'bob', displayName: 'Bob', shareType: ShareTypes.user.value }]
+
+      const { wrapper } = getMountedWrapper({ resources: [resource] })
+
+      expect(wrapper.find('.resource-table-shared-with').exists()).toBeFalsy()
+    })
   })
   describe('rename action', () => {
     it('shows if available', () => {
@@ -735,6 +801,22 @@ describe('ResourceTable', () => {
     it('does not show if not available', () => {
       const { wrapper } = getMountedWrapper({ hasRenameAction: false })
       expect(wrapper.find('.resource-table-edit-name').exists()).toBeFalsy()
+    })
+    it('does not show in single-file embed mode, even if otherwise available', () => {
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => true)
+      })
+      const { wrapper } = getMountedWrapper()
+      expect(wrapper.find('.resource-table-edit-name').exists()).toBeFalsy()
+    })
+    it('still shows in non-file-picker embed mode', () => {
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: computed(() => true),
+        isFilePicker: computed(() => false)
+      })
+      const { wrapper } = getMountedWrapper()
+      expect(wrapper.find('.resource-table-edit-name').exists()).toBeTruthy()
     })
   })
 })

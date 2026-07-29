@@ -1,5 +1,10 @@
 import { computed, Ref, ref, unref, watch } from 'vue'
-import { SHARE_JAIL_ID, SpaceResource } from '@ownclouders/web-client'
+import {
+  isPersonalSpaceResource,
+  isProjectSpaceResource,
+  SHARE_JAIL_ID,
+  SpaceResource
+} from '@ownclouders/web-client'
 import { useRouteQuery } from '../router'
 import { useSpacesLoading } from './useSpacesLoading'
 import { queryItemAsString } from '../appDefaults'
@@ -55,10 +60,13 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
     })
   }
 
-  // clean up global state as the watchers aren't triggered anymore when navigating away
+  // clean up global state as the watchers aren't triggered anymore when navigating away.
+  // keep it set for personal/project spaces so leaving to e.g. an editor app and back
+  // doesn't transiently drop currentSpace (driveAlias may not be 'personal/'/'project/'
+  // prefixed, e.g. eos-backed spaces use 'eos/user/...' / 'eos/project/...')
   onUnmounted(() => {
-    const driveAliasAndItem = unref(options.driveAliasAndItem)
-    if (!driveAliasAndItem?.startsWith('personal/') && !driveAliasAndItem?.startsWith('project/')) {
+    const currentSpace = unref(space)
+    if (!isPersonalSpaceResource(currentSpace) && !isProjectSpaceResource(currentSpace)) {
       spacesStore.setCurrentSpace(null)
     }
   })

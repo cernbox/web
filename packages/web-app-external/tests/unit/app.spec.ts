@@ -104,6 +104,22 @@ describe('The app provider extension', () => {
       expect(alert).toBeTruthy()
       expect(alert.querySelector('button')).toBeFalsy()
     })
+    it('removes the alerts container once its last alert is dismissed, so it stops blocking clicks underneath', async () => {
+      const makeRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: { ...providerSuccessResponseGet, forced_viewmode_reason: 'File is locked' }
+      })
+      createShallowMountWrapper(makeRequest, { appNames: ['example-app'] }, mock<SpaceResource>())
+      await flushPromises()
+
+      const alert = document.getElementById('warning-alert')
+      const closeButton = alert.lastElementChild as HTMLElement
+      closeButton.click()
+
+      expect(document.getElementById('warning-alert')).toBeFalsy()
+      expect(document.getElementById('app-alerts-container')).toBeFalsy()
+    })
     it('shows a switch button when the locking app is currently available', async () => {
       const makeRequest = vi.fn().mockResolvedValue({
         ok: true,

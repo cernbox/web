@@ -156,6 +156,17 @@ export default defineComponent({
       return alertsContainer
     }
 
+    // the container itself is position:fixed, full-width, z-index:9999 - even with no
+    // alerts left, its own padding still occupies space and blocks clicks on whatever's
+    // underneath, so it needs to go once the last alert in it is removed
+    const removeAlert = (alert: HTMLElement) => {
+      const container = alert.parentElement
+      alert.remove()
+      if (container?.id === 'app-alerts-container' && !container.hasChildNodes()) {
+        container.remove()
+      }
+    }
+
     // remixicon error-warning-fill
     const alertIcon =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z"></path></svg>'
@@ -232,7 +243,7 @@ export default defineComponent({
           flex-shrink: 0;
         `
         actionButton.onclick = () => {
-          alert.remove()
+          removeAlert(alert)
           action.onClick()
         }
         contentWrapper.appendChild(actionButton)
@@ -250,7 +261,7 @@ export default defineComponent({
         flex-shrink: 0;
       `
       closeButton.onclick = () => {
-        alert.remove()
+        removeAlert(alert)
         onClose?.()
       }
       alert.appendChild(closeButton)

@@ -5,7 +5,7 @@ import {
   nextTicks,
   shallowMount
 } from '@ownclouders/web-test-helpers'
-import { AppProviderService, useRequest, useRoute } from '@ownclouders/web-pkg'
+import { AppProviderService, useRequest, useRoute, useRouteQuery } from '@ownclouders/web-pkg'
 import { computed, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 
@@ -18,7 +18,8 @@ import { WebThemeType } from '@ownclouders/web-pkg'
 vi.mock('@ownclouders/web-pkg', async (importOriginal) => ({
   ...(await importOriginal<any>()),
   useRequest: vi.fn(),
-  useRoute: vi.fn()
+  useRoute: vi.fn(),
+  useRouteQuery: vi.fn()
 }))
 
 vi.mock('../../src/composables', async (importOriginal) => ({
@@ -90,6 +91,40 @@ describe('The app provider extension', () => {
     await flushPromises()
     expect(wrapper.html()).toMatchSnapshot()
   })
+
+  // deep link into a comment: the editor only ever sees its own iframe url, so the anchor has
+  // to be forwarded onto the app url rather than left on ours
+  describe('actionLink forwarding', () => {
+    const getMakeRequest = () =>
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: providerSuccessResponseGet
+      })
+
+    it('forwards an actionLink from the route onto the app url', async () => {
+      const { wrapper } = createShallowMountWrapper(
+        getMakeRequest(),
+        { appNames: ['example-app'] },
+        null,
+        mock<WebThemeType>({ isDark: false }),
+        { actionLink: '{"action":{"type":"comment","data":"1_1"}}' }
+      )
+      await flushPromises()
+
+      // lower-cased on the way out, to match what editor-wopi.ejs reads
+      expect(wrapper.html()).toContain('actionlink=%7B%22action%22')
+    })
+
+    it('leaves the app url alone when there is no actionLink', async () => {
+      const { wrapper } = createShallowMountWrapper(getMakeRequest())
+      await flushPromises()
+
+      expect(wrapper.html()).toContain(appUrl)
+      expect(wrapper.html()).not.toContain('actionlink')
+    })
+  })
+
   describe('when the file is locked by another app', () => {
     it('shows a warning without a switch button when the locking app is unknown', async () => {
       const makeRequest = vi.fn().mockResolvedValue({
@@ -347,7 +382,8 @@ function createShallowMountWrapper(
   makeRequest = vi.fn().mockResolvedValue({ status: 200 }),
   appProviderService: Partial<AppProviderService> = { appNames: ['example-app'] },
   space: SpaceResource = null,
-  currentTheme: WebThemeType = mock<WebThemeType>({ isDark: false })
+  currentTheme: WebThemeType = mock<WebThemeType>({ isDark: false }),
+  routeQuery: Record<string, string> = {}
 ) {
   vi.mocked(useRequest).mockImplementation(() => ({
     makeRequest
@@ -355,6 +391,7 @@ function createShallowMountWrapper(
   vi.mocked(useRoute).mockImplementation(() =>
     ref(mock<RouteLocation>({ name: 'external-example-app-apps' }))
   )
+  vi.mocked(useRouteQuery).mockImplementation((name: string) => ref(routeQuery[name]))
   const mocks = {
     ...defaultComponentMocks(),
     $appProviderService: mock<AppProviderService>(appProviderService)

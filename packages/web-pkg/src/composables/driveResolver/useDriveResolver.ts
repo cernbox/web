@@ -1,5 +1,6 @@
 import { computed, Ref, ref, unref, watch } from 'vue'
 import {
+  isExplorerSpaceResource,
   isPersonalSpaceResource,
   isProjectSpaceResource,
   SHARE_JAIL_ID,
@@ -40,10 +41,20 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
   const item: Ref<string> = ref(null)
   const loading = ref(false)
 
-  const getSpaceByDriveAliasAndItem = (driveAliasAndItem: string) => {
+  const getSpaceByDriveAliasAndItem = (
+    driveAliasAndItem: string,
+    { includeExplorerSpace = false }: { includeExplorerSpace?: boolean } = {}
+  ) => {
     const driveAliasAndItemSegments = driveAliasAndItem.split('/')
 
     return unref(spaces).find((s) => {
+      // the explorer space is a catch all, its driveAlias ('eos') is a url-prefix of every
+      // eos-backed driveAlias ('eos/user/...', 'eos/project/...'). it must never win over a real
+      // space, hence it's only being taken into account as a last resort (see below).
+      if (isExplorerSpaceResource(s) && !includeExplorerSpace) {
+        return false
+      }
+
       if (!driveAliasAndItem.startsWith(s.driveAlias)) {
         return false
       }
@@ -84,8 +95,12 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
         return
       }
 
+      // the explorer space is excluded because its driveAlias matches any eos-backed path, which
+      // would keep us in the catch all space when navigating to a real space.
       const isOnlyItemPathChanged =
-        unref(space) && driveAliasAndItem.startsWith(unref(space).driveAlias)
+        unref(space) &&
+        !isExplorerSpaceResource(unref(space)) &&
+        driveAliasAndItem.startsWith(unref(space).driveAlias)
       if (isOnlyItemPathChanged) {
         item.value = urlJoin(driveAliasAndItem.slice(unref(space).driveAlias.length), {
           leadingSlash: true
@@ -140,6 +155,14 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
           }
 
           matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem)
+        }
+
+        if (!matchingSpace) {
+          // no real space matches, fall back to the explorer catch all space (if present). it gives
+          // access to any path the user has access to via the storage acls.
+          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, {
+            includeExplorerSpace: true
+          })
         }
 
         if (matchingSpace) {

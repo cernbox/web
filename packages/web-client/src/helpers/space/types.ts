@@ -79,6 +79,13 @@ export const isShareSpaceResource = (resource: Resource): resource is ShareSpace
   return (resource as SpaceResource)?.driveType === 'share'
 }
 
+export interface ExplorerSpaceResource extends SpaceResource {
+  __explorerSpaceResource?: any
+}
+export const isExplorerSpaceResource = (resource: Resource): resource is ExplorerSpaceResource => {
+  return (resource as SpaceResource)?.driveType === 'explorer'
+}
+
 export interface MountPointSpaceResource extends SpaceResource {
   __mountPointSpaceResource?: any
 }

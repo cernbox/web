@@ -120,4 +120,110 @@ describe('useDriveResolver', () => {
       }
     )
   })
+  describe('eos explorer space', () => {
+    const explorerSpaceMock = () =>
+      mockDeep<SpaceResource>({ driveType: 'explorer', driveAlias: 'eos' })
+    const genericRouteMocks = () =>
+      defaultComponentMocks({
+        currentRoute: mock<RouteLocation>({
+          name: 'files-spaces-generic',
+          path: '/',
+          query: { fileId: undefined }
+        })
+      })
+
+    it.each([
+      ['a share root space', 'share'],
+      ['the personal space', 'personal']
+    ])('does not shadow %s matching the same drive alias', (_, driveType) => {
+      const driveAlias = 'eos/user/j/john'
+      const spaceMock = mockDeep<SpaceResource>({ id: 'realSpace', driveType, driveAlias })
+      const mocks = genericRouteMocks()
+
+      getComposableWrapper(
+        () => {
+          const { space, item } = useDriveResolver({
+            driveAliasAndItem: ref(`${driveAlias}/someFolder`)
+          })
+          expect(unref(space).id).toEqual('realSpace')
+          expect(unref(item)).toEqual('/someFolder')
+        },
+        {
+          mocks,
+          provide: mocks,
+          pluginOptions: {
+            piniaOptions: {
+              // the explorer space is being added to the store before mount points are loaded
+              spacesState: { spaces: [explorerSpaceMock(), spaceMock], mountPointsInitialized: true }
+            }
+          }
+        }
+      )
+    })
+    it('loads mount points before falling back to the explorer space', () => {
+      const mocks = genericRouteMocks()
+
+      getComposableWrapper(
+        () => {
+          const spacesStore = useSpacesStore()
+          useDriveResolver({ driveAliasAndItem: ref('eos/user/j/john/someFolder') })
+          expect(spacesStore.loadMountPoints).toHaveBeenCalled()
+        },
+        {
+          mocks,
+          provide: mocks,
+          pluginOptions: {
+            piniaOptions: {
+              spacesState: { spaces: [explorerSpaceMock()], mountPointsInitialized: false },
+              configState: { options: { routing: { fullShareOwnerPaths: true } } }
+            }
+          }
+        }
+      )
+    })
+    it('resolves as a last resort when no other space matches', () => {
+      const explorerSpace = explorerSpaceMock()
+      const mocks = genericRouteMocks()
+
+      getComposableWrapper(
+        () => {
+          const { space, item } = useDriveResolver({
+            driveAliasAndItem: ref('eos/project/someProject/someFolder')
+          })
+          expect(unref(space).driveType).toEqual('explorer')
+          expect(unref(item)).toEqual('/project/someProject/someFolder')
+        },
+        {
+          mocks,
+          provide: mocks,
+          pluginOptions: {
+            piniaOptions: {
+              spacesState: { spaces: [explorerSpace], mountPointsInitialized: true }
+            }
+          }
+        }
+      )
+    })
+    it('does not resolve for a drive alias outside of its own', () => {
+      const mocks = genericRouteMocks()
+
+      getComposableWrapper(
+        () => {
+          const { space } = useDriveResolver({
+            driveAliasAndItem: ref('personal/someRemovedSpace/someFolder')
+          })
+          expect(unref(space)).toBeFalsy()
+        },
+        {
+          mocks,
+          provide: mocks,
+          pluginOptions: {
+            piniaOptions: {
+              spacesState: { spaces: [explorerSpaceMock()], mountPointsInitialized: true }
+            }
+          }
+        }
+      )
+    })
+  })
 })

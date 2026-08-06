@@ -1,6 +1,11 @@
-import { buildEosExplorerSpace, buildSpace, EOS_EXPLORER_SPACE_ID } from '../../../../src/helpers/space'
+import {
+  buildEosExplorerSpace,
+  buildSpace,
+  EOS_EXPLORER_SPACE_ID,
+  isExplorerSpaceResource
+} from '../../../../src/helpers/space'
 import { mock } from 'vitest-mock-extended'
-import { Ability, GraphSharePermission, ShareRole } from '@ownclouders/web-client'
+import { Ability, GraphSharePermission, ShareRole, SpaceResource } from '@ownclouders/web-client'
 import { Drive, User } from '@ownclouders/web-client/graph/generated'
 
 const noPermissionsRole = mock<ShareRole>({ id: '1', rolePermissions: [] })
@@ -408,6 +413,12 @@ describe('buildEosExplorerSpace', () => {
     expect(space.driveAlias).toBe('eos')
     expect(space.webDavPath).toBe('/files/jdoe/eos')
     expect(space.mimeType).toBe('eos')
+  })
+
+  it('is detected as an explorer space', () => {
+    const space = buildEosExplorerSpace({ userName, serverUrl })
+    expect(isExplorerSpaceResource(space)).toBe(true)
+    expect(isExplorerSpaceResource(mock<SpaceResource>({ driveType: 'personal' }))).toBe(false)
   })
 
   it('resolves the webdav url through the legacy per-user files endpoint', () => {

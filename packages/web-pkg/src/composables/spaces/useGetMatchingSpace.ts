@@ -29,6 +29,14 @@ export const useGetMatchingSpace = (options?: GetMatchingSpaceOptions) => {
   }
 
   const getMatchingSpace = (resource: Resource): SpaceResource => {
+    // the eos explorer space is synthetic - it isn't a real drive, so files reached through it
+    // report their real eos storage id, which never matches the explorer space's own (made up)
+    // id. Storage-id matching below can therefore never find it, and falls through to the wrong
+    // space. Since every resource reached while browsing it genuinely belongs to it, trust it.
+    if (spacesStore.currentSpace?.driveType === 'explorer') {
+      return spacesStore.currentSpace
+    }
+
     let storageId = resource.storageId
 
     if (

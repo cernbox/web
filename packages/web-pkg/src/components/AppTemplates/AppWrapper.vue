@@ -333,13 +333,15 @@ export default defineComponent({
     }).restartable()
 
     const loadFileTask = useTask(function* (signal) {
+      // Bail out before the `finally` below: nothing has been loaded yet, so clearing `loading`
+      // here would render the slot without a resource. The wrapped app receives it as a prop and
+      // typically only reacts to the very first value it sees, so handing it `undefined` means it
+      // never opens the file. The watcher runs this again once the context and resource exist.
+      if (!unref(currentFileContext) || !unref(resource)) {
+        return null
+      }
+
       try {
-        if (!unref(currentFileContext)) {
-          return null
-        }
-        if (!unref(resource)) {
-          return null
-        }
         const newExtension = props.importResourceWithExtension(unref(resource))
         if (newExtension) {
           const timestamp = DateTime.local().toFormat('yyyyMMddHHmmss')

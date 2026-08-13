@@ -3,8 +3,10 @@ import { Resource, SpaceResource } from '@ownclouders/web-client'
 import {
   MountPointSpaceResource,
   extractStorageId,
+  isFallbackSpaceResource,
   isMountPointSpaceResource,
   isProjectSpaceResource,
+  isSegmentPrefix,
   ShareTypes,
   OCM_PROVIDER_ID,
   isShareResource
@@ -28,13 +30,26 @@ export const useGetMatchingSpace = (options?: GetMatchingSpaceOptions) => {
     return unref(options?.space) || unref(spaces).find((space) => space.id === storageId)
   }
 
+  /**
+   * The fallback space is synthetic: resources reached through it report their *real* storage id
+   * (which never matches the fallback's own, made-up id), while their `path` is relative to the
+   * fallback's webdav root. Resolving them by storage id would therefore produce a path relative
+   * to the wrong root (`/spaces/<projectId>/project/c/foo/bar.txt`). Detect them by their webdav
+   * path rather than by the ambient `currentSpace`, so that resources which merely happen to be
+   * resolved while a fallback route is open - clipboard entries, file-picker results, search hits
+   * - still resolve to the space they actually came from.
+   */
+  const getListingFallbackSpace = (resource: Resource): SpaceResource => {
+    const fallbackSpace = unref(spaces).find(isFallbackSpaceResource)
+    return fallbackSpace && isSegmentPrefix(resource?.webDavPath, fallbackSpace.webDavPath)
+      ? fallbackSpace
+      : null
+  }
+
   const getMatchingSpace = (resource: Resource): SpaceResource => {
-    // the eos explorer space is synthetic - it isn't a real drive, so files reached through it
-    // report their real eos storage id, which never matches the explorer space's own (made up)
-    // id. Storage-id matching below can therefore never find it, and falls through to the wrong
-    // space. Since every resource reached while browsing it genuinely belongs to it, trust it.
-    if (spacesStore.currentSpace?.driveType === 'explorer') {
-      return spacesStore.currentSpace
+    const fallbackSpace = getListingFallbackSpace(resource)
+    if (!unref(options?.space) && fallbackSpace) {
+      return fallbackSpace
     }
 
     let storageId = resource.storageId

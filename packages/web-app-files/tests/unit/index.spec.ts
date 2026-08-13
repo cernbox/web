@@ -54,6 +54,30 @@ describe('Web app files', () => {
           expect(items[4].isActive()).toBe(expectedResult)
         }
       )
+
+      it('does not claim every eos route via the catch-all fallback space', () => {
+        // the fallback's driveAlias ('eos') is a url-prefix of every real eos driveAlias. Listing
+        // it in activeFor made the href check in Application.vue match any eos route - so browsing
+        // a share lit up both "Shares" and "Spaces" at once.
+        const spacesStore = useSpacesStore()
+        spacesStore.spaces = [
+          mock<SpaceResource>({ id: 'fallback', driveType: 'explorer', driveAlias: 'eos' }),
+          mock<SpaceResource>({
+            id: 'p',
+            driveType: 'project',
+            driveAlias: 'eos/project/c/cernbox'
+          })
+        ]
+
+        const paths = navItems(undefined)[4].activeFor().map(({ path }) => path)
+
+        expect(paths).not.toContain('/files/spaces/eos')
+        expect(paths).toContain('/files/spaces/eos/project/c/cernbox')
+        // a share's owner path must not be claimed by any of them
+        expect(
+          paths.some((p) => '/files/spaces/eos/user/p/pmedinar/sub'.startsWith(p))
+        ).toBeFalsy()
+      })
     })
   })
 })

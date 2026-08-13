@@ -149,10 +149,9 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
         path: `/${appInfo.id}/spaces/projects`
       },
       isActive: () => {
-        // the fallback space's driveAlias ('eos') is a url-prefix of real eos-backed
-        // personal/project driveAliases (`eos/user/...`, `eos/project/...`), so activeFor's
-        // href-prefix match below would otherwise also fire while browsing those unrelated
-        // spaces. Gate on the actually resolved current space first.
+        // `currentSpace` is briefly null while navigating (the outgoing route's resolver clears it),
+        // and it is permanently null on the projects overview itself - so "no space" has to stay
+        // active, and the href match in activeFor is what narrows it down.
         const currentSpace = spacesStores.currentSpace
         return (
           !currentSpace ||
@@ -163,7 +162,10 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       activeFor: () => {
         const projects = [{ path: `/${appInfo.id}/spaces/project` }]
         spacesStores.spaces.forEach((drive) => {
-          if (isProjectSpaceResource(drive) || isFallbackSpaceResource(drive)) {
+          // deliberately excludes the catch-all fallback space: its driveAlias ('eos') is a
+          // url-prefix of every real eos-backed driveAlias, so listing it here would match any
+          // eos route - including shares - and light this item up alongside the right one
+          if (isProjectSpaceResource(drive)) {
             projects.push({
               path: `/${appInfo.id}/spaces/${drive.driveAlias}`
             })

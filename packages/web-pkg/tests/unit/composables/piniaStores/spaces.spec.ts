@@ -90,6 +90,22 @@ describe('spaces', () => {
         }
       })
     })
+    it('is not flipped by on-demand loads', async () => {
+      // the application layout swaps the whole router view for a spinner while this is true, so an
+      // on-demand load must not toggle it - a view refreshing spaces on mount would remount itself
+      // in a loop
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([mock<SpaceResource>({ id: '1' })])
+
+          const load = instance.loadSpacesByType('project', { graphClient })
+          expect(instance.spacesLoading).toEqual(false)
+          await load
+          expect(instance.spacesLoading).toEqual(false)
+        }
+      })
+    })
   })
   describe('method "setCurrentSpace"', () => {
     it('correctly sets the current space', () => {
@@ -176,52 +192,36 @@ describe('spaces', () => {
     })
   })
   describe('method "loadSpaces"', () => {
-    it('correctly loads personal and project spaces', async () => {
+    it('loads personal spaces only - project and mount points are loaded on demand', async () => {
       await getWrapper({
         setup: async (instance) => {
-          const spaces = [mock<SpaceResource>({ id: '1' })]
           const graphClient = mockDeep<Graph>()
-          graphClient.drives.listMyDrives.mockResolvedValue(spaces)
+          graphClient.drives.listMyDrives.mockResolvedValue([mock<SpaceResource>({ id: '1' })])
           await instance.loadSpaces({ graphClient })
 
-          expect(graphClient.drives.listMyDrives).toHaveBeenCalledTimes(2)
-          expect(graphClient.drives.listMyDrives).toHaveBeenNthCalledWith(
-            1,
+          expect(graphClient.drives.listMyDrives).toHaveBeenCalledTimes(1)
+          expect(graphClient.drives.listMyDrives).toHaveBeenCalledWith(
             {},
-            {
-              orderBy: 'name asc',
-              filter: 'driveType eq personal'
-            },
+            { orderBy: 'name asc', filter: 'driveType eq personal' },
             expect.anything()
           )
-          expect(graphClient.drives.listMyDrives).toHaveBeenNthCalledWith(
-            2,
-            {},
-            {
-              orderBy: 'name asc',
-              filter: 'driveType eq project'
-            },
-            expect.anything()
-          )
-          expect(instance.spaces.length).toBe(2)
-          expect(instance.spacesLoading).toBeFalsy()
           expect(instance.spacesInitialized).toBeTruthy()
-          expect(instance.spaces.some((s) => s.driveType === 'explorer')).toBeFalsy()
+          expect(instance.initializedTypes.personal).toBeTruthy()
+          expect(instance.initializedTypes.project).toBeFalsy()
+          expect(instance.initializedTypes.mountpoint).toBeFalsy()
         }
       })
     })
     it('does not add an eos explorer space when runningOnEos is disabled', async () => {
       await getWrapper({
         setup: async (instance) => {
-          const spaces = [mock<SpaceResource>({ id: '1' })]
           const graphClient = mockDeep<Graph>()
-          graphClient.drives.listMyDrives.mockResolvedValue(spaces)
+          graphClient.drives.listMyDrives.mockResolvedValue([])
           const configStore = useConfigStore()
           configStore.options.runningOnEos = false
 
           await instance.loadSpaces({ graphClient })
 
-          expect(instance.spaces.length).toBe(2)
           expect(instance.spaces.some((s) => s.driveType === 'explorer')).toBeFalsy()
         }
       })
@@ -229,9 +229,8 @@ describe('spaces', () => {
     it('adds an eos explorer space when runningOnEos is enabled', async () => {
       await getWrapper({
         setup: async (instance) => {
-          const spaces = [mock<SpaceResource>({ id: '1' })]
           const graphClient = mockDeep<Graph>()
-          graphClient.drives.listMyDrives.mockResolvedValue(spaces)
+          graphClient.drives.listMyDrives.mockResolvedValue([])
           const configStore = useConfigStore()
           configStore.options.runningOnEos = true
           const userStore = useUserStore()
@@ -239,14 +238,93 @@ describe('spaces', () => {
 
           await instance.loadSpaces({ graphClient })
 
-          expect(instance.spaces.length).toBe(3)
           const explorerSpace = instance.spaces.find((s) => s.driveType === 'explorer')
           expect(explorerSpace).toBeDefined()
           expect(explorerSpace.driveAlias).toBe('eos')
           expect(explorerSpace.webDavPath).toBe('/files/jdoe/eos')
-          // the fallback space is documented as being appended last - pin it so a future
-          // reordering has to be a deliberate act
-          expect(instance.spaces.at(-1).driveType).toBe('explorer')
+        }
+      })
+    })
+    it('does not add the eos explorer space twice', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([])
+          const configStore = useConfigStore()
+          configStore.options.runningOnEos = true
+          const userStore = useUserStore()
+          userStore.setUser(mock<User>({ onPremisesSamAccountName: 'jdoe' }))
+
+          await instance.loadSpaces({ graphClient })
+          await instance.loadSpaces({ graphClient })
+
+          expect(instance.spaces.filter((s) => s.driveType === 'explorer').length).toBe(1)
+        }
+      })
+    })
+  })
+  describe('method "loadSpacesByType"', () => {
+    it('loads a drive type once and shares in-flight requests', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([mock<SpaceResource>({ id: '1' })])
+
+          // concurrent callers must not produce two requests
+          await Promise.all([
+            instance.loadSpacesByType('project', { graphClient }),
+            instance.loadSpacesByType('project', { graphClient })
+          ])
+          // and neither must a later one, once initialized
+          await instance.loadSpacesByType('project', { graphClient })
+
+          expect(graphClient.drives.listMyDrives).toHaveBeenCalledTimes(1)
+          expect(graphClient.drives.listMyDrives).toHaveBeenCalledWith(
+            {},
+            { orderBy: 'name asc', filter: 'driveType eq project' },
+            expect.anything()
+          )
+          expect(instance.initializedTypes.project).toBeTruthy()
+          expect(instance.spaces.length).toBe(1)
+        }
+      })
+    })
+    it('refetches a drive type when forced', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([
+            mock<SpaceResource>({ id: '1', driveAlias: 'a' })
+          ])
+          await instance.loadSpacesByType('mountpoint', { graphClient })
+          await instance.loadSpacesByType('mountpoint', { graphClient })
+          expect(graphClient.drives.listMyDrives).toHaveBeenCalledTimes(1)
+
+          graphClient.drives.listMyDrives.mockResolvedValue([
+            mock<SpaceResource>({ id: '1', driveAlias: 'a' }),
+            mock<SpaceResource>({ id: '2', driveAlias: 'b' })
+          ])
+          await instance.loadSpacesByType('mountpoint', { graphClient, force: true })
+
+          expect(graphClient.drives.listMyDrives).toHaveBeenCalledTimes(2)
+          // the newly available space shows up, the known one isn't duplicated
+          expect(instance.spaces.length).toBe(2)
+        }
+      })
+    })
+    it('does not add a space that is already known', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const existing = mock<SpaceResource>({ id: '1', driveAlias: 'eos/project/c/cernbox' })
+          instance.addSpaces([existing])
+
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([
+            mock<SpaceResource>({ id: '1', driveAlias: 'eos/project/c/cernbox' })
+          ])
+          await instance.loadSpacesByType('project', { graphClient })
+
+          expect(instance.spaces.length).toBe(1)
         }
       })
     })
@@ -373,7 +451,7 @@ describe('spaces', () => {
             })
           ]
           instance.spaces = mountpoints
-          instance.mountPointsInitialized = true
+          instance.setMountPointsInitialized(true)
           const mountPoint = await instance.getMountPointForSpace({ graphClient, space })
 
           expect(mountPoint).toEqual(mountpoints[0])

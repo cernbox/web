@@ -26,8 +26,17 @@ describe('Web app files', () => {
         spacesStore.spaces = [
           mock<SpaceResource>({ id: '1', driveType: 'project', isOwner: () => false })
         ]
+        // only once personal spaces have actually been fetched does "none present" mean the user
+        // has none
+        spacesStore.setTypeInitialized('personal', true)
         const items = navItems(undefined)
         expect(items[0].isVisible()).toBeFalsy()
+      })
+      it('stays visible while personal spaces have not been loaded yet', () => {
+        const spacesStore = useSpacesStore()
+        spacesStore.spaces = []
+        const items = navItems(undefined)
+        expect(items[0].isVisible()).toBeTruthy()
       })
     })
     describe('Spaces', () => {

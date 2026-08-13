@@ -280,8 +280,12 @@ export default defineComponent({
     const { setSelection, initResourceList, clearResourceList, setAncestorMetaData } =
       useResourcesStore()
 
-    const userHasPersonalSpace = !!spacesStore.spaces.find(
-      (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+    // must be reactive: personal spaces are loaded on demand, so evaluating this once during
+    // setup would pin it to `false` on a cold start
+    const userHasPersonalSpace = computed(() =>
+      spacesStore.spaces.some(
+        (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+      )
     )
     const visibilityOption = useRouteQueryPersisted({
       name: 'q_projectVisibility',
@@ -311,9 +315,16 @@ export default defineComponent({
     const loadResourcesTask = useTask(function* (signal) {
       clearResourceList()
       setAncestorMetaData({})
+      // project and mount point spaces are loaded on demand - refresh both here so newly created
+      // projects and newly accepted shares show up without a page reload
       yield spacesStore.reloadProjectSpaces({
         graphClient: clientService.graphAuthenticated,
         signal
+      })
+      yield spacesStore.loadMountPoints({
+        graphClient: clientService.graphAuthenticated,
+        signal,
+        force: true
       })
       initResourceList({ currentFolder: null, resources: unref(spaces) })
     })
@@ -432,7 +443,7 @@ export default defineComponent({
 
     const hasCreatePermission = computed(
       // if user has a personal space, it's not a lightweight account
-      () => can('create-all', 'Drive') && userHasPersonalSpace
+      () => can('create-all', 'Drive') && unref(userHasPersonalSpace)
     )
 
     const extensionRegistry = useExtensionRegistry()

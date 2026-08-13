@@ -11,7 +11,7 @@
       :resource="resource"
       @close="closeApp"
     />
-    <loading-screen v-if="loading" />
+    <loading-screen v-if="isLoading" />
     <error-screen v-else-if="loadingError" :message="loadingError.message" />
     <div
       v-else
@@ -216,6 +216,12 @@ export default defineComponent({
     } = useAppDefaults({
       applicationId: props.applicationId
     })
+
+    // components that load their own resource keep `loading` false from the start, so without this
+    // the slot would render before the drive resolver has produced a file context. Resolving a
+    // space is asynchronous (drive types are fetched on demand), and everything below - `slotAttrs`
+    // included - assumes a context is there.
+    const isLoading = computed(() => unref(loading) || !unref(currentFileContext))
 
     const { applicationMeta } = useAppMeta({ applicationId: props.applicationId, appsStore })
 
@@ -669,7 +675,7 @@ export default defineComponent({
 
     const slotAttrs = computed(() => ({
       url: unref(url),
-      space: unref(unref(currentFileContext).space),
+      space: unref(unref(currentFileContext)?.space),
       resource: unref(resource),
       activeFiles: unref(activeFiles),
       isDirty: unref(isDirty),
@@ -681,7 +687,7 @@ export default defineComponent({
 
       'onUpdate:resource': (value: Resource) => {
         resource.value = value
-        space.value = unref(unref(currentFileContext).space)
+        space.value = unref(unref(currentFileContext)?.space)
         selectedResources.value = [value]
       },
       'onUpdate:currentContent': (value: unknown) => {
@@ -704,6 +710,7 @@ export default defineComponent({
       closeApp,
       fileActions,
       loading,
+      isLoading,
       loadingError,
       pageTitle,
       resource,

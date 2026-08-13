@@ -77,7 +77,9 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
           : []
       },
       isVisible() {
-        if (!spacesStores.spacesInitialized) {
+        // personal spaces are fetched on demand, so "not loaded yet" must not read as "the user
+        // has none" - that would hide the item for the rest of the session
+        if (!spacesStores.initializedTypes.personal) {
           return true
         }
 

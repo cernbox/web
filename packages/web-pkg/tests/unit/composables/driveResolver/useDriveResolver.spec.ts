@@ -135,12 +135,14 @@ describe('useDriveResolver', () => {
       spaces,
       mountPointsInitialized = true,
       fullShareOwnerPaths = false,
+      initializedTypes,
       onLoadMountPoints
     }: {
       driveAliasAndItem: Ref<string>
       spaces: SpaceResource[]
       mountPointsInitialized?: boolean
       fullShareOwnerPaths?: boolean
+      initializedTypes?: Partial<Record<'personal' | 'project' | 'mountpoint', boolean>>
       onLoadMountPoints?: (spacesStore: ReturnType<typeof useSpacesStore>) => void
     }) => {
       const mocks = defaultComponentMocks({
@@ -165,7 +167,7 @@ describe('useDriveResolver', () => {
           provide: mocks,
           pluginOptions: {
             piniaOptions: {
-              spacesState: { spaces, mountPointsInitialized },
+              spacesState: { spaces, mountPointsInitialized, initializedTypes },
               configState: { options: { routing: { fullShareOwnerPaths } } } as any
             }
           }
@@ -223,13 +225,16 @@ describe('useDriveResolver', () => {
         mountPointsInitialized: false,
         fullShareOwnerPaths: true,
         onLoadMountPoints: (store) => {
-          vi.mocked(store.loadMountPoints).mockImplementation(async () => {
-            store.spaces.push(mountPoint)
+          vi.mocked(store.loadSpacesByType).mockImplementation(async (driveType) => {
+            store.setTypeInitialized(driveType, true)
+            if (driveType === 'mountpoint') {
+              store.spaces.push(mountPoint)
+            }
           })
         }
       })
 
-      expect(spacesStore.loadMountPoints).toHaveBeenCalled()
+      expect(spacesStore.loadSpacesByType).toHaveBeenCalledWith('mountpoint', expect.anything())
       expect(unref(space)).toEqual(mountPoint)
     })
 
@@ -243,7 +248,10 @@ describe('useDriveResolver', () => {
         fullShareOwnerPaths: false
       })
 
-      expect(spacesStore.loadMountPoints).not.toHaveBeenCalled()
+      expect(spacesStore.loadSpacesByType).not.toHaveBeenCalledWith(
+        'mountpoint',
+        expect.anything()
+      )
       expect(unref(space)).toEqual(fallback)
     })
 
@@ -257,7 +265,10 @@ describe('useDriveResolver', () => {
         fullShareOwnerPaths: true
       })
 
-      expect(spacesStore.loadMountPoints).not.toHaveBeenCalled()
+      expect(spacesStore.loadSpacesByType).not.toHaveBeenCalledWith(
+        'mountpoint',
+        expect.anything()
+      )
       expect(unref(space)).toEqual(fallback)
     })
 
@@ -278,6 +289,55 @@ describe('useDriveResolver', () => {
 
       expect(unref(space)).toEqual(projectSpace)
       expect(unref(item)).toEqual('/foo')
+    })
+
+    it('loads drive types in order and stops as soon as one matches', async () => {
+      const fallback = fallbackSpace()
+      const projectSpace = buildSpaceMock('eos/project/c/cernbox')
+
+      const { space, spacesStore } = await resolve({
+        driveAliasAndItem: ref('eos/project/c/cernbox/foo'),
+        spaces: [fallback],
+        initializedTypes: { personal: false, project: false, mountpoint: false },
+        fullShareOwnerPaths: true,
+        onLoadMountPoints: (store) => {
+          vi.mocked(store.loadSpacesByType).mockImplementation(async (driveType) => {
+            store.setTypeInitialized(driveType, true)
+            if (driveType === 'project') {
+              store.spaces.push(projectSpace)
+            }
+          })
+        }
+      })
+
+      expect(unref(space)).toEqual(projectSpace)
+      // personal is tried first, project resolves it, mountpoint is never fetched
+      expect(spacesStore.loadSpacesByType).toHaveBeenCalledWith('personal', expect.anything())
+      expect(spacesStore.loadSpacesByType).toHaveBeenCalledWith('project', expect.anything())
+      expect(spacesStore.loadSpacesByType).not.toHaveBeenCalledWith('mountpoint', expect.anything())
+    })
+
+    it('stops loading even when a drive type fails to load', async () => {
+      // `loading` gates whether consumers get a file context at all - AppWrapper renders a loading
+      // screen while it is true - so a failed request must not wedge it on forever
+      const fallback = fallbackSpace()
+      let result: Awaited<ReturnType<typeof resolve>>
+
+      try {
+        result = await resolve({
+          driveAliasAndItem: ref('eos/project/c/cernbox/foo'),
+          spaces: [fallback],
+          initializedTypes: { personal: false, project: false, mountpoint: false },
+          fullShareOwnerPaths: true,
+          onLoadMountPoints: (store) => {
+            vi.mocked(store.loadSpacesByType).mockRejectedValue(new Error('drives unavailable'))
+          }
+        })
+      } catch {
+        // the rejection surfaces through the watcher; what matters is the flag below
+      }
+
+      expect(unref(result.loading)).toBe(false)
     })
 
     it('does not keep a space whose driveAlias is only a string prefix when the path changes', async () => {

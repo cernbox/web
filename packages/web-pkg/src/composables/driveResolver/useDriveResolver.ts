@@ -12,7 +12,7 @@ import { useSpacesLoading } from './useSpacesLoading'
 import { queryItemAsString } from '../appDefaults'
 import { urlJoin } from '@ownclouders/web-client'
 import { useClientService } from '../clientService'
-import { useSpacesStore, useConfigStore } from '../piniaStores'
+import { useSpacesStore, useConfigStore, LOADABLE_DRIVE_TYPES } from '../piniaStores'
 import { onUnmounted } from 'vue'
 
 interface DriveResolverOptions {
@@ -80,6 +80,103 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
     }
   })
 
+  const resolve = async (driveAliasAndItem: string) => {
+    if (!driveAliasAndItem || driveAliasAndItem.startsWith('virtual/')) {
+      space.value = null
+      item.value = null
+      return
+    }
+
+    const resolvedSpace = unref(space)
+    // never latch onto the fallback: a deeper path may be covered by a real space that we
+    // either already hold or can still lazily load, so always re-resolve. For real spaces the
+    // shortcut is kept, but segment-aware: `eos/project/c/cern` must not swallow
+    // `eos/project/c/cernbox/x` (which would yield item `box/x` on the wrong space).
+    const isOnlyItemPathChanged =
+      !!resolvedSpace &&
+      !isFallbackSpaceResource(resolvedSpace) &&
+      isSegmentPrefix(driveAliasAndItem, resolvedSpace.driveAlias)
+    if (isOnlyItemPathChanged) {
+      item.value = urlJoin(driveAliasAndItem.slice(resolvedSpace.driveAlias.length), {
+        leadingSlash: true
+      })
+      return
+    }
+
+    let matchingSpace = null
+    let path = null
+    if (driveAliasAndItem.startsWith('public/') || driveAliasAndItem.startsWith('ocm/')) {
+      const [publicLinkToken, ...item] = driveAliasAndItem.split('/').slice(1)
+      matchingSpace = unref(spaces).find((s) => s.id === publicLinkToken)
+      path = item.join('/')
+    } else if (
+      driveAliasAndItem.startsWith('share/') ||
+      driveAliasAndItem.startsWith('ocm-share/')
+    ) {
+      const [shareName, ...item] = driveAliasAndItem.split('/').slice(1)
+      const driveAliasPrefix = driveAliasAndItem.startsWith('ocm-share/') ? 'ocm-share' : 'share'
+
+      let shareIdStr = queryItemAsString(unref(shareId))
+      // keep compatibility with old share jail ids pre sharing NG
+      if (shareIdStr?.includes(':')) {
+        shareIdStr = [SHARE_JAIL_ID, shareIdStr].join('!')
+      }
+
+      matchingSpace =
+        spacesStore.getSpace(shareIdStr) ||
+        spacesStore.createShareSpace({
+          driveAliasPrefix,
+          id: shareIdStr,
+          shareName: unref(shareName)
+        })
+
+      path = item.join('/')
+    } else {
+      if (unref(fileId)) {
+        matchingSpace = unref(spaces).find((s) => {
+          return unref(fileId).startsWith(`${s.fileId}`)
+        })
+      }
+
+      // real spaces are fetched per drive type on demand, cheapest first. Try what we already
+      // hold, then load one type at a time and retry, so a location is never attributed to the
+      // catch-all fallback just because its real space hadn't been fetched yet.
+      if (!matchingSpace) {
+        matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, { includeFallback: false })
+      }
+
+      for (const driveType of LOADABLE_DRIVE_TYPES) {
+        if (matchingSpace || spacesStore.initializedTypes[driveType]) {
+          continue
+        }
+        // mount points only ever contribute an owner-path shaped driveAlias (and are expensive
+        // to fetch), so they can't change the outcome unless full share owner paths are on
+        if (driveType === 'mountpoint' && !configStore.options.routing.fullShareOwnerPaths) {
+          continue
+        }
+
+        loading.value = true
+        await spacesStore.loadSpacesByType(driveType, {
+          graphClient: clientService.graphAuthenticated
+        })
+        matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, { includeFallback: false })
+      }
+
+      // last resort: the synthetic catch-all space, if this deployment has one
+      if (!matchingSpace) {
+        matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem)
+      }
+
+      if (matchingSpace) {
+        path = driveAliasAndItem.slice(matchingSpace.driveAlias.length)
+      }
+    }
+    space.value = matchingSpace
+    item.value = urlJoin(path, {
+      leadingSlash: true
+    })
+  }
+
   watch(
     [options.driveAliasAndItem, areSpacesLoading],
     async ([driveAliasAndItem, areSpacesLoading], [driveAliasAndItemOld, areSpacesLoadingOld]) => {
@@ -87,95 +184,14 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
         return
       }
 
-      if (!driveAliasAndItem || driveAliasAndItem.startsWith('virtual/')) {
-        space.value = null
-        item.value = null
-        return
+      // `loading` decides whether consumers have a usable file context at all, so it has to be
+      // reset on every exit. An early return or a failing drive request would otherwise leave the
+      // app stuck on a loading screen for the rest of the session.
+      try {
+        await resolve(driveAliasAndItem)
+      } finally {
+        loading.value = false
       }
-
-      const resolvedSpace = unref(space)
-      // never latch onto the fallback: a deeper path may be covered by a real space that we
-      // either already hold or can still lazily load, so always re-resolve. For real spaces the
-      // shortcut is kept, but segment-aware: `eos/project/c/cern` must not swallow
-      // `eos/project/c/cernbox/x` (which would yield item `box/x` on the wrong space).
-      const isOnlyItemPathChanged =
-        !!resolvedSpace &&
-        !isFallbackSpaceResource(resolvedSpace) &&
-        isSegmentPrefix(driveAliasAndItem, resolvedSpace.driveAlias)
-      if (isOnlyItemPathChanged) {
-        item.value = urlJoin(driveAliasAndItem.slice(resolvedSpace.driveAlias.length), {
-          leadingSlash: true
-        })
-        return
-      }
-
-      let matchingSpace = null
-      let path = null
-      if (driveAliasAndItem.startsWith('public/') || driveAliasAndItem.startsWith('ocm/')) {
-        const [publicLinkToken, ...item] = driveAliasAndItem.split('/').slice(1)
-        matchingSpace = unref(spaces).find((s) => s.id === publicLinkToken)
-        path = item.join('/')
-      } else if (
-        driveAliasAndItem.startsWith('share/') ||
-        driveAliasAndItem.startsWith('ocm-share/')
-      ) {
-        const [shareName, ...item] = driveAliasAndItem.split('/').slice(1)
-        const driveAliasPrefix = driveAliasAndItem.startsWith('ocm-share/') ? 'ocm-share' : 'share'
-
-        let shareIdStr = queryItemAsString(unref(shareId))
-        // keep compatibility with old share jail ids pre sharing NG
-        if (shareIdStr?.includes(':')) {
-          shareIdStr = [SHARE_JAIL_ID, shareIdStr].join('!')
-        }
-
-        matchingSpace =
-          spacesStore.getSpace(shareIdStr) ||
-          spacesStore.createShareSpace({
-            driveAliasPrefix,
-            id: shareIdStr,
-            shareName: unref(shareName)
-          })
-
-        path = item.join('/')
-      } else {
-        if (unref(fileId)) {
-          matchingSpace = unref(spaces).find((s) => {
-            return unref(fileId).startsWith(`${s.fileId}`)
-          })
-        }
-
-        // 1. real spaces we already know about
-        if (!matchingSpace) {
-          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, { includeFallback: false })
-        }
-
-        // 2. the location may live in a received share whose owner-path root space hasn't been
-        //    fetched yet. Fetching mount points is expensive, so only once per session and only
-        //    when it can actually produce a matching driveAlias.
-        if (
-          !matchingSpace &&
-          !spacesStore.mountPointsInitialized &&
-          configStore.options.routing.fullShareOwnerPaths
-        ) {
-          loading.value = true
-          await spacesStore.loadMountPoints({ graphClient: clientService.graphAuthenticated })
-          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, { includeFallback: false })
-        }
-
-        // 3. last resort: the synthetic catch-all space, if this deployment has one
-        if (!matchingSpace) {
-          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem)
-        }
-
-        if (matchingSpace) {
-          path = driveAliasAndItem.slice(matchingSpace.driveAlias.length)
-        }
-      }
-      space.value = matchingSpace
-      item.value = urlJoin(path, {
-        leadingSlash: true
-      })
-      loading.value = false
     },
     { immediate: true, deep: true }
   )

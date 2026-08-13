@@ -9,6 +9,7 @@ import {
 } from '../resource'
 import {
   EOS_EXPLORER_SPACE_ID,
+  FALLBACK_DRIVE_TYPE,
   isPersonalSpaceResource,
   isPublicSpaceResource,
   PublicSpaceResource,
@@ -146,7 +147,7 @@ export function buildEosExplorerSpace({
     {
       id: EOS_EXPLORER_SPACE_ID,
       name: 'EOS',
-      driveType: 'explorer',
+      driveType: FALLBACK_DRIVE_TYPE,
       driveAlias: 'eos',
       webDavPath: buildWebDavEosExplorerPath(userName),
       serverUrl

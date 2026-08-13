@@ -272,9 +272,10 @@ export const useSpacesStore = defineStore('spaces', () => {
       graphRoles: sharesStore.graphRoles,
       signal
     })
-    spaces.value = unref(spaces).filter(
-      (s) => !isProjectSpaceResource(s) && s.driveType !== 'explorer'
-    )
+    // only project spaces are being replaced here. The fallback space is not a project space and
+    // is only ever constructed once, in `loadSpaces` - dropping it would destroy it for the rest
+    // of the session.
+    spaces.value = unref(spaces).filter((s) => !isProjectSpaceResource(s))
     addSpaces(projectSpaces)
   }
 

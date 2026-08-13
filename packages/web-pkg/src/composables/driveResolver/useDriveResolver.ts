@@ -1,7 +1,9 @@
 import { computed, Ref, ref, unref, watch } from 'vue'
 import {
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isProjectSpaceResource,
+  isSegmentPrefix,
   SHARE_JAIL_ID,
   SpaceResource
 } from '@ownclouders/web-client'
@@ -40,24 +42,27 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
   const item: Ref<string> = ref(null)
   const loading = ref(false)
 
-  const getSpaceByDriveAliasAndItem = (driveAliasAndItem: string) => {
-    const driveAliasAndItemSegments = driveAliasAndItem.split('/')
-
-    return unref(spaces).find((s) => {
-      if (!driveAliasAndItem.startsWith(s.driveAlias)) {
-        return false
+  const getSpaceByDriveAliasAndItem = (
+    driveAliasAndItem: string,
+    { includeFallback = true }: { includeFallback?: boolean } = {}
+  ): SpaceResource => {
+    return unref(spaces).reduce<SpaceResource>((mostSpecific, space) => {
+      if (!includeFallback && isFallbackSpaceResource(space)) {
+        return mostSpecific
       }
-
-      const driveAliasSegments = s.driveAlias.split('/')
-      if (
-        driveAliasAndItemSegments.length < driveAliasSegments.length ||
-        driveAliasAndItemSegments.slice(0, driveAliasSegments.length).join('/') !== s.driveAlias
-      ) {
-        return false
+      if (!isSegmentPrefix(driveAliasAndItem, space.driveAlias)) {
+        return mostSpecific
       }
-
-      return s
-    })
+      // all matching aliases are segment prefixes of the same string and are therefore totally
+      // ordered by length: the longest one is the most specific. This is what makes a real space
+      // (`eos/project/c/cernbox`) win over the catch-all fallback (`eos`), independent of the
+      // order spaces happen to have been loaded in. `>=` keeps the first of two identical
+      // aliases, preserving the previous `.find()` semantics for duplicates.
+      if (mostSpecific && mostSpecific.driveAlias.length >= space.driveAlias.length) {
+        return mostSpecific
+      }
+      return space
+    }, null)
   }
 
   // clean up global state as the watchers aren't triggered anymore when navigating away.
@@ -66,7 +71,11 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
   // prefixed, e.g. eos-backed spaces use 'eos/user/...' / 'eos/project/...')
   onUnmounted(() => {
     const currentSpace = unref(space)
-    if (!isPersonalSpaceResource(currentSpace) && !isProjectSpaceResource(currentSpace)) {
+    if (
+      !isPersonalSpaceResource(currentSpace) &&
+      !isProjectSpaceResource(currentSpace) &&
+      !isFallbackSpaceResource(currentSpace)
+    ) {
       spacesStore.setCurrentSpace(null)
     }
   })
@@ -84,10 +93,17 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
         return
       }
 
+      const resolvedSpace = unref(space)
+      // never latch onto the fallback: a deeper path may be covered by a real space that we
+      // either already hold or can still lazily load, so always re-resolve. For real spaces the
+      // shortcut is kept, but segment-aware: `eos/project/c/cern` must not swallow
+      // `eos/project/c/cernbox/x` (which would yield item `box/x` on the wrong space).
       const isOnlyItemPathChanged =
-        unref(space) && driveAliasAndItem.startsWith(unref(space).driveAlias)
+        !!resolvedSpace &&
+        !isFallbackSpaceResource(resolvedSpace) &&
+        isSegmentPrefix(driveAliasAndItem, resolvedSpace.driveAlias)
       if (isOnlyItemPathChanged) {
-        item.value = urlJoin(driveAliasAndItem.slice(unref(space).driveAlias.length), {
+        item.value = urlJoin(driveAliasAndItem.slice(resolvedSpace.driveAlias.length), {
           leadingSlash: true
         })
         return
@@ -126,19 +142,28 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
           matchingSpace = unref(spaces).find((s) => {
             return unref(fileId).startsWith(`${s.fileId}`)
           })
-        } else {
-          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem)
         }
 
+        // 1. real spaces we already know about
         if (!matchingSpace) {
-          if (
-            !spacesStore.mountPointsInitialized &&
-            configStore.options.routing.fullShareOwnerPaths
-          ) {
-            loading.value = true
-            await spacesStore.loadMountPoints({ graphClient: clientService.graphAuthenticated })
-          }
+          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, { includeFallback: false })
+        }
 
+        // 2. the location may live in a received share whose owner-path root space hasn't been
+        //    fetched yet. Fetching mount points is expensive, so only once per session and only
+        //    when it can actually produce a matching driveAlias.
+        if (
+          !matchingSpace &&
+          !spacesStore.mountPointsInitialized &&
+          configStore.options.routing.fullShareOwnerPaths
+        ) {
+          loading.value = true
+          await spacesStore.loadMountPoints({ graphClient: clientService.graphAuthenticated })
+          matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem, { includeFallback: false })
+        }
+
+        // 3. last resort: the synthetic catch-all space, if this deployment has one
+        if (!matchingSpace) {
           matchingSpace = getSpaceByDriveAliasAndItem(driveAliasAndItem)
         }
 

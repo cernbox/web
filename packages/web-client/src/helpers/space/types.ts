@@ -99,3 +99,18 @@ export interface PublicSpaceResource extends SpaceResource {
 export const isPublicSpaceResource = (resource: Resource): resource is PublicSpaceResource => {
   return (resource as SpaceResource)?.driveType === 'public'
 }
+
+/**
+ * A synthetic catch-all space. It is not backed by a real drive: it exposes a whole storage
+ * namespace through a legacy per-user webdav endpoint, and its driveAlias is therefore a prefix
+ * of every real space's driveAlias in that namespace. It must only ever be resolved as a last
+ * resort, when no real space covers the requested location.
+ */
+export const FALLBACK_DRIVE_TYPE = 'explorer'
+
+export interface FallbackSpaceResource extends SpaceResource {
+  __fallbackSpaceResource?: any
+}
+export const isFallbackSpaceResource = (resource: Resource): resource is FallbackSpaceResource => {
+  return (resource as SpaceResource)?.driveType === FALLBACK_DRIVE_TYPE
+}

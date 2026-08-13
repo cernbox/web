@@ -223,6 +223,7 @@ import {
 import SpaceContextActions from '../../components/Spaces/SpaceContextActions.vue'
 import {
   getSpaceManagers,
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isProjectSpaceResource,
   ProjectSpaceResource,
@@ -331,7 +332,7 @@ export default defineComponent({
     const runtimeSpaces = computed(() => {
       return (
         spacesStore.spaces.filter(
-          (space) => isProjectSpaceResource(space) || space?.driveType === 'explorer'
+          (space) => isProjectSpaceResource(space) || isFallbackSpaceResource(space)
         ) || []
       )
     })

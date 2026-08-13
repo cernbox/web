@@ -16,7 +16,11 @@ import {
   formatFileSize
 } from '@ownclouders/web-pkg'
 import { locationSpacesGeneric, UppyService, UppyResource } from '@ownclouders/web-pkg'
-import { isPersonalSpaceResource, isShareSpaceResource } from '@ownclouders/web-client'
+import {
+  isFallbackSpaceResource,
+  isPersonalSpaceResource,
+  isShareSpaceResource
+} from '@ownclouders/web-client'
 import { ClientService, queryItemAsString } from '@ownclouders/web-pkg'
 
 export interface HandleUploadOptions {
@@ -213,7 +217,7 @@ export class HandleUpload extends BasePlugin {
       if (
         !targetUploadSpace ||
         isShareSpaceResource(targetUploadSpace) ||
-        targetUploadSpace.driveType === 'explorer' ||
+        isFallbackSpaceResource(targetUploadSpace) ||
         (isPersonalSpaceResource(targetUploadSpace) &&
           !targetUploadSpace.isOwner(this.userStore.user))
       ) {

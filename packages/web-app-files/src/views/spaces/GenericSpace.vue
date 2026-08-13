@@ -121,6 +121,7 @@ import { RouteLocationNamedRaw } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { Resource } from '@ownclouders/web-client'
 import {
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isProjectSpaceResource,
   isPublicSpaceResource,
@@ -297,7 +298,7 @@ export default defineComponent({
     const route = useRoute()
     const breadcrumbs = computed(() => {
       const rootBreadcrumbItems: BreadcrumbItem[] = []
-      if (isProjectSpaceResource(unref(space)) || unref(space).driveType === 'explorer') {
+      if (isProjectSpaceResource(unref(space)) || isFallbackSpaceResource(unref(space))) {
         rootBreadcrumbItems.push({
           id: uuidV4(),
           text: $gettext('Spaces'),

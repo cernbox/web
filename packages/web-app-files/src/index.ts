@@ -24,6 +24,7 @@ import { AppNavigationItem } from '@ownclouders/web-pkg'
 // dirty: importing view from other extension within project
 import SearchResults from '../../web-app-search/src/views/List.vue'
 import {
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isShareSpaceResource,
   isProjectSpaceResource
@@ -146,7 +147,7 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
         path: `/${appInfo.id}/spaces/projects`
       },
       isActive: () => {
-        // the eos explorer space's driveAlias ('eos') is a url-prefix of real eos-backed
+        // the fallback space's driveAlias ('eos') is a url-prefix of real eos-backed
         // personal/project driveAliases (`eos/user/...`, `eos/project/...`), so activeFor's
         // href-prefix match below would otherwise also fire while browsing those unrelated
         // spaces. Gate on the actually resolved current space first.
@@ -154,13 +155,13 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
         return (
           !currentSpace ||
           isProjectSpaceResource(currentSpace) ||
-          currentSpace.driveType === 'explorer'
+          isFallbackSpaceResource(currentSpace)
         )
       },
       activeFor: () => {
         const projects = [{ path: `/${appInfo.id}/spaces/project` }]
         spacesStores.spaces.forEach((drive) => {
-          if (isProjectSpaceResource(drive) || drive.driveType === 'explorer') {
+          if (isProjectSpaceResource(drive) || isFallbackSpaceResource(drive)) {
             projects.push({
               path: `/${appInfo.id}/spaces/${drive.driveAlias}`
             })

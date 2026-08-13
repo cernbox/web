@@ -1,6 +1,11 @@
-import { buildEosExplorerSpace, buildSpace, EOS_EXPLORER_SPACE_ID } from '../../../../src/helpers/space'
+import {
+  buildEosExplorerSpace,
+  buildSpace,
+  EOS_EXPLORER_SPACE_ID,
+  isFallbackSpaceResource
+} from '../../../../src/helpers/space'
 import { mock } from 'vitest-mock-extended'
-import { Ability, GraphSharePermission, ShareRole } from '@ownclouders/web-client'
+import { Ability, GraphSharePermission, ShareRole, SpaceResource } from '@ownclouders/web-client'
 import { Drive, User } from '@ownclouders/web-client/graph/generated'
 
 const noPermissionsRole = mock<ShareRole>({ id: '1', rolePermissions: [] })
@@ -424,4 +429,19 @@ describe('buildEosExplorerSpace', () => {
       expect(space[method]()).toBeFalsy()
     }
   )
+
+  it('is recognised as a fallback space', () => {
+    expect(isFallbackSpaceResource(buildEosExplorerSpace({ userName, serverUrl }))).toBe(true)
+  })
+
+  it.each(['personal', 'project', 'share', 'mountpoint', 'public'])(
+    'a %s space is not a fallback space',
+    (driveType) => {
+      expect(isFallbackSpaceResource(mock<SpaceResource>({ driveType }))).toBe(false)
+    }
+  )
+
+  it('does not treat a missing resource as a fallback space', () => {
+    expect(isFallbackSpaceResource(undefined)).toBe(false)
+  })
 })

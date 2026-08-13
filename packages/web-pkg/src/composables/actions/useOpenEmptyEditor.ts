@@ -19,11 +19,7 @@ export const useOpenEmptyEditor = () => {
   const { openEditor } = useFileActions()
   const { resources, currentFolder } = storeToRefs(resourcesStore)
 
-  const openEmptyEditor = async (
-    appId: string,
-    extension: string,
-    forceSameTab: boolean = false
-  ) => {
+  const openEmptyEditor = async (appId: string, extension: string) => {
     let destinationSpace = unref(currentFolder) ? getMatchingSpace(unref(currentFolder)) : null
     let destinationFiles = unref(resources)
     let filePath = unref(currentFolder)?.path
@@ -51,7 +47,7 @@ export const useOpenEmptyEditor = () => {
       ({ app, extension: ext }) => app === appId && ext === extension
     )
 
-    openEditor(appFileExtension, space, emptyResource, EDITOR_MODE_EDIT, forceSameTab)
+    openEditor(appFileExtension, space, emptyResource, EDITOR_MODE_EDIT)
   }
 
   return {

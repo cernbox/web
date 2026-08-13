@@ -145,13 +145,7 @@ export const useFileActions = () => {
             })
           },
           handler: (options) =>
-            openEditor(
-              fileExtension,
-              options.space,
-              options.resources[0],
-              EDITOR_MODE_EDIT,
-              options.forceSameTab === true
-            ),
+            openEditor(fileExtension, options.space, options.resources[0], EDITOR_MODE_EDIT),
           isVisible: ({ resources }) => {
             if (resources.length !== 1) {
               return false
@@ -237,20 +231,12 @@ export const useFileActions = () => {
     appFileExtension: ApplicationFileExtension,
     space: SpaceResource,
     resource: Resource,
-    mode: string,
-    forceSameTab: boolean = false
+    mode: string
   ) => {
     const remoteItemId = isShareSpaceResource(space) ? space.id : undefined
     const routeName = appFileExtension.routeName || appFileExtension.app
     const routeOpts = getEditorRouteOpts(routeName, space, resource, mode, remoteItemId)
-
-    if (!forceSameTab && configStore.options.cernFeatures) {
-      const editorRoute = router.resolve(routeOpts)
-      const editorRouteUrl = new URL(editorRoute.href, window.location.origin)
-      openUrl(editorRouteUrl.toString(), '_blank', true)
-    } else {
-      router.push(routeOpts)
-    }
+    router.push(routeOpts)
   }
 
   // TODO: Make user-configurable what is a defaultAction for a filetype/mimetype

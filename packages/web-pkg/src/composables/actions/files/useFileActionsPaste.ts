@@ -9,7 +9,12 @@ import { useGetMatchingSpace } from '../../spaces'
 import { useClientService } from '../../clientService'
 import { useRouter } from '../../router'
 import { FileAction, FileActionOptions } from '../types'
-import { Resource, SpaceResource, isShareSpaceResource } from '@ownclouders/web-client'
+import {
+  Resource,
+  SpaceResource,
+  isPublicSpaceResource,
+  isShareSpaceResource
+} from '@ownclouders/web-client'
 import { useClipboardStore, useResourcesStore } from '../../piniaStores'
 import { ClipboardActions, ResourceTransfer, TransferType } from '../../../helpers'
 import { storeToRefs } from 'pinia'
@@ -115,7 +120,21 @@ export const useFileActionsPaste = () => {
     })
   }
 
+  /**
+   * A webdav COPY/MOVE carries either the public link token or the user's bearer token, never
+   * both, so a transfer between a public link and an authenticated space is built for one context
+   * and rejected by the other. Nothing downstream can recover from that, so don't offer it.
+   */
+  const crossesAuthBoundary = (targetSpace: SpaceResource) => {
+    return isPublicSpaceResource(targetSpace) !== clipboardStore.isPublicLinkSource
+  }
+
   const handler = async ({ space: targetSpace }: FileActionOptions) => {
+    // also guarded here, not just in isVisible: the keyboard shortcut invokes the handler directly
+    if (crossesAuthBoundary(targetSpace)) {
+      return
+    }
+
     const resourceSpaceMapping = clipboardStore.resources.reduce<
       Record<string, { space: SpaceResource; resources: Resource[] }>
     >((acc, resource) => {
@@ -150,8 +169,11 @@ export const useFileActionsPaste = () => {
       handler,
       label: () => $gettext('Paste'),
       shortcut: unref(pasteShortcutString),
-      isVisible: ({ resources }) => {
+      isVisible: ({ space, resources }) => {
         if (clipboardStore.resources.length === 0) {
+          return false
+        }
+        if (crossesAuthBoundary(space)) {
           return false
         }
         if (

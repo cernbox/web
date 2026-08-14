@@ -34,8 +34,11 @@ describe('copy', () => {
             setup: ({ actions }) => {
               unref(actions)[0].handler({ space: null, resources })
               const clipboardStore = useClipboardStore()
+              // the source space is recorded alongside the resources so that paste can refuse a
+              // transfer that would cross the public link / authenticated boundary
               expect(clipboardStore.copyResources).toHaveBeenCalledWith(
-                resources.filter((r) => copyAbleResources.includes(r.id as string))
+                resources.filter((r) => copyAbleResources.includes(r.id as string)),
+                null
               )
             }
           })

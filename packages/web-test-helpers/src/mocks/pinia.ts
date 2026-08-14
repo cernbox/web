@@ -38,7 +38,11 @@ export type PiniaMockOptions = {
     publicLinkContextReady?: boolean
   }
   themeState?: { availableThemes?: WebThemeType[]; currentTheme?: WebThemeType }
-  clipboardState?: { action?: ClipboardActions; resources?: Resource[] }
+  clipboardState?: {
+    action?: ClipboardActions
+    resources?: Resource[]
+    isPublicLinkSource?: boolean
+  }
   configState?: {
     server?: string
     options?: OptionsConfig

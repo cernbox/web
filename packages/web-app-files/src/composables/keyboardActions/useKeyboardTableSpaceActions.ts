@@ -20,7 +20,7 @@ export const useKeyboardTableSpaceActions = (
   const pasteFileAction = unref(pasteFileActions)[0].handler
 
   keyActions.bindKeyAction({ modifier: Modifier.Ctrl, primary: Key.C }, () => {
-    copyResources(resourcesStore.selectedResources)
+    copyResources(resourcesStore.selectedResources, unref(space))
   })
 
   keyActions.bindKeyAction({ modifier: Modifier.Ctrl, primary: Key.V }, () => {
@@ -28,6 +28,6 @@ export const useKeyboardTableSpaceActions = (
   })
 
   keyActions.bindKeyAction({ modifier: Modifier.Ctrl, primary: Key.X }, () => {
-    cutResources(resourcesStore.selectedResources)
+    cutResources(resourcesStore.selectedResources, unref(space))
   })
 }

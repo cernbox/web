@@ -59,6 +59,7 @@ import { OcDrop } from '@ownclouders/design-system/components'
 import { useGettext } from 'vue3-gettext'
 import { SharingLinkType } from '@ownclouders/web-client/graph/generated'
 import DatePickerModal from '../../../Modals/DatePickerModal.vue'
+import EmailModal from '../../../Modals/EmailModal.vue'
 import { RouteLocationNamedRaw } from 'vue-router'
 import ContextMenuItem from './ContextMenuItem.vue'
 
@@ -132,6 +133,10 @@ const isInternalLink = computed(() => {
   return linkShare.type === SharingLinkType.Internal
 })
 
+const isCurrentLinkRoleCreateOnly = computed(() => {
+  return linkShare.type === SharingLinkType.CreateOnly
+})
+
 const sharedAncestor = computed(() => {
   if (!linkShare.indirect) {
     return null
@@ -177,6 +182,23 @@ const navigateToParentOption = computed<EditOption>(() => {
   }
 })
 
+const showNotifyUploadsExtraRecipientsModal = () => {
+  dispatchModal({
+    title: $gettext('Notify a third party about uploads'),
+    hideActions: true,
+    customComponent: EmailModal,
+    customComponentAttrs: () => ({
+      initialEmail: linkShare.notifyUploadsExtraRecipients
+    }),
+    onConfirm: (value: string) => {
+      emit('updateLink', {
+        linkShare: { ...linkShare, notifyUploadsExtraRecipients: value },
+        options: { type: null }
+      })
+    }
+  })
+}
+
 const showRenameModal = () => {
   dispatchModal({
     title: $gettext('Edit name'),
@@ -221,7 +243,13 @@ const editOptions = computed<EditOption[]>(() => {
     })
 
     // only if it is not a edit folder link
-    if (!(linkShare.type === SharingLinkType.Edit && unref(resource)?.isFolder && sharingPublicExpireDateMaxRWFolders)) {
+    if (
+      !(
+        linkShare.type === SharingLinkType.Edit &&
+        unref(resource)?.isFolder &&
+        sharingPublicExpireDateMaxRWFolders
+      )
+    ) {
       result.push({
         id: 'remove-expiration',
         title: $gettext('Remove expiration date'),
@@ -257,8 +285,7 @@ const editOptions = computed<EditOption[]>(() => {
         id: 'remove-password',
         title: $gettext('Remove password'),
         icon: 'lock-unlock',
-        method: () =>
-          emit('updateLink', { linkShare: linkShare, options: { password: '' } })
+        method: () => emit('updateLink', { linkShare: linkShare, options: { password: '' } })
       })
     }
   }
@@ -268,6 +295,28 @@ const editOptions = computed<EditOption[]>(() => {
       title: $gettext('Add password'),
       icon: 'lock-password',
       method: () => emit('showPasswordModal')
+    })
+  }
+
+  if (unref(isCurrentLinkRoleCreateOnly) && linkShare.notifyUploads) {
+    result.push({
+      id: 'add-notify-uploads-extra-recipients',
+      title: $gettext('Edit third party notification'),
+      icon: 'mail-add',
+      method: showNotifyUploadsExtraRecipientsModal
+    })
+  }
+
+  if (linkShare.notifyUploadsExtraRecipients) {
+    result.push({
+      id: 'remove-notify-uploads-extra-recipients',
+      title: $gettext('Remove third party notification'),
+      icon: 'mail-close',
+      method: () =>
+        emit('updateLink', {
+          linkShare: { ...linkShare, notifyUploadsExtraRecipients: '' },
+          options: { type: null }
+        })
     })
   }
 

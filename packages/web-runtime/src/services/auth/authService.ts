@@ -9,22 +9,22 @@ import {
   useTokenTimerWorker,
   useMfaExpiryWorker,
   useModals,
-  AuthServiceInterface
+  AuthServiceInterface,
+  useEmbedMode
 } from '@ownclouders/web-pkg'
 import { RouteLocation, Router } from 'vue-router'
 import {
   extractPublicLinkToken,
   isAnonymousContext,
   isIdpContextRequired,
-  isPublicLinkContextRequired,
-  isUserContextRequired
+  isPublicLinkContextRequired
 } from '../../router'
 import { unref } from 'vue'
-import { Ability } from '@ownclouders/web-client'
+import { Ability, urlJoin } from '@ownclouders/web-client'
 import { Language } from 'vue3-gettext'
 import { PublicLinkType } from '@ownclouders/web-client'
 import { WebWorkersStore } from '@ownclouders/web-pkg'
-import { isSilentRedirectRoute } from '../../helpers/silentRedirect'
+import { isSilentRedirectRoute, isPopupCallbackRoute } from '../../helpers/silentRedirect'
 
 export class AuthService implements AuthServiceInterface {
   private clientService: ClientService
@@ -50,8 +50,6 @@ export class AuthService implements AuthServiceInterface {
   // number of seconds before an access token is to expire to raise the accessTokenExpiring event
   private accessTokenExpiryThreshold = 10
 
-  public hasAuthErrorOccurred: boolean
-
   public initialize(
     configStore: ConfigStore,
     clientService: ClientService,
@@ -66,7 +64,6 @@ export class AuthService implements AuthServiceInterface {
     this.configStore = configStore
     this.clientService = clientService
     this.router = router
-    this.hasAuthErrorOccurred = false
     this.ability = ability
     this.language = language
     this.userStore = userStore
@@ -118,9 +115,9 @@ export class AuthService implements AuthServiceInterface {
         accessTokenExpiryThreshold: this.accessTokenExpiryThreshold
       })
 
-      // don't load worker in the silent redirect iframe
+      // don't load worker in the silent redirect iframe or popup callback window
       const isSilentRedirect = isSilentRedirectRoute()
-      if (!this.tokenTimerWorker && !isSilentRedirect) {
+      if (!this.tokenTimerWorker && !isSilentRedirect && !isPopupCallbackRoute()) {
         const { options } = this.configStore
 
         if (!options.embed?.enabled || !options.embed?.delegateAuthentication) {
@@ -169,7 +166,7 @@ export class AuthService implements AuthServiceInterface {
         this.userManager.events.addAccessTokenExpired((...args): void => {
           const handleExpirationError = () => {
             console.error('AccessToken Expired：', ...args)
-            this.handleAuthError(unref(this.router.currentRoute), { forceLogout: true })
+            this.handleAuthError(unref(this.router.currentRoute))
           }
 
           // retry silent signin once, force logout if it fails
@@ -205,11 +202,8 @@ export class AuthService implements AuthServiceInterface {
           this.resetStateAfterUserLogout()
 
           if (this.userManager.unloadReason === 'authError') {
-            this.hasAuthErrorOccurred = true
-            return this.router.push({
-              name: 'accessDenied',
-              query: { redirectUrl: unref(this.router.currentRoute)?.fullPath }
-            })
+            this.authStore.setSessionExpired(true)
+            return
           }
 
           // handle redirect after logout
@@ -265,7 +259,25 @@ export class AuthService implements AuthServiceInterface {
     }
   }
 
+  public showSessionExpiredModal() {
+    this.tokenTimerWorker?.resetTokenTimer()
+    this.authStore.setSessionExpired(true)
+  }
+
+  public loginUserPopup() {
+    return this.userManager.signinPopup({
+      redirect_uri: urlJoin(unref(this.configStore.serverUrl), 'web-oidc-popup-callback')
+    })
+  }
+
   public loginUser(redirectUrl?: string) {
+    const { isEnabled: isEmbedModeEnable } = useEmbedMode()
+    // if embed mode is enabled, use popup login instead of a redirect
+    if (unref(isEmbedModeEnable)) {
+      return this.userManager.signinPopup({
+        redirect_uri: urlJoin(unref(this.configStore.serverUrl), 'web-oidc-popup-callback')
+      })
+    }
     this.userManager.setPostLoginRedirectUrl(redirectUrl)
     return this.userManager.signinRedirect()
   }
@@ -321,6 +333,35 @@ export class AuthService implements AuthServiceInterface {
     await this.userManager.signinSilentCallback(this.buildSignInCallbackUrl())
   }
 
+  public async signInPopupCallback() {
+    // Use window.location.href directly — more reliable than the router-reconstructed URL,
+    // and avoids issues when window.opener is null (e.g. COOP headers from cross-origin SSO).
+    await this.userManager.signinPopupCallback(window.location.href)
+  }
+
+  /**
+   * COOP fallback for popup callback when window.opener is null.
+   * Processes the auth code via the redirect flow, then signals the opener
+   * via BroadcastChannel (same-origin, not affected by COOP).
+   */
+  public async signInCallbackForCOOPFallback() {
+    await this.userManager.signinRedirectCallback(window.location.href)
+    const bc = new BroadcastChannel('oc_oidc_popup_complete')
+    bc.postMessage({ type: 'complete' })
+    bc.close()
+  }
+
+  /**
+   * Called by the opener after BroadcastChannel signals popup completed.
+   * Re-reads the user from storage and updates the auth context.
+   */
+  public async reloadUserFromStorage() {
+    const user = await this.userManager.getUser()
+    if (user?.access_token) {
+      await this.userManager.updateContext(user.access_token, true)
+    }
+  }
+
   /**
    * craft a url that the parser in oidc-client-ts can handle…
    */
@@ -329,10 +370,12 @@ export class AuthService implements AuthServiceInterface {
     return '/?' + new URLSearchParams(currentQuery as Record<string, string>).toString()
   }
 
-  public async handleAuthError(
-    route: RouteLocation,
-    { forceLogout = false }: { forceLogout?: boolean } = {}
-  ) {
+  public async handleAuthError(route: RouteLocation) {
+    // guard against re-entrant calls while already showing session expired modal
+    if (this.authStore.sessionExpired) {
+      return
+    }
+
     if (isPublicLinkContextRequired(this.router, route)) {
       const token = extractPublicLinkToken(route)
       this.publicLinkManager.clear(token)
@@ -342,27 +385,18 @@ export class AuthService implements AuthServiceInterface {
         query: { redirectUrl: route.fullPath }
       })
     }
-    if (isUserContextRequired(this.router, route) || isIdpContextRequired(this.router, route)) {
-      if (forceLogout) {
-        this.tokenTimerWorker?.resetTokenTimer()
-        await this.logoutUser()
-        return
-      }
 
-      const user = await this.userManager.getUser()
-      if (user?.expires_in !== undefined && user.expires_in < 0) {
-        // token expired, simply return and let the regular auth flow do its thing
-        return
-      }
-
-      await this.userManager.removeUser('authError')
+    // If the user context was never established (startup or login failure),
+    // navigate to the access denied page with an appropriate message rather
+    // than showing the "session expired" modal which implies a prior session.
+    if (!this.authStore.userContextReady) {
       this.tokenTimerWorker?.resetTokenTimer()
-      return
+      return this.router.push({ name: 'accessDenied', query: { reason: 'loginError' } })
     }
-    // authGuard is taking care of redirecting the user to the
-    // accessDenied page if hasAuthErrorOccurred is set to true
-    // we can't push the route ourselves, see authGuard for details.
-    this.hasAuthErrorOccurred = true
+
+    // User WAS logged in — this is a mid-session auth failure.
+    this.tokenTimerWorker?.resetTokenTimer()
+    this.authStore.setSessionExpired(true)
   }
 
   public async resolvePublicLink(

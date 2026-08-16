@@ -26,11 +26,9 @@ export const setupAuthGuard = (router: Router) => {
     const authStore = useAuthStore()
     await authService.initializeContext(to)
 
-    // vue-router currently (4.1.6) does not cancel navigations when a new one is triggered
-    // we need to guard this case to be able to show the access denied page
-    // and not be redirected to the login page
-    if (authService.hasAuthErrorOccurred) {
-      return to.name === 'accessDenied' || { name: 'accessDenied' }
+    // block navigation while session expired modal is active
+    if (authStore.sessionExpired) {
+      return false
     }
 
     if (isPublicLinkContextRequired(router, to)) {
@@ -68,12 +66,6 @@ export const setupAuthGuard = (router: Router) => {
     }
 
     return true
-  })
-  router.afterEach((to) => {
-    if (to.name !== 'accessDenied') {
-      return
-    }
-    authService.hasAuthErrorOccurred = false
   })
 }
 

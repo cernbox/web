@@ -54,6 +54,12 @@ const routes = [
     meta: { title: $gettext('Oidc redirect'), authContext: 'anonymous' }
   },
   {
+    path: '/web-oidc-popup-callback',
+    name: 'oidcPopupCallback',
+    component: OidcCallbackPage,
+    meta: { title: $gettext('Oidc popup callback'), authContext: 'anonymous' }
+  },
+  {
     path: '/f/:fileId',
     name: 'resolvePrivateLink',
     component: ResolvePrivateLinkPage,

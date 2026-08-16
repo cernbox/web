@@ -21,7 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, unref, Ref } from 'vue'
+import { onMounted, ref, unref, Ref } from 'vue'
 import ConnectionsPanel from './ConnectionsPanel.vue'
 import IncomingInvitations from './IncomingInvitations.vue'
 import OutgoingInvitations from './OutgoingInvitations.vue'
@@ -41,7 +41,6 @@ const { $gettext } = useGettext()
 
 const connections: Ref<FederatedConnection[]> = ref([])
 const highlightedConnections: Ref<FederatedConnection[]> = ref([])
-const highlightNewConnectionsInterval = ref(null)
 const loadingConnections = ref(true)
 
 const findAcceptedUsers = async () => {
@@ -92,13 +91,6 @@ const highlightNewConnections = async () => {
 onMounted(async () => {
   await findAcceptedUsers()
   loadingConnections.value = false
-  highlightNewConnectionsInterval.value = setInterval(() => {
-    highlightNewConnections()
-  }, 10 * 1000)
-})
-
-onUnmounted(() => {
-  clearInterval(unref(highlightNewConnectionsInterval))
 })
 </script>
 

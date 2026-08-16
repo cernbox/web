@@ -4,24 +4,47 @@ exports[`Projects view > different files view states > lists all available proje
 "<div class="oc-flex oc-width-1-1">
   <div data-v-e62b9535="" class="files-view-wrapper oc-width-expand">
     <div data-v-e62b9535="" id="files-view">
-      <app-bar-stub viewmodedefault="resource-tiles" breadcrumbs="[object Object]" breadcrumbscontextactionsitems="" viewmodes="[object Object]" hasbulkactions="true" hasviewoptions="true" hashiddenfiles="false" hasfileextensions="false" haspagination="false" issidebaropen="false"></app-bar-stub>
+      <app-bar-stub viewmodedefault="resource-tiles" breadcrumbs="[object Object]" breadcrumbscontextactionsitems="" viewmodes="[object Object]" hasbulkactions="true" hasviewoptions="true" hashiddenfiles="false" hasfileextensions="false" haspagination="true" issidebaropen="false"></app-bar-stub>
       <div class="spaces-list">
         <div class="spaces-list-filters oc-flex oc-flex-between oc-flex-wrap oc-flex-bottom oc-mx-m oc-mb-m">
           <fieldset class="oc-flex">
             <div>
               <legend class="oc-mr-m oc-flex oc-flex-middle"><span class="oc-icon oc-icon-m oc-icon-passive oc-mr-xs"><!----></span> <span>Filter:</span></legend>
             </div>
-            <div class="item-filter oc-flex item-filter-includeDisabled spaces-list-filter-include-disabled oc-mr-s">
-              <div class="oc-filter-chip oc-flex oc-filter-chip-toggle"><span id="004nym8equapq009bx8gtholfh" class="oc-invisible-sr oc-hidden-announcer" aria-live="polite" aria-atomic="true"></span> <button type="button" class="oc-button oc-rounded oc-button-m oc-button-justify-content-center oc-button-gap-m oc-button-passive oc-button-passive-raw oc-filter-chip-button oc-pill" id="oc-filter-chip-1" aria-pressed="false">
+            <div class="project-visibility-filter">
+              <div role="radiogroup" class="item-inline-filter oc-flex-inline item-inline-filter-projectVisibility"><button type="button" class="oc-button oc-rounded oc-button-m oc-button-justify-content-center oc-button-gap-m oc-button-passive oc-button-passive-raw item-inline-filter-option item-inline-filter-option-selected" id="all" role="radio" aria-checked="true">
                   <!--v-if-->
-                  <!-- @slot Content of the button --> <span class="oc-icon oc-icon-s oc-icon-passive oc-filter-check-icon-inactive"><!----></span> <span class="oc-text-truncate oc-filter-chip-label">Include disabled</span>
+                  <!-- @slot Content of the button --> <span class="oc-text-truncate item-inline-filter-option-label">All</span>
+                </button><button type="button" class="oc-button oc-rounded oc-button-m oc-button-justify-content-center oc-button-gap-m oc-button-passive oc-button-passive-raw item-inline-filter-option" id="project" role="radio" aria-checked="false">
                   <!--v-if-->
+                  <!-- @slot Content of the button --> <span class="oc-text-truncate item-inline-filter-option-label">My Spaces</span>
+                </button><button type="button" class="oc-button oc-rounded oc-button-m oc-button-justify-content-center oc-button-gap-m oc-button-passive oc-button-passive-raw item-inline-filter-option" id="explorer" role="radio" aria-checked="false">
                   <!--v-if-->
-                </button>
-                <!--v-if-->
-                <!--v-if-->
-              </div>
+                  <!-- @slot Content of the button --> <span class="oc-text-truncate item-inline-filter-option-label">Explorer</span>
+                </button></div>
             </div>
+            <!--<item-filter
+                :allow-multiple="true"
+                :filter-label="$gettext('Storage Type')"
+                :filterable-attributes="['label']"
+                :items="storageTypes"
+                :option-filter-label="$gettext('Filter storage types')"
+                :show-option-filter="true"
+                id-attribute="key"
+                class="storage-type-filter oc-ml-s"
+                display-name-attribute="label"
+                filter-name="storageType"
+              >
+                <template #item="{ item }">
+                  <span class="oc-ml-s" v-text="item.label" />
+                </template>
+              </item-filter>-->
+            <!-- FIXME: TEMPORARY REMOVAL OF FILTER -->
+            <!-- <item-filter-toggle -->
+            <!--   :filter-label="$gettext('Include disabled')" -->
+            <!--   filter-name="includeDisabled" -->
+            <!--   class="spaces-list-filter-include-disabled oc-mr-s" -->
+            <!-- /> -->
           </fieldset>
           <div class="" autocomplete="off"><label class="oc-label" for="spaces-filter">Search</label>
             <div class="oc-position-relative">
@@ -32,7 +55,7 @@ exports[`Projects view > different files view states > lists all available proje
             <!--v-if-->
           </div>
         </div>
-        <div class="resource-table" selected-ids="" resource-type="space" resources="[object Object],[object Object]" fields-displayed="image,name,manager,members,totalQuota,usedQuota,remainingQuota,status,mdate" sort-fields="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" sort-by="name" sort-dir="asc" header-position="0" is-side-bar-open="false" view-size="1"></div>
+        <div class="resource-table" selected-ids="" resource-type="space" resources="[object Object],[object Object]" fields-displayed="image,name,manager,members,totalQuota,usedQuota,remainingQuota,status,mdate" sort-fields="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" sort-by="name" sort-dir="asc" header-position="0" is-side-bar-open="false" view-size="NaN"></div>
       </div>
     </div>
   </div>

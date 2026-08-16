@@ -9,8 +9,36 @@
       />
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
+        <div
+          class="shared-with-me-filters oc-flex oc-flex-between oc-flex-wrap oc-flex-bottom oc-mx-m oc-mb-m"
+        >
+          <div class="oc-flex oc-flex-wrap">
+            <div class="oc-mr-m oc-flex oc-flex-middle">
+              <oc-icon name="filter-2" class="oc-mr-xs" />
+              <span v-text="$gettext('Filter:')" />
+            </div>
+            <trashbin-date-picker @range-changed="rangeChanged" />
+          </div>
+        </div>
         <no-content-message
-          v-if="isEmpty"
+          v-if="recycleError"
+          id="files-trashbin-error"
+          class="files-empty"
+          icon="error-warning"
+          icon-fill-type="line"
+        >
+          <template #message>
+            <span
+              >Your trash bin returned too many entries and cannot be displayed, or the date range
+              is too long. <br />Please filter by date or check the
+              <a href="https://cernbox.docs.cern.ch/web/data-security/trash-bin/" target="_blank"
+                >documentation</a
+              >.</span
+            >
+          </template>
+        </no-content-message>
+        <no-content-message
+          v-else-if="isEmpty"
           id="files-trashbin-empty"
           class="files-empty"
           icon="delete-bin-7"
@@ -65,11 +93,12 @@ import { Pagination } from '@ownclouders/web-pkg'
 
 import { eventBus } from '@ownclouders/web-pkg'
 import { useResourcesViewDefaults } from '../../composables'
-import { computed, onMounted, onBeforeUnmount, unref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, unref, ref } from 'vue'
 import { Resource } from '@ownclouders/web-client'
 import { createLocationTrash } from '@ownclouders/web-pkg'
 import { isProjectSpaceResource, SpaceResource } from '@ownclouders/web-client'
-import { useDocumentTitle } from '@ownclouders/web-pkg'
+import { useDocumentTitle, useRouteQuery } from '@ownclouders/web-pkg'
+import TrashbinDatePicker from '../../components/FilesList/TrashbinDatePicker.vue'
 import { useGettext } from 'vue3-gettext'
 
 interface Props {
@@ -79,6 +108,24 @@ const { space = null } = defineProps<Props>()
 const { $gettext } = useGettext()
 const userStore = useUserStore()
 const { user } = storeToRefs(userStore)
+
+const filterFrom = useRouteQuery('from')
+const filterTo = useRouteQuery('to')
+const dateFilter =
+  unref(filterFrom) && unref(filterTo)
+    ? ref({
+        from: unref(filterFrom),
+        to: unref(filterTo)
+      })
+    : ref(null)
+
+const recycleError = ref(false)
+
+const rangeChanged = (data: { range?: { from: string; to: string } }) => {
+  dateFilter.value =
+    data.range?.from && data.range?.to ? { from: data.range.from, to: data.range.to } : null
+  performLoaderTask()
+}
 
 let loadResourcesEventToken: string
 const emptyTrashMessage = computed(() => {
@@ -115,9 +162,14 @@ const {
 } = useResourcesViewDefaults<Resource, any, any[]>()
 
 const performLoaderTask = async () => {
-  await loadResourcesTask.perform(space)
-  refreshFileListHeaderPosition()
-  scrollToResourceFromRoute(unref(paginatedResources), 'files-app-bar')
+  recycleError.value = false
+  try {
+    await loadResourcesTask.perform(space, unref(dateFilter))
+    refreshFileListHeaderPosition()
+    scrollToResourceFromRoute(unref(paginatedResources), 'files-app-bar')
+  } catch {
+    recycleError.value = true
+  }
 }
 const isEmpty = computed(() => {
   return unref(paginatedResources).length < 1

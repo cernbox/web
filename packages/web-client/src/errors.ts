@@ -24,3 +24,5 @@ export class DavHttpError extends HttpError {
     this.errorCode = errorCode
   }
 }
+
+export class UiError extends Error {}

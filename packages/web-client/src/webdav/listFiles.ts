@@ -16,6 +16,7 @@ import { DAV, DAVRequestOptions } from './client'
 import { GetPathForFileIdFactory } from './getPathForFileId'
 import { WebDavOptions } from './types'
 import { getWebDavPath } from './utils'
+import { UiError } from '../errors'
 
 export type ListFilesOptions = {
   depth?: number
@@ -91,7 +92,9 @@ export const ListFilesFactory = (
             children: children.map((c) => buildResource(c, dav.extraProps, space.webDavPath))
           } as ListFilesResult
         }
-        const resources = webDavResources.map((r) => buildResource(r, dav.extraProps, space.webDavPath))
+        const resources = webDavResources.map((r) =>
+          buildResource(r, dav.extraProps, space.webDavPath)
+        )
         return { resource: resources[0], children: resources.slice(1) } as ListFilesResult
       }
 
@@ -120,7 +123,9 @@ export const ListFilesFactory = (
           } as ListFilesResult
         }
 
-        const resources = webDavResources.map((r) => buildResource(r, dav.extraProps, space.webDavPath))
+        const resources = webDavResources.map((r) =>
+          buildResource(r, dav.extraProps, space.webDavPath)
+        )
 
         const resourceIsSpace = fileId === space.id
         if (fileId && !resourceIsSpace && fileId !== resources[0].fileId) {
@@ -130,6 +135,9 @@ export const ListFilesFactory = (
       } catch (e) {
         if (e.statusCode === 404 && fileId) {
           return listFilesCorrectedPath()
+        }
+        if (e.statusCode === 400) {
+          throw new UiError()
         }
         throw e
       }

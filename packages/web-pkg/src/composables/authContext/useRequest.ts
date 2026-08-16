@@ -24,13 +24,14 @@ export function useRequest(options: RequestOptions = {}): RequestResult {
     url: string,
     config: AxiosRequestConfig = {}
   ): Promise<AxiosResponse> => {
-    const httpClient = authStore.accessToken
+    let httpClient = authStore.accessToken
       ? clientService.httpAuthenticated
       : clientService.httpUnAuthenticated
 
     config.headers = config.headers || {}
 
     if (authStore.publicLinkContextReady) {
+      httpClient = clientService.httpUnAuthenticated
       if (authStore.publicLinkPassword) {
         config.headers.Authorization =
           'Basic ' +

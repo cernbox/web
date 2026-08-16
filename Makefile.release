@@ -35,7 +35,7 @@ build: build-web copy-config
 build-web:
 	[ -n "${NO_INSTALL}" ] || $(PNPM) install
 	$(PNPM) check:types
-	$(PNPM) build
+	$(PNPM) build -c vite.cern.config.ts
 
 .PHONY: copy-config
 copy-config:

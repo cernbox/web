@@ -11,6 +11,12 @@ import { join } from 'path'
 
 const projectRootDir = searchForWorkspaceRoot(process.cwd())
 
+const stockCreateSpace = join(
+  projectRootDir,
+  'packages/web-pkg/src/components/AppBar/CreateSpace.vue'
+)
+const cernCreateSpace = join(projectRootDir, 'packages/web-pkg/src/cern/components/CreateSpace.vue')
+
 export default defineConfig(async (args) => {
   let config
   if (typeof _defineConfig === 'function') {
@@ -24,11 +30,20 @@ export default defineConfig(async (args) => {
     strictPort: true
   }
 
-  // create space component
-  ;(config.resolve.alias as any)['../../components/AppBar/CreateSpace.vue'] = join(
-    projectRootDir,
-    'packages/web-pkg/src/cern/components/CreateSpace.vue'
-  )
+  // create space component. Matched on the resolved file rather than through resolve.alias,
+  // because the component is imported through the @ownclouders/web-pkg barrel and therefore
+  // has no import specifier that is stable enough to alias against.
+  config.plugins.push({
+    name: 'cern:create-space',
+    enforce: 'pre',
+    async resolveId(source, importer, options) {
+      if (!importer) {
+        return null
+      }
+      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
+      return resolved?.id.split('?')[0] === stockCreateSpace ? cernCreateSpace : null
+    }
+  } as PluginOption)
 
   config.plugins.push(historyModePlugins()[0] as PluginOption)
 

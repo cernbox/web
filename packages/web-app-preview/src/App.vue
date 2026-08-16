@@ -85,6 +85,7 @@ import {
   useRouter,
   usePreviewService,
   useAppStore,
+  useConfigStore,
   useGetMatchingSpace,
   isLocationSharesActive
 } from '@ownclouders/web-pkg'
@@ -126,6 +127,7 @@ const {
 const emit = defineEmits<Emits>()
 const router = useRouter()
 const route = useRoute()
+const configStore = useConfigStore()
 const contextRouteQuery = useRouteQuery('contextRouteQuery') as unknown as Ref<
   Record<string, string>
 >
@@ -315,9 +317,14 @@ watch(
 
 function setActiveFile() {
   for (let i = 0; i < unref(filteredFiles).length; i++) {
-    const filterAttr = isLocationSharesActive(router, 'files-shares-with-me')
-      ? 'remoteItemId'
-      : 'fileId'
+    // With fullShareOwnerPaths a received share resolves to the owner's real space rather than
+    // to a synthetic share space, so its resources carry a regular fileId and no remoteItemId -
+    // matching on remoteItemId there would never hit and always land on the first file.
+    const filterAttr =
+      isLocationSharesActive(router, 'files-shares-with-me') &&
+      !configStore.options.routing.fullShareOwnerPaths
+        ? 'remoteItemId'
+        : 'fileId'
 
     // match the given file id with the filtered files to get the current index
     if (unref(filteredFiles)[i][filterAttr] === unref(fileId)) {

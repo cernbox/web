@@ -33,19 +33,23 @@ const {
 } = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const img = ref<HTMLElement | null>()
-const panzoom = ref<PanzoomObject>()
+const panzoom = ref<PanzoomObject | undefined>()
 
 const onPanZoomChange = (event: Event) => {
   emit('panZoomChange', event)
 }
 
-const initPanzoom = async () => {
-  if (unref(panzoom)) {
-    await nextTick()
-    ;(unref(img) as unknown as HTMLElement).removeEventListener('panzoomchange', onPanZoomChange)
-    unref(panzoom)?.destroy()
+const destroyPanzoom = () => {
+  const el = unref(img) as unknown as HTMLElement
+  el?.removeEventListener('panzoomchange', onPanZoomChange)
+  unref(panzoom)?.destroy()
+  panzoom.value = undefined
+  if (el) {
+    el.style.transform = `rotate(${currentImageRotation}deg)`
   }
+}
 
+const createPanzoom = async () => {
   // wait for next tick until image is rendered
   await nextTick()
 
@@ -88,15 +92,32 @@ const initPanzoom = async () => {
   ;(unref(img) as unknown as HTMLElement).addEventListener('panzoomchange', onPanZoomChange)
 }
 
+// Panzoom captures pointer events and shows a move cursor even when the image
+// fits, so keep it uninstantiated while at natural size.
+const initPanzoom = async () => {
+  destroyPanzoom()
+  if (currentImageZoom > 1) {
+    await createPanzoom()
+    unref(panzoom).zoom(currentImageZoom)
+  }
+}
+
 watch(img, initPanzoom)
 onMounted(initPanzoom)
 
-watch([() => currentImageZoom, () => currentImageRotation], () => {
-  unref(panzoom).zoom(currentImageZoom)
+watch([() => currentImageZoom, () => currentImageRotation], async () => {
+  if (currentImageZoom === 1) {
+    destroyPanzoom()
+  } else {
+    if (!unref(panzoom)) {
+      await createPanzoom()
+    }
+    unref(panzoom).zoom(currentImageZoom)
+  }
 })
 
 watch([() => currentImagePositionX, () => currentImagePositionY], () => {
-  unref(panzoom).pan(currentImagePositionX, currentImagePositionY)
+  unref(panzoom)?.pan(currentImagePositionX, currentImagePositionY)
 })
 </script>
 <style lang="scss" scoped>
@@ -104,6 +125,5 @@ img {
   object-fit: contain;
   max-width: 80%;
   max-height: 80%;
-  cursor: move;
 }
 </style>

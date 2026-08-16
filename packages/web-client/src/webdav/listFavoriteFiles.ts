@@ -7,10 +7,10 @@ export const ListFavoriteFilesFactory = (dav: DAV, options: WebDavOptions) => {
   return {
     listFavoriteFiles({
       davProperties = DavProperties.Default,
-      username = '',
+      spaceID = '',
       ...opts
-    }: { davProperties?: DavPropertyValue[]; username?: string } & DAVRequestOptions = {}) {
-      return dav.report(urlJoin('files', username), {
+    }: { davProperties?: DavPropertyValue[]; spaceID?: string } & DAVRequestOptions = {}) {
+      return dav.report(urlJoin('spaces', spaceID), {
         properties: davProperties,
         filterRules: { favorite: 1 },
         ...opts

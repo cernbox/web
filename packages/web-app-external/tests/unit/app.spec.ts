@@ -90,6 +90,81 @@ describe('The app provider extension', () => {
     await flushPromises()
     expect(wrapper.html()).toMatchSnapshot()
   })
+  describe('when the file is locked by another app', () => {
+    it('shows a warning without a switch button when the locking app is unknown', async () => {
+      const makeRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: { ...providerSuccessResponseGet, forced_viewmode_reason: 'File is locked' }
+      })
+      createShallowMountWrapper(makeRequest, { appNames: ['example-app'] }, mock<SpaceResource>())
+      await flushPromises()
+
+      const alert = document.getElementById('warning-alert')
+      expect(alert).toBeTruthy()
+      expect(alert.querySelector('button')).toBeFalsy()
+    })
+    it('removes the alerts container once its last alert is dismissed, so it stops blocking clicks underneath', async () => {
+      const makeRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: { ...providerSuccessResponseGet, forced_viewmode_reason: 'File is locked' }
+      })
+      createShallowMountWrapper(makeRequest, { appNames: ['example-app'] }, mock<SpaceResource>())
+      await flushPromises()
+
+      const alert = document.getElementById('warning-alert')
+      const closeButton = alert.lastElementChild as HTMLElement
+      closeButton.click()
+
+      expect(document.getElementById('warning-alert')).toBeFalsy()
+      expect(document.getElementById('app-alerts-container')).toBeFalsy()
+    })
+    it('shows a switch button when the locking app is currently available', async () => {
+      const makeRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: {
+          ...providerSuccessResponseGet,
+          forced_viewmode_reason: 'File is locked',
+          app_for_editing: 'Other-App'
+        }
+      })
+      const { mocks } = createShallowMountWrapper(
+        makeRequest,
+        { appNames: ['example-app', 'Other-App'] },
+        mock<SpaceResource>()
+      )
+      await flushPromises()
+
+      const alert = document.getElementById('warning-alert')
+      const button = alert.querySelector('button')
+      expect(button).toBeTruthy()
+
+      button.click()
+      expect(mocks.$router.push).toHaveBeenCalledWith({
+        name: 'external-other-app-apps',
+        params: expect.anything(),
+        query: expect.anything()
+      })
+    })
+    it('does not show a switch button when the locking app is the current app', async () => {
+      const makeRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: {
+          ...providerSuccessResponseGet,
+          forced_viewmode_reason: 'File is locked',
+          app_for_editing: 'example-app'
+        }
+      })
+      createShallowMountWrapper(makeRequest, { appNames: ['example-app'] }, mock<SpaceResource>())
+      await flushPromises()
+
+      const alert = document.getElementById('warning-alert')
+      expect(alert.querySelector('button')).toBeFalsy()
+    })
+  })
   describe('office postMessage handling', () => {
     it('registers the handler on mount and unregisters it on unmount', async () => {
       const register = vi.fn()

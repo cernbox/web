@@ -29,6 +29,7 @@
       appearance="filled"
       variation="primary"
       v-bind="logoutButtonsAttrs"
+      @click="lowAssuranceLevelError && handleLogout()"
     >
       {{ navigateToLoginText }}
     </oc-button>
@@ -43,7 +44,9 @@ import {
   queryItemAsString,
   useConfigStore,
   useRouteQuery,
-  useThemeStore
+  useRouter,
+  useThemeStore,
+  useAuthService
 } from '@ownclouders/web-pkg'
 
 export default defineComponent({
@@ -52,8 +55,13 @@ export default defineComponent({
     const themeStore = useThemeStore()
     const { currentTheme } = storeToRefs(themeStore)
     const configStore = useConfigStore()
+    const authService = useAuthService()
+    const router = useRouter()
     const redirectUrlQuery = useRouteQuery('redirectUrl')
     const reasonQuery = useRouteQuery('reason')
+    const lowAssuranceLevelError = computed(
+      () => queryItemAsString(unref(reasonQuery)) === 'lowAssuranceLevel'
+    )
 
     const { $gettext } = useGettext()
 
@@ -64,12 +72,20 @@ export default defineComponent({
     const logoImg = computed(() => currentTheme.value.logo.login)
 
     const cardTitle = computed(() => {
+      if (unref(lowAssuranceLevelError)) {
+        return $gettext('Cannot log in')
+      }
       if (unref(isLoginError)) {
         return $gettext('Error signing in')
       }
       return $gettext('Not logged in')
     })
     const cardHint = computed(() => {
+      if (unref(lowAssuranceLevelError)) {
+        return $gettext(
+          'Please login to a CERN account using the CERN credentials instead of a linked guest account.'
+        )
+      }
       if (unref(isLoginError)) {
         return $gettext(
           'There was an error while trying to sign you in. Please try again or contact your administrator if the problem persists.'
@@ -80,7 +96,15 @@ export default defineComponent({
       )
     })
     const navigateToLoginText = computed(() => $gettext('Log in again'))
+    const handleLogout = async () => {
+      await authService.logoutUser()
+      await router.push({ name: 'login' })
+    }
+
     const logoutButtonsAttrs = computed(() => {
+      if (unref(lowAssuranceLevelError)) {
+        return { type: 'button' }
+      }
       const redirectUrl = queryItemAsString(unref(redirectUrlQuery))
       if (configStore.options.loginUrl) {
         const configLoginURL = new URL(encodeURI(configStore.options.loginUrl))
@@ -102,7 +126,9 @@ export default defineComponent({
       footerSlogan,
       navigateToLoginText,
       accessDeniedHelpUrl,
-      logoutButtonsAttrs
+      logoutButtonsAttrs,
+      handleLogout,
+      lowAssuranceLevelError
     }
   }
 })

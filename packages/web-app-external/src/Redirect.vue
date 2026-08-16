@@ -26,11 +26,12 @@ import {
   queryItemAsString,
   useAppProviderService,
   useClientService,
+  useConfigStore,
   useRouteMeta,
   useRouteQuery,
   useSharesStore
 } from '@ownclouders/web-pkg'
-import { buildSpace } from '@ownclouders/web-client'
+import { buildSpace, urlJoin } from '@ownclouders/web-client'
 import { DavProperty } from '@ownclouders/web-client/webdav'
 import { useRouter } from 'vue-router'
 import { omit } from 'lodash-es'
@@ -42,6 +43,7 @@ const { $gettext } = useGettext()
 const appProviderService = useAppProviderService()
 const clientService = useClientService()
 const sharesStore = useSharesStore()
+const configStore = useConfigStore()
 const router = useRouter()
 const { isReady } = storeToRefs(useApplicationReadyStore())
 
@@ -71,6 +73,18 @@ const fail = (message: string) => {
 
 const redirectToApp = (appName: string) => {
   hasError.value = false
+
+  if (!configStore.options.routing.idBased) {
+    // Path-based routing has no fileId to key the target route on, so the file path has to be
+    // carried over verbatim: '/external/a/b/c' -> ['', 'external', 'a', 'b', 'c'] -> ['a', 'b', 'c']
+    const filePath = unref(router.currentRoute).path.split('/').slice(2)
+    router.replace({
+      path: urlJoin(`external-${appName.toLowerCase()}`, ...filePath),
+      query: omit(unref(router.currentRoute).query, ['app', 'appName', 'fileId'])
+    })
+    return
+  }
+
   router.replace({
     name: `external-${appName.toLowerCase()}-apps`,
     query: omit(unref(router.currentRoute).query, ['app', 'appName'])
@@ -95,10 +109,33 @@ const resolveAppNameByFileId = async (fileId: string): Promise<string | undefine
   return appProviderService.getDefaultAppNameForMimeType(resource.mimeType)
 }
 
+// Path-based routing counterpart of resolveAppNameByFileId: there is no fileId to look the
+// mime type up by, so the app is resolved from the file extension in the route path instead.
+const resolveAppNameByRoutePath = (): string | undefined => {
+  const extension = unref(router.currentRoute).path.split('.').pop() || ''
+  const mimeType = appProviderService.mimeTypes.find(({ ext }) => ext === extension)
+
+  if (!mimeType) {
+    return undefined
+  }
+
+  return appProviderService.getDefaultAppNameForMimeType(mimeType.mime_type)
+}
+
 const redirect = async () => {
   const explicit = unref(explicitAppName)
   if (explicit) {
     redirectToApp(explicit)
+    return
+  }
+
+  if (!configStore.options.routing.idBased) {
+    const appName = resolveAppNameByRoutePath()
+    if (!appName) {
+      fail($gettext('No application is available to open this file type.'))
+      return
+    }
+    redirectToApp(appName)
     return
   }
 

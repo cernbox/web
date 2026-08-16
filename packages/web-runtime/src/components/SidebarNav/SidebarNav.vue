@@ -45,7 +45,10 @@
     </nav>
     <!-- @slot bottom content of the sidebar -->
     <slot name="bottom">
-      <div v-if="!closed" class="versions oc-pb-m oc-pl-m oc-text-xsmall oc-text-muted">
+      <div
+        v-if="!closed && listVersions"
+        class="versions oc-pb-m oc-pl-m oc-text-xsmall oc-text-muted"
+      >
         <span v-text="backendVersion" />
         <span v-text="webVersion" />
       </div>
@@ -68,7 +71,12 @@ import {
 import { v4 as uuidV4 } from 'uuid'
 import SidebarNavItem from './SidebarNavItem.vue'
 import { NavItem } from '../../helpers/navItems'
-import { useCapabilityStore, getBackendVersion, getWebVersion } from '@ownclouders/web-pkg'
+import {
+  useCapabilityStore,
+  useConfigStore,
+  getBackendVersion,
+  getWebVersion
+} from '@ownclouders/web-pkg'
 
 type NavItemRef = InstanceType<typeof SidebarNavItem>
 
@@ -88,8 +96,10 @@ export default defineComponent({
     let resizeObserver: ResizeObserver
     const navItemRefs = ref<Record<string, NavItemRef>>({})
     const highlighterAttrs = ref<Record<string, unknown>>({})
+    const configStore = useConfigStore()
     const capabilityStore = useCapabilityStore()
 
+    const listVersions = unref(configStore.options).listVersions
     const webVersion = computed(() => getWebVersion())
     const backendVersion = computed(() => getBackendVersion({ capabilityStore }))
 
@@ -139,7 +149,7 @@ export default defineComponent({
       { deep: true, immediate: true }
     )
 
-    return { highlighterAttrs, navItemRefs, backendVersion, webVersion }
+    return { highlighterAttrs, navItemRefs, backendVersion, webVersion, listVersions }
   },
   computed: {
     toggleSidebarButtonClass() {

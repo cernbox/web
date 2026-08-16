@@ -127,6 +127,7 @@ const OptionsConfigSchema = z.object({
   hideAccountMenu: z.boolean().optional(),
   hideNavigation: z.boolean().optional(),
   defaultLanguage: z.string().optional(),
+  listVersions: z.boolean().optional(),
   alertRwFolders: z.record(z.string(), z.string()).optional()
 })
 

@@ -18,9 +18,7 @@
   "editor.quickSuggestions": {
     "strings": true
   },
-  "cucumberautocomplete.steps": [
-    "tests/e2e/cucumber/steps/**/*.ts"
-  ],
-  "cucumberautocomplete.strictGherkinCompletion": true,
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "js/ts.implicitProjectConfig.checkJs": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }

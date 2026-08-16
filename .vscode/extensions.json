@@ -5,8 +5,8 @@
     "esbenp.prettier-vscode",
     "EditorConfig.EditorConfig",
     "Vue.volar",
+    "dbaeumer.vscode-eslint",
     "vitest.explorer",
-    "alexkrechik.cucumberautocomplete",
-    "vscode.typescript-language-features"
+    "ms-playwright.playwright"
   ]
 }

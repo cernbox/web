@@ -5,6 +5,7 @@ import {
   RouteLocation
 } from '@ownclouders/web-test-helpers'
 import { mock } from 'vitest-mock-extended'
+import { ref } from 'vue'
 import { Resource, ShareSpaceResource, SpaceResource } from '@ownclouders/web-client'
 import { useSpacesStore } from '../../../../src/composables/piniaStores'
 
@@ -43,13 +44,20 @@ describe('useSpaceHelpers', () => {
       })
     })
   })
+
 })
 
 function getWrapper({
   driveAliasAndItem = '',
+  includeFallbackSpace = false,
+  currentSpace = undefined,
+  options = undefined,
   setup
 }: {
   driveAliasAndItem?: string
+  includeFallbackSpace?: boolean
+  currentSpace?: SpaceResource
+  options?: Parameters<typeof useGetMatchingSpace>[0]
   setup: (instance: ReturnType<typeof useGetMatchingSpace>) => void
 }) {
   const mocks = {
@@ -63,19 +71,29 @@ function getWrapper({
 
   const spaces = [
     mock<SpaceResource>({ id: '1', driveType: 'project' }),
-    mock<SpaceResource>({ id: 'xyz', driveType: 'public' })
+    mock<SpaceResource>({ id: 'xyz', driveType: 'public' }),
+    ...(includeFallbackSpace
+      ? [
+          mock<SpaceResource>({
+            id: 'fallback',
+            driveType: 'explorer',
+            webDavPath: '/files/jdoe/eos'
+          })
+        ]
+      : [])
   ]
 
   return {
+    spaces,
     wrapper: getComposableWrapper(
       () => {
-        const instance = useGetMatchingSpace()
+        const instance = useGetMatchingSpace(options)
         setup(instance)
       },
       {
         mocks,
         provide: mocks,
-        pluginOptions: { piniaOptions: { spacesState: { spaces } } }
+        pluginOptions: { piniaOptions: { spacesState: { spaces, currentSpace } } }
       }
     )
   }

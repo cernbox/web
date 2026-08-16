@@ -29,7 +29,7 @@ export const useGetMatchingSpace = (options?: GetMatchingSpaceOptions) => {
   }
 
   const getMatchingSpace = (resource: Resource): SpaceResource => {
-    let storageId = resource.spaceId
+    let storageId = resource.spaceId || resource.storageId
 
     if (
       unref(driveAliasAndItem)?.startsWith('public/') ||

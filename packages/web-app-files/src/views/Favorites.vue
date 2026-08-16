@@ -1,7 +1,12 @@
 <template>
   <div class="oc-flex">
     <files-view-wrapper>
-      <app-bar ref="appBarRef" :view-modes="viewModes" :is-side-bar-open="isSideBarOpen" />
+      <app-bar
+        ref="appBarRef"
+        :breadcrumbs="breadcrumbs"
+        :view-modes="viewModes"
+        :is-side-bar-open="isSideBarOpen"
+      />
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
         <no-content-message
@@ -161,6 +166,15 @@ export default defineComponent({
   },
 
   computed: {
+    breadcrumbs() {
+      return [
+        {
+          text: this.$gettext('Favorites'),
+          onClick: () => this.loadResourcesTask.perform(),
+          isStativNav: true
+        }
+      ]
+    },
     isEmpty() {
       return this.paginatedResources.length < 1
     }

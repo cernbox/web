@@ -9,7 +9,12 @@
         v-if="appMenuExtensions.length && !isEmbedModeEnabled && !hideAppSwitcher"
         :menu-items="appMenuExtensions"
       />
-      <router-link v-if="!hideLogo" :to="homeLink" class="oc-logo-href">
+      <router-link
+        v-if="!hideLogo"
+        :to="homeLink"
+        :target="isEmbedModeEnabled ? '_blank' : null"
+        class="oc-logo-href"
+      >
         <oc-responsive-image
           :src="{
             xs: currentTheme.logo.topbarSm,
@@ -154,6 +159,14 @@ export default {
         return {
           name: 'resolvePublicLink',
           params: { token: authStore.publicLinkToken }
+        }
+      }
+
+      if (unref(isEmbedModeEnabled)) {
+        const currentRoute = unref(router.currentRoute)
+        return {
+          name: currentRoute.name,
+          params: currentRoute.params
         }
       }
 

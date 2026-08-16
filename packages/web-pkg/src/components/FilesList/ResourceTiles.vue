@@ -61,7 +61,10 @@
               :label-hidden="true"
               size="large"
               class="oc-flex-inline oc-p-s"
-              :disabled="!isSpaceResource(resource) && isResourceDisabled(resource)"
+              :disabled="
+                !isSpaceResource(resource) &&
+                (isResourceDisabled(resource) || (isInlineAttach && resource.isFolder))
+              "
               :model-value="isResourceSelected(resource)"
               @click.stop.prevent="toggleTile([resource, $event])"
             />
@@ -156,6 +159,7 @@ import {
   useResourcesStore,
   useViewSizeMax,
   useEmbedMode,
+  useEmbedModeDownloadUrl,
   useCanBeOpenedWithSecureView,
   useFileActions,
   useGetMatchingSpace,
@@ -213,8 +217,10 @@ const {
   fileTypes: embedModeFileTypes,
   isLocationPicker,
   isFilePicker,
+  isInlineAttach,
   postMessage
 } = useEmbedMode()
+const { withDownloadUrl } = useEmbedModeDownloadUrl()
 const viewSizeMax = useViewSizeMax()
 const viewSizeCurrent = computed(() => {
   return Math.min(unref(viewSizeMax), viewSize)
@@ -275,10 +281,12 @@ const getRoute = (resource: Resource) => {
 
   return action.route({ space, resources: [resource] })
 }
-const emitTileClick = (resource: Resource) => {
-  if (unref(isEmbedModeEnabled) && unref(isFilePicker)) {
+const emitTileClick = async (resource: Resource) => {
+  if (unref(isEmbedModeEnabled) && unref(isFilePicker) && !resource.isFolder) {
+    const clonedResource = JSON.parse(JSON.stringify(resource))
+    const resourceWithUrl = await withDownloadUrl(space, clonedResource)
     return postMessage<embedModeFilePickMessageData>('owncloud-embed:file-pick', {
-      resource: JSON.parse(JSON.stringify(resource)),
+      resource: resourceWithUrl,
       locationQuery: JSON.parse(JSON.stringify(routeToContextQuery(unref(router.currentRoute))))
     })
   }

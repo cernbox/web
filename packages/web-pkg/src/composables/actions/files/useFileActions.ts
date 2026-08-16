@@ -6,12 +6,7 @@ import { isLocationTrashActive } from '../../../router'
 import { computed, unref } from 'vue'
 import { useRouter, useRoute } from '../../router'
 import { useGettext } from 'vue3-gettext'
-import {
-  Action,
-  FileAction,
-  FileActionOptions,
-  useIsSearchActive
-} from '../../actions'
+import { Action, FileAction, FileActionOptions, useIsSearchActive } from '../../actions'
 
 import {
   useFileActionsEnableSync,
@@ -21,13 +16,13 @@ import {
   useFileActionsDelete,
   useFileActionsDownloadArchive,
   useFileActionsDownloadFile,
+  useFileActionsDuplicate,
   useFileActionsFavorite,
   useFileActionsMove,
   useFileActionsNavigate,
   useFileActionsRename,
   useFileActionsRestore,
-  useFileActionsCreateSpaceFromResource,
-  useFileActionsDuplicate
+  useFileActionsCreateSpaceFromResource
 } from './index'
 import {
   ActionExtension,
@@ -68,13 +63,13 @@ export const useFileActions = () => {
   const { actions: disableSyncActions } = useFileActionsDisableSync()
   const { actions: downloadArchiveActions } = useFileActionsDownloadArchive()
   const { actions: downloadFileActions } = useFileActionsDownloadFile()
+  const { actions: duplicateActions } = useFileActionsDuplicate()
   const { actions: favoriteActions } = useFileActionsFavorite()
   const { actions: moveActions } = useFileActionsMove()
   const { actions: navigateActions } = useFileActionsNavigate()
   const { actions: renameActions } = useFileActionsRename()
   const { actions: restoreActions } = useFileActionsRestore()
   const { actions: createSpaceFromResource } = useFileActionsCreateSpaceFromResource()
-  const { actions: duplicateActions } = useFileActionsDuplicate()
 
   const systemActions = computed((): Action[] => [
     ...unref(downloadArchiveActions),
@@ -82,8 +77,8 @@ export const useFileActions = () => {
     ...unref(deleteActions),
     ...unref(moveActions),
     ...unref(copyActions),
-    ...unref(renameActions),
     ...unref(duplicateActions),
+    ...unref(renameActions),
     ...unref(createSpaceFromResource),
     ...unref(restoreActions),
     ...unref(enableSyncActions),
@@ -240,8 +235,6 @@ export const useFileActions = () => {
     const remoteItemId = isShareSpaceResource(space) ? space.id : undefined
     const routeName = appFileExtension.routeName || appFileExtension.app
     const routeOpts = getEditorRouteOpts(routeName, space, resource, mode, remoteItemId)
-
-
     router.push(routeOpts)
   }
 
@@ -264,9 +257,25 @@ export const useFileActions = () => {
   const getAllAvailableActions = (options: GetFileActionsOptions) => {
     const filterCallback = (action: FileAction) => action.isVisible(options)
 
+    // TEMPORARY: browser-local override for which app opens office files by default, written
+    // to localStorage by the office-app-feedback extension. Read raw/inline on purpose - this
+    // is meant to be ripped out in a couple of months, not grown into a proper store.
+    const preferredAppName = localStorage.getItem('preferredOfficeAppName')
+    const preferredActionName = preferredAppName
+      ? `editor-external-${preferredAppName.toLowerCase()}`
+      : null
+
     const primaryActions = [...unref(defaultActions), ...unref(editorActions)]
       .filter(filterCallback)
-      .sort((a, b) => Number(b.hasPriority) - Number(a.hasPriority))
+      .sort((a, b) => {
+        if (
+          preferredActionName &&
+          (a.name === preferredActionName || b.name === preferredActionName)
+        ) {
+          return a.name === preferredActionName ? -1 : 1
+        }
+        return Number(b.hasPriority) - Number(a.hasPriority)
+      })
 
     const secondaryActions = options.omitSystemActions
       ? []

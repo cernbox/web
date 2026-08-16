@@ -56,9 +56,13 @@ export default defineWebApplication({
       id: appId,
       extensions: mimeTypes.map((mimeType) => {
         const provider = mimeType.app_providers.find((provider) => provider.name === appName)
+        let visible_name = provider.name
+        if (provider.name === 'MS365') {
+          visible_name = 'Microsoft Office 365'
+        }
         return {
           extension: mimeType.ext,
-          label: () => $gettext('Open in %{app}', { app: provider.name }),
+          label: () => $gettext('Open in %{app}', { app: visible_name }),
           icon: provider.icon,
           name: provider.name,
           mimeType: mimeType.mime_type,

@@ -6,8 +6,7 @@
     class="oc-width-1-1 oc-height-1-1"
     :title="iFrameTitle"
     allowfullscreen
-    allow="camera; clipboard-read; clipboard-write"
-    @load="onIframeLoad"
+    allow="camera; clipboard-read *; clipboard-write *"
   />
   <div v-if="appUrl && method === 'POST' && formParameters" class="oc-height-1-1 oc-width-1-1">
     <form :action="appUrl" target="app-iframe" method="post">
@@ -23,8 +22,7 @@
       class="oc-width-1-1 oc-height-1-1"
       :title="iFrameTitle"
       allowfullscreen
-      allow="camera; clipboard-read; clipboard-write"
-      @load="onIframeLoad"
+      allow="camera; clipboard-read *; clipboard-write *"
     />
   </div>
 </template>
@@ -37,6 +35,7 @@ import {
   unref,
   nextTick,
   ref,
+  toRef,
   watch,
   VNodeRef,
   onMounted,
@@ -49,22 +48,25 @@ import { useGettext } from 'vue3-gettext'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { urlJoin } from '@ownclouders/web-client'
 import {
-  isSameResource,
   useCapabilityStore,
   useConfigStore,
+  useEmbedMode,
   useMessages,
-  useModals,
   useRequest,
   useAppProviderService,
   useRoute,
+  useRouter,
   queryItemAsString,
-  useRouteQuery
+  useRouteQuery,
+  useThemeStore,
+  isSameResource
 } from '@ownclouders/web-pkg'
 import {
   isProjectSpaceResource,
   isPublicSpaceResource,
   isShareSpaceResource
 } from '@ownclouders/web-client'
+import { useOfficePostMessageRegistry } from './composables'
 
 type ExtendedNavigator = Navigator & {
   userAgentData?: {
@@ -83,12 +85,14 @@ const props = defineProps<Props>()
 const language = useGettext()
 const { $gettext } = language
 const { showErrorMessage } = useMessages()
-const { dispatchModal } = useModals()
 const capabilityStore = useCapabilityStore()
 const configStore = useConfigStore()
 const route = useRoute()
+const router = useRouter()
 const appProviderService = useAppProviderService()
 const { makeRequest } = useRequest()
+const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
+const themeStore = useThemeStore()
 
 const viewModeQuery = useRouteQuery('view_mode')
 const isMobileWidth =
@@ -110,8 +114,8 @@ const appName = computed(() => {
   return appProviderService.appNames.find((appName) => appName.toLowerCase() === lowerCaseAppName)
 })
 
-// The grouped Save-As control and the Host_PostmessageReady handshake are
-// Collabora-specific WOPI extensions; other app providers don't implement them.
+// The grouped Save-As control is a Collabora-specific WOPI extension; other app
+// providers don't implement it.
 const isCollabora = computed(() => unref(appName) === 'Collabora')
 
 const appUrl = ref()
@@ -152,109 +156,6 @@ const withSaveAsUiDefaults = (rawUrl: string) => {
   }
 }
 
-// Post a WOPI postMessage into the editor iframe (messages are JSON strings).
-// Accepts an explicit target/origin so callers that captured them at the time
-// a user action started (e.g. opening the Save-As modal) don't re-read the
-// live refs, which may have moved on to a different resource by the time the
-// user confirms. Returns whether the message was actually sent.
-const postToApp = (
-  message: Record<string, unknown>,
-  target: Window | null | undefined = unref(appIframe)?.contentWindow,
-  origin: string = unref(appOrigin)
-): boolean => {
-  if (!target || !origin) {
-    return false
-  }
-  target.postMessage(JSON.stringify({ ...message, SendTime: Date.now() }), origin)
-  return true
-}
-
-// The editor only emits its rich postMessage API (UI_SaveAs, App_LoadingStatus,
-// ...) once the host has announced itself with `Host_PostmessageReady`. Without
-// this handshake "Save As" silently does nothing. Send it as soon as the iframe
-// has loaded. This handshake is Collabora-specific; other providers don't expect it.
-const onIframeLoad = () => {
-  if (!unref(isCollabora)) {
-    return
-  }
-  postToApp({ MessageId: 'Host_PostmessageReady', Values: {} })
-}
-
-// Reject empty names, path separators and the reserved "." / ".." names before
-// the name is sent on. The server-side `PutRelativeFile` sanitizes the name as
-// well, but validating here gives immediate feedback and avoids a pointless
-// round-trip on invalid input.
-const validateSaveAsFilename = (filename: string): string => {
-  const trimmed = filename?.trim()
-  if (!trimmed) {
-    return $gettext('The file name cannot be empty.')
-  }
-  if (/[/\\]/.test(trimmed)) {
-    return $gettext('The file name cannot contain "/" or "\\".')
-  }
-  if (trimmed === '.' || trimmed === '..') {
-    return $gettext('The file name cannot be "." or "..".')
-  }
-  return ''
-}
-
-// Guards against a second Save-As modal being dispatched while one is already
-// open (e.g. the editor's grouped Save-As control emitting `UI_SaveAs` twice
-// in quick succession).
-const isSaveAsModalOpen = ref(false)
-
-// Handle the editor's "Save As" request: ask the user for the copy's name (the
-// extension selects the export format) and reply with `Action_SaveAs`, which
-// makes the editor render to that format and PutRelativeFile it into the space.
-const onSaveAs = () => {
-  if (props.isReadOnly) {
-    showErrorMessage({ title: $gettext('Cannot save a copy: file is read-only') })
-    return
-  }
-  if (unref(isSaveAsModalOpen)) {
-    return
-  }
-
-  // Capture the target iframe/origin now, at dispatch time, rather than
-  // re-reading the (reactive) refs in `onConfirm`: if the component gets
-  // reused for a different resource while the modal is open, the live refs
-  // would point at the new document by the time the user presses Save.
-  const target = unref(appIframe)?.contentWindow
-  const origin = unref(appOrigin)
-
-  isSaveAsModalOpen.value = true
-  dispatchModal({
-    variation: 'passive',
-    title: $gettext('Save a copy'),
-    confirmText: $gettext('Save'),
-    hasInput: true,
-    inputValue: props.resource.name,
-    inputLabel: $gettext('File name'),
-    onInput: (filename: string, setError: (error: string) => void) => {
-      setError(validateSaveAsFilename(filename))
-    },
-    onCancel: () => {
-      isSaveAsModalOpen.value = false
-    },
-    onConfirm: (filename: string) => {
-      isSaveAsModalOpen.value = false
-      // Guard again on confirm (defense-in-depth); onInput normally prevents
-      // reaching here with an invalid name.
-      if (validateSaveAsFilename(filename)) {
-        return
-      }
-      const sent = postToApp(
-        { MessageId: 'Action_SaveAs', Values: { Filename: filename.trim(), Notify: true } },
-        target,
-        origin
-      )
-      if (!sent) {
-        showErrorMessage({ title: $gettext('Cannot save a copy: the editor is not available') })
-      }
-    }
-  })
-}
-
 const iFrameTitle = computed(() => {
   return $gettext('"%{appName}" app content area', {
     appName: unref(appName)
@@ -282,6 +183,7 @@ const loadAppUrl = useTask(function* (signal, viewMode: string) {
     const query = stringify({
       file_id: fileId,
       lang: language.current,
+      ui_theme: themeStore.currentTheme.isDark ? 'dark' : 'light',
       mobile: unref(isMobileWidth) ? 1 : 0,
       ...(unref(appName) && { app_name: encodeURIComponent(unref(appName)) }),
       ...(viewMode && { view_mode: viewMode }),
@@ -338,42 +240,51 @@ const determineOpenAsPreview = (appName: string) => {
   return openAsPreview === true || (Array.isArray(openAsPreview) && openAsPreview.includes(appName))
 }
 
-// Single handler for the editor's postMessage events. Only messages coming from
-// the editor's own origin are accepted.
-const onAppMessage = (event: MessageEvent) => {
-  // Fail closed: reject every message until the editor origin is known (i.e.
-  // `appUrl` has resolved to an absolute URL) and accept only messages from that
-  // exact origin. The listener is attached on mount, before the WOPI `open_url`
-  // POST resolves, so an empty `appOrigin` must reject rather than wave messages
-  // through. No legitimate editor message can arrive before `appUrl` is set (the
-  // iframe cannot have loaded yet), so this is strictly correct and also covers a
-  // backend returning a non-absolute `app_url`.
+const {
+  register: registerOfficePostMessageHandler,
+  unregister: unregisterOfficePostMessageHandler,
+  handleMessage: handleOfficePostMessage,
+  notifyResourceChanged: notifyOfficePostMessageResourceChanged,
+  hasPendingMentions: hasPendingOfficeMentions
+} = useOfficePostMessageRegistry(appName, {
+  space: toRef(props, 'space'),
+  resource: toRef(props, 'resource'),
+  appIframeRef: appIframe,
+  switchToWriteMode: () => loadAppUrl.perform('write')
+})
+
+// Fail closed: reject every message until the editor origin is known (i.e. `appUrl`
+// has resolved) and accept only messages from that exact origin. The listener is
+// attached on mount, before the WOPI `open_url` POST resolves, so an empty
+// `appOrigin` must reject rather than wave messages through.
+const catchOfficePostMessage = (event: MessageEvent) => {
   if (!unref(appOrigin) || event.origin !== unref(appOrigin)) {
     return
   }
-  let message: { MessageId?: string }
-  try {
-    message = JSON.parse(event.data)
-  } catch {
+  handleOfficePostMessage(event)
+}
+
+// warns before leaving the tab if @mentions are queued but not yet flushed to
+// notifyMentionedUsers - can't block/wait for the flush itself, browsers don't allow that,
+// this only gives the user a chance to cancel and let it happen naturally
+const warnAboutPendingMentions = (event: BeforeUnloadEvent) => {
+  if (!unref(hasPendingOfficeMentions)) {
     return
   }
-  switch (message?.MessageId) {
-    case 'UI_Edit':
-      // switch to write mode when edit is clicked
-      if (determineOpenAsPreview(unref(appName))) {
-        loadAppUrl.perform('write')
-      }
-      break
-    case 'UI_SaveAs':
-      onSaveAs()
-      break
-  }
+  event.preventDefault()
+  event.returnValue = ''
 }
+
 onMounted(() => {
-  window.addEventListener('message', onAppMessage)
+  window.addEventListener('message', catchOfficePostMessage)
+  window.addEventListener('beforeunload', warnAboutPendingMentions)
+  registerOfficePostMessageHandler()
 })
+
 onBeforeUnmount(() => {
-  window.removeEventListener('message', onAppMessage)
+  window.removeEventListener('message', catchOfficePostMessage)
+  window.removeEventListener('beforeunload', warnAboutPendingMentions)
+  unregisterOfficePostMessageHandler()
 })
 
 watch(
@@ -383,9 +294,13 @@ watch(
       return
     }
 
+    notifyOfficePostMessageResourceChanged()
+
     let viewMode = 'view'
 
-    if (!props.isReadOnly) {
+    if (unref(isEmbedModeEnabled)) {
+      viewMode = 'embedded'
+    } else if (!props.isReadOnly) {
       viewMode = unref(viewModeQueryValue) || 'write'
     }
 
@@ -395,7 +310,7 @@ watch(
         isPublicSpaceResource(props.space) ||
         isProjectSpaceResource(props.space))
     ) {
-      viewMode = 'view'
+      viewMode = 'preview'
     }
     loadAppUrl.perform(viewMode)
   },

@@ -3,7 +3,7 @@
     id="create-shortcut-modal-url-input"
     v-model="inputUrl"
     :placeholder="'example.org'"
-    :label="$gettext('Webpage or file')"
+    :label="$gettext(labelText)"
     @keydown.up="onKeyUpDrop"
     @keydown.down="onKeyDownDrop"
     @keydown.esc="onKeyEscDrop"
@@ -13,14 +13,10 @@
   >
     <template #label>
       <div class="oc-flex oc-flex-middle create-shortcut-modal-label">
-        <label for="create-shortcut-modal-url-input" v-text="$gettext('Webpage or file')"></label>
+        <label for="create-shortcut-modal-url-input" v-text="$gettext(labelText)"></label>
         <oc-contextual-helper
-          :text="
-            $gettext(
-              'Enter the target URL of a webpage or the name of a file. Users will be directed to this webpage or file.'
-            )
-          "
-          :title="$gettext('Webpage or file')"
+          :text="$gettext(helperText)"
+          :title="$gettext(labelText)"
           class="oc-ml-xs"
         />
       </div>
@@ -111,6 +107,7 @@ import { ref, unref, computed, nextTick, Ref, watch, onMounted } from 'vue'
 import { SpaceResource } from '@ownclouders/web-client'
 import {
   useClientService,
+  useConfigStore,
   useMessages,
   useResourcesStore,
   useRouter,
@@ -146,6 +143,7 @@ const SEARCH_DEBOUNCE_TIME = 200
 const clientService = useClientService()
 const { $gettext } = useGettext()
 const { showMessage, showErrorMessage } = useMessages()
+const { runningOnEos } = useConfigStore().options
 const router = useRouter()
 const { search } = useSearch()
 
@@ -168,6 +166,13 @@ const getInputUrlWithProtocol = (input: string) => {
   return `https://${url}`
 }
 
+const labelText = computed(() => (runningOnEos ? 'Webpage' : 'Webpage or file'))
+const helperText = computed(() =>
+  runningOnEos
+    ? 'Enter the target URL of a webpage. Users will be directed to this webpage.'
+    : 'Enter the target URL of a webpage or the name of a file. Users will be directed to this webpage or file.'
+)
+
 const dropItemUrl = computed(() => {
   return getInputUrlWithProtocol(unref(inputUrl))
 })
@@ -177,7 +182,7 @@ const fileAlreadyExists = computed(
 )
 
 const confirmButtonDisabled = computed(
-  () => unref(fileAlreadyExists) || !unref(inputFilename) || !unref(inputUrl)
+  () => !unref(inputFilename) || !unref(inputUrl) || unref(inputFileNameErrorMessage).length > 0
 )
 
 watch(

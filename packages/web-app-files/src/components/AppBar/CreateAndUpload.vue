@@ -51,7 +51,7 @@
               class="oc-width-1-1"
               justify-content="left"
               :class="['new-file-btn-' + fileAction.ext]"
-              @click="fileAction.handler"
+              @click="onCreateFileClick(fileAction)"
             >
               <resource-icon :resource="getIconResource(fileAction)" size="medium" />
               <span class="create-list-file-item-text">{{ fileAction.label() }}</span>
@@ -184,6 +184,7 @@
 <script lang="ts" setup>
 import {
   FileAction,
+  FileActionOptions,
   isLocationPublicActive,
   useClipboardStore,
   useFileActionsCreateNewShortcut,
@@ -284,6 +285,10 @@ const { actions: createNewShortcut } = useFileActionsCreateNewShortcut({ space }
 const createNewShortcutAction = computed(() => unref(createNewShortcut)[0].handler)
 
 const { actions: createNewFileActions } = useFileActionsCreateNewFile({ space })
+
+const onCreateFileClick = (fileAction: FileAction) => {
+  fileAction.handler({} as FileActionOptions)
+}
 
 const createFileActionsGroups = computed(() => {
   const result = []

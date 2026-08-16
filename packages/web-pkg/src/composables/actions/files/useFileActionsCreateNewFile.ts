@@ -17,6 +17,7 @@ import {
 import { ApplicationFileExtension } from '../../../apps'
 import { storeToRefs } from 'pinia'
 import { useEmbedMode } from '../../embedMode'
+import CreateNewFileModal from '../../../components/Modals/CreateNewFileModal.vue'
 
 export const useFileActionsCreateNewFile = ({ space }: { space?: Ref<SpaceResource> } = {}) => {
   const { showMessage, showErrorMessage } = useMessages()
@@ -72,10 +73,55 @@ export const useFileActionsCreateNewFile = ({ space }: { space?: Ref<SpaceResour
     return openEditor(appFileExtension, unref(space), resource, EDITOR_MODE_CREATE)
   }
 
+  const createAndOpenFile = async (
+    fileName: string,
+    extension: string,
+    appFileExtension: ApplicationFileExtension
+  ) => {
+    if (!areFileExtensionsShown.value) {
+      fileName = `${fileName}.${extension}`
+    }
+
+    try {
+      let resource: Resource
+      if (appFileExtension.createFileHandler) {
+        resource = await appFileExtension.createFileHandler({
+          fileName,
+          space: unref(space),
+          currentFolder: unref(currentFolder)
+        })
+      } else {
+        const path = join(unref(currentFolder).path, fileName)
+        resource = await (clientService.webdav as WebDAV).putFileContents(unref(space), {
+          path
+        })
+      }
+
+      resourcesStore.upsertResource(resource)
+
+      showMessage({
+        title: $gettext('"%{fileName}" was created successfully', { fileName: resource.name })
+      })
+
+      if (unref(isEmbedModeEnabled)) {
+        return
+      }
+
+      return openFile(resource, appFileExtension)
+    } catch (error) {
+      console.error(error)
+      showErrorMessage({
+        title: $gettext('Failed to create file'),
+        errors: [error]
+      })
+    }
+  }
+
   const handler = (
     fileActionOptions: FileActionOptions,
     extension: string,
-    appFileExtension: ApplicationFileExtension
+    defaultAppFileExtension: ApplicationFileExtension,
+    candidates: ApplicationFileExtension[] = [defaultAppFileExtension]
   ) => {
     let defaultName = $gettext('New file') + `.${extension}`
 
@@ -91,55 +137,54 @@ export const useFileActionsCreateNewFile = ({ space }: { space?: Ref<SpaceResour
       ? null
       : ([0, defaultName.length - (extension.length + 1)] as [number, number])
 
+    // only one app can open this extension - no need to ask, just take the plain filename
+    if (candidates.length <= 1) {
+      dispatchModal({
+        title: $gettext('Create a new file'),
+        confirmText: $gettext('Create'),
+        hasInput: true,
+        inputValue: defaultName,
+        inputLabel: $gettext('File name'),
+        inputSelectionRange,
+        onConfirm: (fileName: string) =>
+          createAndOpenFile(fileName, extension, defaultAppFileExtension),
+        onInput: (name, setError) =>
+          setError(getNameErrorMsg(areFileExtensionsShown.value ? name : `${name}.${extension}`))
+      })
+      return
+    }
+
+    // several apps can open this extension - default to defaultAppFileExtension, let the user override via dropdown
     dispatchModal({
       title: $gettext('Create a new file'),
-      confirmText: $gettext('Create'),
-      hasInput: true,
-      inputValue: defaultName,
-      inputLabel: $gettext('File name'),
-      inputSelectionRange,
-      onConfirm: async (fileName: string) => {
-        if (!areFileExtensionsShown.value) {
-          fileName = `${fileName}.${extension}`
-        }
-
-        try {
-          let resource: Resource
-          if (appFileExtension.createFileHandler) {
-            resource = await appFileExtension.createFileHandler({
-              fileName,
-              space: unref(space),
-              currentFolder: unref(currentFolder)
-            })
-          } else {
-            const path = join(unref(currentFolder).path, fileName)
-            resource = await (clientService.webdav as WebDAV).putFileContents(unref(space), {
-              path
-            })
-          }
-
-          resourcesStore.upsertResource(resource)
-
-          showMessage({
-            title: $gettext('"%{fileName}" was created successfully', { fileName: resource.name })
-          })
-
-          if (unref(isEmbedModeEnabled)) {
-            return
-          }
-
-          return openFile(resource, appFileExtension)
-        } catch (error) {
-          console.error(error)
-          showErrorMessage({
-            title: $gettext('Failed to create file'),
-            errors: [error]
-          })
-        }
-      },
-      onInput: (name, setError) =>
-        setError(getNameErrorMsg(areFileExtensionsShown.value ? name : `${name}.${extension}`))
+      hideActions: true,
+      customComponent: CreateNewFileModal,
+      customComponentAttrs: () => ({
+        defaultName,
+        inputSelectionRange,
+        appFileExtensions: candidates,
+        defaultAppFileExtension,
+        getNameErrorMsg: (name: string) =>
+          getNameErrorMsg(areFileExtensionsShown.value ? name : `${name}.${extension}`),
+        callbackFn: (fileName: string, appFileExtension: ApplicationFileExtension) =>
+          createAndOpenFile(fileName, extension, appFileExtension)
+      })
     })
+  }
+
+  /** Creates the file for the given app, letting the user switch apps via dropdown if candidates are given. */
+  const createFile = (
+    fileActionOptions: FileActionOptions,
+    appFileExtension: ApplicationFileExtension,
+    candidates?: ApplicationFileExtension[]
+  ) => {
+    return appFileExtension.customHandler
+      ? appFileExtension.customHandler(
+          fileActionOptions,
+          appFileExtension.extension,
+          appFileExtension
+        )
+      : handler(fileActionOptions, appFileExtension.extension, appFileExtension, candidates)
   }
 
   const actions = computed((): FileAction[] => {
@@ -161,13 +206,14 @@ export const useFileActionsCreateNewFile = ({ space }: { space?: Ref<SpaceResour
     }
 
     for (const [, appFileExtension] of Object.entries(defaultMapping)) {
+      const candidates = unref(appNewFileMenuExtensions).filter(
+        ({ extension }) => extension === appFileExtension.extension
+      )
+
       actions.push({
         name: 'create-new-file',
         icon: 'add',
-        handler: (args) =>
-          appFileExtension.customHandler
-            ? appFileExtension.customHandler(args, appFileExtension.extension, appFileExtension)
-            : handler(args, appFileExtension.extension, appFileExtension),
+        handler: (args) => createFile(args, appFileExtension, candidates),
         label: () => $gettext(appFileExtension.newFileMenu.menuTitle()),
         isVisible: () => {
           if (
@@ -191,6 +237,8 @@ export const useFileActionsCreateNewFile = ({ space }: { space?: Ref<SpaceResour
   return {
     actions,
     getNameErrorMsg,
-    openFile
+    openFile,
+    createFile,
+    appNewFileMenuExtensions
   }
 }

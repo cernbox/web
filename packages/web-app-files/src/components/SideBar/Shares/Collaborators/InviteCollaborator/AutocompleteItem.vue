@@ -54,8 +54,22 @@ interface Props {
 const props = defineProps<Props>()
 
 const additionalInfo = computed(() => {
+  if (props.item.attributes?.length) {
+    return props.item.attributes.join(' · ')
+  }
+
+  // CERN accounts can share a display name across namespaces (primary, secondary/service,
+  // guest), so the account name has to be shown alongside the mail to tell them apart.
+  if (props.item.onPremisesSamAccountName) {
+    return props.item.mail
+      ? `${props.item.onPremisesSamAccountName} - ${props.item.mail}`
+      : props.item.onPremisesSamAccountName
+  }
+
+  // groups have no account name; fall back to the id unless it merely repeats the display name
   return (
-    props.item.attributes?.join(' · ') || props.item.mail || props.item.onPremisesSamAccountName
+    props.item.mail ||
+    (props.item.id?.toLowerCase() === props.item.displayName?.toLowerCase() ? '' : props.item.id)
   )
 })
 

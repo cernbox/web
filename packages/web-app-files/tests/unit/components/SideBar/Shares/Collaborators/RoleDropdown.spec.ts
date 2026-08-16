@@ -47,6 +47,20 @@ describe('RoleDropdown', () => {
     await wrapper.find(selectors.roleButton).trigger('click')
     expect(wrapper.emitted('optionChange')).toBeTruthy()
   })
+  it('reverts to the existing role after a failed edit selection', async () => {
+    const existingShareRole = mock<ShareRole>({ id: 'viewer', displayName: 'Can view' })
+    const { wrapper } = getWrapper({
+      mountType: shallowMount,
+      mode: 'edit',
+      existingShareRole
+    })
+    ;(wrapper.vm.$refs.rolesDrop as any).tippy = { hide: vi.fn() }
+    await wrapper.findAll(selectors.roleButton).at(1)?.trigger('click')
+    expect((wrapper.vm as any).selectedRole.displayName).not.toEqual('Can view')
+
+    wrapper.vm.revertToExistingRole()
+    expect((wrapper.vm as any).selectedRole).toEqual(existingShareRole)
+  })
   it('renders a button for each available role', () => {
     const { wrapper } = getWrapper({ mountType: shallowMount })
     expect(wrapper.findAll(selectors.roleButton).length).toBe(2)
@@ -71,6 +85,7 @@ function getWrapper({
   existingShareRole = null,
   existingSharePermissions = null,
   isExternal = false,
+  mode = 'create',
   availableInternalShareRoles = [
     mock<ShareRole>({ displayName: 'Can view', description: '' }),
     mock<ShareRole>({ displayName: 'Can edit', description: '' })
@@ -81,6 +96,7 @@ function getWrapper({
   existingShareRole?: ShareRole
   existingSharePermissions?: string[]
   isExternal?: boolean
+  mode?: 'create' | 'edit'
   availableInternalShareRoles?: ShareRole[]
   availableExternalShareRoles?: ShareRole[]
 } = {}) {
@@ -89,7 +105,8 @@ function getWrapper({
       props: {
         existingShareRole,
         existingSharePermissions: existingSharePermissions ?? [],
-        isExternal
+        isExternal,
+        mode
       },
       global: {
         plugins: [

@@ -1,13 +1,24 @@
-import { Resource } from '@ownclouders/web-client'
-import { ClientService } from '../../../services'
-import { CollaboratorShare, LinkShare, SpaceResource } from '@ownclouders/web-client'
+import {
+  CollaboratorShare,
+  LinkShare,
+  Resource,
+  SpaceResource,
+  type ConfirmSharingHierarchyConflict,
+  type GraphRequestOptions,
+  type InformSharingHierarchyConflict
+} from '@ownclouders/web-client'
 import { DriveItemCreateLink, DriveItemInvite } from '@ownclouders/web-client/graph/generated'
-
+import { ClientService } from '../../../services'
 export interface AddShareOptions {
   clientService: ClientService
   space: SpaceResource
   resource: Resource
   options: DriveItemInvite
+  graphRequestOptions?: GraphRequestOptions
+  confirmSharingHierarchyConflict?: ConfirmSharingHierarchyConflict
+  informSharingHierarchyConflict?: InformSharingHierarchyConflict
+  /** When true, 409 with `can_force` throws instead of opening a confirmation dialog (for batched invite UX). */
+  deferSharingHierarchyConflictConfirm?: boolean
 }
 
 export interface UpdateShareOptions {
@@ -16,6 +27,9 @@ export interface UpdateShareOptions {
   resource: Resource
   collaboratorShare: CollaboratorShare
   options: DriveItemInvite
+  graphRequestOptions?: GraphRequestOptions
+  confirmSharingHierarchyConflict?: ConfirmSharingHierarchyConflict
+  informSharingHierarchyConflict?: InformSharingHierarchyConflict
 }
 
 export interface DeleteShareOptions {
@@ -23,6 +37,9 @@ export interface DeleteShareOptions {
   space: SpaceResource
   resource: Resource
   collaboratorShare: CollaboratorShare
+  graphRequestOptions?: GraphRequestOptions
+  confirmSharingHierarchyConflict?: ConfirmSharingHierarchyConflict
+  informSharingHierarchyConflict?: InformSharingHierarchyConflict
 }
 
 export interface AddLinkOptions {

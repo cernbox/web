@@ -308,10 +308,19 @@ const loadResourceTask = useTask(function* (signal) {
       return authService.handleAuthError(unref(router.currentRoute))
     }
 
-    if (e?.response?.status === 404 && e?.message === 'Unknown error') {
+    if (e?.response?.status === 404) {
       console.error(e)
       loadingError.value = new Error(
         $gettext('The resource could not be located, it may not exist anymore.')
+      )
+      loading.value = false
+      return
+    }
+
+    if (e?.response?.status === 403) {
+      console.error(e)
+      loadingError.value = new Error(
+        $gettext("You don't have permission to open this file.")
       )
       loading.value = false
       return

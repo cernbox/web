@@ -42,6 +42,16 @@ export const useGetResourceContext = () => {
   const getResourceContext = async (id: string) => {
     let path: string
     let resource: Resource
+
+    // own spaces are loaded on demand - make sure they're there before concluding the resource
+    // must be a share and falling into the expensive mount point walk below
+    await spacesStore.loadSpacesByType('personal', {
+      graphClient: clientService.graphAuthenticated
+    })
+    await spacesStore.loadSpacesByType('project', {
+      graphClient: clientService.graphAuthenticated
+    })
+
     let space = getMatchingSpaceByFileId(id)
 
     if (space) {

@@ -4,8 +4,11 @@ import { FileAction } from '../types'
 import { useClipboard } from '../../clipboard'
 import { useMessages } from '../../piniaStores'
 import { isPublicSpaceResource } from '@ownclouders/web-client'
+import { useRouter } from '../../router'
+import { isLocationTrashActive } from '../../../router'
 
 export const useFileActionsCopyPermanentLink = () => {
+  const router = useRouter()
   const { showMessage, showErrorMessage } = useMessages()
   const { $gettext } = useGettext()
   const { copyToClipboard } = useClipboard()
@@ -35,6 +38,9 @@ export const useFileActionsCopyPermanentLink = () => {
       },
       isVisible: ({ space, resources }) => {
         if (isPublicSpaceResource(space)) {
+          return false
+        }
+        if (isLocationTrashActive(router, 'files-trash-generic')) {
           return false
         }
         return resources.length === 1

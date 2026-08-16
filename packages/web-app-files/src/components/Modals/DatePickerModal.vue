@@ -3,6 +3,7 @@
     :label="$gettext('Expiration date')"
     type="date"
     :min-date="minDate"
+    :max-date="maxDate"
     :current-date="currentDate"
     :is-clearable="isClearable"
     @date-changed="onDateChanged"
@@ -34,6 +35,7 @@ import { DateTime } from 'luxon'
 interface Props {
   currentDate?: DateTime
   minDate?: DateTime
+  maxDate?: DateTime
   isClearable?: boolean
 }
 interface Emits {
@@ -41,7 +43,12 @@ interface Emits {
   (e: 'cancel'): void
 }
 defineEmits<Emits>()
-const { currentDate = null, minDate = null, isClearable = true } = defineProps<Props>()
+const {
+  currentDate = null,
+  minDate = null,
+  maxDate = null,
+  isClearable = true
+} = defineProps<Props>()
 const dateTime = ref<DateTime>()
 const confirmDisabled = ref(true)
 const onDateChanged = ({ date, error }: { date: DateTime; error: boolean }) => {

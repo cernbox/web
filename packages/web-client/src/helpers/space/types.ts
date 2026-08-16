@@ -16,6 +16,7 @@ import { Ability, Resource } from '../resource'
 
 export const SHARE_JAIL_ID = 'a0ca6a90-a365-4782-871e-d44447bbc668'
 export const OCM_PROVIDER_ID = '89f37a33-858b-45fa-8890-a1f2b27d90e1'
+export const EOS_EXPLORER_SPACE_ID = 'f6b1a2c3-7d4e-4b8a-9c2f-3e5d6a7b8c9d'
 
 export type SpaceMember = {
   grantedTo: SharePointIdentitySet
@@ -102,4 +103,19 @@ export interface PublicSpaceResource extends SpaceResource {
 }
 export const isPublicSpaceResource = (resource: Resource): resource is PublicSpaceResource => {
   return (resource as SpaceResource)?.driveType === 'public'
+}
+
+/**
+ * A synthetic catch-all space. It is not backed by a real drive: it exposes a whole storage
+ * namespace through a legacy per-user webdav endpoint, and its driveAlias is therefore a prefix
+ * of every real space's driveAlias in that namespace. It must only ever be resolved as a last
+ * resort, when no real space covers the requested location.
+ */
+export const FALLBACK_DRIVE_TYPE = 'explorer'
+
+export interface FallbackSpaceResource extends SpaceResource {
+  __fallbackSpaceResource?: any
+}
+export const isFallbackSpaceResource = (resource: Resource): resource is FallbackSpaceResource => {
+  return (resource as SpaceResource)?.driveType === FALLBACK_DRIVE_TYPE
 }

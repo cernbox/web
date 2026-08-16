@@ -191,6 +191,22 @@ describe('HandleUpload', () => {
         ])
         expect(result).toBeFalsy()
       })
+      it('does not check quota for explorer spaces', async () => {
+        const size = 100
+        const space = mock<SpaceResource>({
+          driveType: 'explorer',
+          id: '1'
+        })
+        const { instance } = getWrapper({ spaces: [space] })
+        const result = await instance.checkQuotaExceeded([
+          mock<any>({
+            name: 'name',
+            meta: { spaceId: '1', routeName: locationSpacesGeneric.name as string },
+            data: { size } as Blob
+          })
+        ])
+        expect(result).toBeFalsy()
+      })
       it("does not check quota for other's personal spaces", async () => {
         const size = 100
         const remaining = 90

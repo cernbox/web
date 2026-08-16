@@ -19,7 +19,11 @@ import {
   OcUppyBody
 } from '@ownclouders/web-pkg'
 import { locationSpacesGeneric, UppyService } from '@ownclouders/web-pkg'
-import { isPersonalSpaceResource, isShareSpaceResource } from '@ownclouders/web-client'
+import {
+  isFallbackSpaceResource,
+  isPersonalSpaceResource,
+  isShareSpaceResource
+} from '@ownclouders/web-client'
 import { ClientService, queryItemAsString } from '@ownclouders/web-pkg'
 import { PluginOpts } from '@uppy/core'
 
@@ -215,6 +219,7 @@ export class HandleUpload extends BasePlugin<PluginOpts, OcUppyMeta, OcUppyBody>
       if (
         !targetUploadSpace ||
         isShareSpaceResource(targetUploadSpace) ||
+        isFallbackSpaceResource(targetUploadSpace) ||
         (isPersonalSpaceResource(targetUploadSpace) &&
           !targetUploadSpace.isOwner(this.userStore.user))
       ) {

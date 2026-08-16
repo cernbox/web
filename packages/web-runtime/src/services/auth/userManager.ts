@@ -258,7 +258,7 @@ export class UserManager extends OidcUserManager {
 
   // copied from upstream oidc-client-ts UserManager with CERN customization
   protected async _signinEnd(url: string, verifySub?: string, ...args: any[]): Promise<User> {
-    if (!this.configStore.options.isRunningOnEos) {
+    if (!this.configStore.options.useRevaToken) {
       return (super._signinEnd as any)(url, verifySub, ...args)
     }
 

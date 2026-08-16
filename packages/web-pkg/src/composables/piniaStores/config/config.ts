@@ -35,6 +35,7 @@ const defaultOptions = {
     fullShareOwnerPaths: false
   },
   runningOnEos: false,
+  useRevaToken: false,
   tokenStorageLocal: true,
   userListRequiresFilter: false,
   hideLogo: false

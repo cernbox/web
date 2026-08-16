@@ -210,7 +210,7 @@ const options = computed<EditOption[]>(() => {
     })
   }
 
-  if (configStore.options.isRunningOnEos) {
+  if (configStore.options.runningOnEos) {
     result.push({
       title: $gettext('Notify via mail'),
       method: () => emit('notifyShare'),

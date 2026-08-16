@@ -100,7 +100,7 @@ const OptionsConfigSchema = z.object({
       href: z.string().optional()
     })
     .optional(),
-  isRunningOnEos: z.boolean().optional(),
+  useRevaToken: z.boolean().optional(),
   loginUrl: z.string().optional(),
   logoutUrl: z.string().optional(),
   ocm: z

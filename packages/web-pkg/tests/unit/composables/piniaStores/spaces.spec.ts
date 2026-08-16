@@ -212,6 +212,56 @@ describe('spaces', () => {
         }
       })
     })
+    it('does not add an eos explorer space when runningOnEos is disabled', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([])
+          const configStore = useConfigStore()
+          configStore.options.runningOnEos = false
+
+          await instance.loadSpaces({ graphClient, isInVault: false })
+
+          expect(instance.spaces.some((s) => s.driveType === 'explorer')).toBeFalsy()
+        }
+      })
+    })
+    it('adds an eos explorer space when runningOnEos is enabled', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([])
+          const configStore = useConfigStore()
+          configStore.options.runningOnEos = true
+          const userStore = useUserStore()
+          userStore.setUser(mock<User>({ onPremisesSamAccountName: 'jdoe' }))
+
+          await instance.loadSpaces({ graphClient, isInVault: false })
+
+          const explorerSpace = instance.spaces.find((s) => s.driveType === 'explorer')
+          expect(explorerSpace).toBeDefined()
+          expect(explorerSpace.driveAlias).toBe('eos')
+          expect(explorerSpace.webDavPath).toBe('/files/jdoe/eos')
+        }
+      })
+    })
+    it('does not add the eos explorer space twice', async () => {
+      await getWrapper({
+        setup: async (instance) => {
+          const graphClient = mockDeep<Graph>()
+          graphClient.drives.listMyDrives.mockResolvedValue([])
+          const configStore = useConfigStore()
+          configStore.options.runningOnEos = true
+          const userStore = useUserStore()
+          userStore.setUser(mock<User>({ onPremisesSamAccountName: 'jdoe' }))
+
+          await instance.loadSpaces({ graphClient, isInVault: false })
+          await instance.loadSpaces({ graphClient, isInVault: false })
+
+          expect(instance.spaces.filter((s) => s.driveType === 'explorer').length).toBe(1)
+        }
+      })
+    })
   })
   describe('method "loadSpacesByType"', () => {
     it('loads a drive type once and shares in-flight requests', async () => {
@@ -385,7 +435,10 @@ describe('spaces', () => {
       await getWrapper({
         setup: async (instance) => {
           const fallbackSpace = mock<SpaceResource>({ id: 'fallback', driveType: 'explorer' })
-          instance.spaces = [mock<SpaceResource>({ id: 'old', driveType: 'project' }), fallbackSpace]
+          instance.spaces = [
+            mock<SpaceResource>({ id: 'old', driveType: 'project' }),
+            fallbackSpace
+          ]
 
           const graphClient = mockDeep<Graph>()
           graphClient.drives.listMyDrives.mockResolvedValue([

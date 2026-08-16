@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref, unref } from 'vue'
 import {
+  buildEosExplorerSpace,
   buildShareSpaceResource,
+  isFallbackSpaceResource,
   isMountPointSpaceResource,
   SpaceDeletedState,
   SpaceResource
@@ -222,6 +224,23 @@ export const useSpacesStore = defineStore('spaces', () => {
   }
 
   /**
+   * The catch-all fallback space is synthetic - it needs no request, so it is created eagerly and
+   * kept for the whole session. Idempotent, so it can be called from anywhere that needs to be
+   * sure it exists.
+   */
+  const ensureFallbackSpace = () => {
+    if (!configStore.options.runningOnEos || unref(spaces).some(isFallbackSpaceResource)) {
+      return
+    }
+    addSpaces([
+      buildEosExplorerSpace({
+        userName: userStore.user.onPremisesSamAccountName,
+        serverUrl: configStore.serverUrl
+      })
+    ])
+  }
+
+  /**
    * Loads all spaces of a single drive type, once per session unless `force` is given. Concurrent
    * callers share the same request. Spaces are deduplicated by id and driveAlias, so a type that
    * arrives late can't shadow an already loaded one, and a forced refresh picks up newly available
@@ -281,6 +300,7 @@ export const useSpacesStore = defineStore('spaces', () => {
   }) => {
     spacesLoading.value = true
     try {
+      ensureFallbackSpace()
       await loadSpacesByType('personal', { graphClient })
       spacesInitialized.value = true
     } finally {
@@ -359,6 +379,7 @@ export const useSpacesStore = defineStore('spaces', () => {
     removeSpace,
     upsertSpace,
     updateSpaceField,
+    ensureFallbackSpace,
     loadSpaces,
     loadSpacesByType,
     loadMountPoints,

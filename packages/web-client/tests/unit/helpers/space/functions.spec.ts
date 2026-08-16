@@ -1,4 +1,4 @@
-import { buildSpace } from '../../../../src/helpers/space'
+import { buildPublicSpaceResource, buildSpace } from '../../../../src/helpers/space'
 import { mock } from 'vitest-mock-extended'
 import { Ability, GraphSharePermission, ShareRole } from '@ownclouders/web-client'
 import { Drive, User } from '@ownclouders/web-client/graph/generated'
@@ -394,5 +394,21 @@ describe('buildSpace', () => {
         expect(space.canEditReadme({ user: mock<User>({ id, memberOf: [] }) })).toBe(expectedResult)
       }
     )
+  })
+})
+
+describe('buildPublicSpaceResource', () => {
+  it.each([undefined, ''])('falls back to "Public files" given the name %j', (name) => {
+    const space = buildPublicSpaceResource({ id: 'token', name, publicLinkType: 'public-link' })
+    expect(space.name).toBe('Public files')
+  })
+
+  it('keeps the name it is given', () => {
+    const space = buildPublicSpaceResource({
+      id: 'token',
+      name: 'Shared folder',
+      publicLinkType: 'public-link'
+    })
+    expect(space.name).toBe('Shared folder')
   })
 })

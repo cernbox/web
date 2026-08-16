@@ -23,13 +23,19 @@
       </template>
     </no-content-message>
 
-    <app-loading-spinner />
+    <app-loading-spinner v-else-if="areSpacesLoading" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, unref } from 'vue'
-import { NoContentMessage, useRoute, useRouter, useSpacesStore } from '@ownclouders/web-pkg'
+import { computed, unref, watchEffect } from 'vue'
+import {
+  NoContentMessage,
+  useRoute,
+  useRouter,
+  useSpacesLoading,
+  useSpacesStore
+} from '@ownclouders/web-pkg'
 import { AppLoadingSpinner } from '@ownclouders/web-pkg'
 import { urlJoin } from '@ownclouders/web-client'
 import { createFileRouteOptions } from '@ownclouders/web-pkg'
@@ -47,6 +53,7 @@ const { driveAliasAndItem = '' } = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const spacesStore = useSpacesStore()
+const { areSpacesLoading } = useSpacesLoading()
 
 const personalSpace = computed(() => {
   return spacesStore.spaces.find((space) => space.driveType === 'personal')
@@ -54,39 +61,44 @@ const personalSpace = computed(() => {
 
 const spacesRoute = computed(() => createLocationSpaces('files-spaces-projects'))
 
-const spaceNotFound = computed(
+const isPersonalAlias = computed(
   () =>
-    driveAliasAndItem !== '' &&
-    !driveAliasAndItem.startsWith(fakePersonalDriveAlias) &&
-    !driveAliasAndItem.startsWith('personal')
+    driveAliasAndItem.startsWith(fakePersonalDriveAlias) ||
+    driveAliasAndItem === 'personal' ||
+    driveAliasAndItem === ''
 )
 
-if (!unref(spaceNotFound)) {
-  if (!unref(personalSpace)) {
-    router.replace(unref(spacesRoute))
-  } else {
-    const itemPath = driveAliasAndItem.startsWith(fakePersonalDriveAlias)
-      ? urlJoin(driveAliasAndItem.slice(fakePersonalDriveAlias.length))
-      : '/'
+const spaceNotFound = computed(() => {
+  if (unref(areSpacesLoading)) return false
+  return !unref(isPersonalAlias) || !unref(personalSpace)
+})
 
-    const { params, query } = createFileRouteOptions(unref(personalSpace), {
-      path: itemPath
-    })
+watchEffect(() => {
+  if (unref(areSpacesLoading)) return
+  if (!unref(isPersonalAlias)) return
+  if (!unref(personalSpace)) return
 
-    const { fullPath, ...routeWithoutFullPath } = unref(route)
+  const itemPath = driveAliasAndItem.startsWith(fakePersonalDriveAlias)
+    ? urlJoin(driveAliasAndItem.slice(fakePersonalDriveAlias.length))
+    : '/'
 
-    router
-      .replace({
-        ...routeWithoutFullPath,
-        path: fullPath,
-        params: {
-          ...routeWithoutFullPath.params,
-          ...params
-        },
-        query
-      } as RouteLocationRaw)
-      // avoid NavigationDuplicated error in console
-      .catch(() => {})
-  }
-}
+  const { params, query } = createFileRouteOptions(unref(personalSpace), {
+    path: itemPath
+  })
+
+  const { fullPath, ...routeWithoutFullPath } = unref(route)
+
+  router
+    .replace({
+      ...routeWithoutFullPath,
+      path: fullPath,
+      params: {
+        ...routeWithoutFullPath.params,
+        ...params
+      },
+      query
+    } as RouteLocationRaw)
+    // avoid NavigationDuplicated error in console
+    .catch(() => {})
+})
 </script>

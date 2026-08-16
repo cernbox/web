@@ -122,8 +122,14 @@ const getEmbedConfigFromQuery = (
 
   const delegateAuthenticationOrigin = getQueryParam('embed-delegate-authentication-origin')
 
-  if (delegateAuthentication) {
+  if (delegateAuthenticationOrigin) {
     config.delegateAuthenticationOrigin = delegateAuthenticationOrigin
+  }
+
+  const messagesOrigin = getQueryParam('embed-messages-origin')
+
+  if (messagesOrigin) {
+    config.messagesOrigin = messagesOrigin
   }
 
   return config

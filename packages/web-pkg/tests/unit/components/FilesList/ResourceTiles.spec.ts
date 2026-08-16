@@ -3,11 +3,12 @@ import ResourceTiles from '../../../../src/components/FilesList/ResourceTiles.vu
 import { sortFields } from '../../../../src/helpers/ui/resourceTiles'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { mock } from 'vitest-mock-extended'
-import { ComponentPublicInstance, computed } from 'vue'
+import { ComponentPublicInstance, computed, ref } from 'vue'
 import { extractDomSelector } from '@ownclouders/web-client'
 import { useCanBeOpenedWithSecureView } from '../../../../src/composables/resources'
 import { displayPositionedDropdown } from '../../../../src/helpers/contextMenuDropdown'
 import { OcSelect } from '@ownclouders/design-system/components'
+import { flushPromises } from '@vue/test-utils'
 import { ResourceIndicator } from '../../../../src/helpers/statusIndicators'
 
 vi.mock('../../../../src/helpers/contextMenuDropdown')
@@ -19,8 +20,15 @@ vi.mock('../../../../src/composables/viewMode', async (importOriginal) => ({
 }))
 
 const mockUseEmbedMode = vi.fn().mockReturnValue({ isEnabled: computed(() => false) })
-vi.mock('../../../../src/composables/embedMode', () => ({
-  useEmbedMode: vi.fn().mockImplementation(() => mockUseEmbedMode())
+const mockWithDownloadUrl = vi
+  .fn()
+  .mockImplementation((space: unknown, resource: Resource) => Promise.resolve(resource))
+vi.mock('../../../../src/composables/embedMode', async (importOriginal) => ({
+  ...(await importOriginal<any>()),
+  useEmbedMode: vi.fn().mockImplementation(() => mockUseEmbedMode()),
+  useEmbedModeDownloadUrl: vi
+    .fn()
+    .mockImplementation(() => ({ withDownloadUrl: mockWithDownloadUrl }))
 }))
 
 vi.mock('../../../../src/composables/resources', async (importOriginal) => ({
@@ -83,6 +91,10 @@ describe('ResourceTiles component', () => {
   const originalGetElementById = document.getElementById
   const originalGetComputedStyle = window.getComputedStyle
   beforeEach(() => {
+    mockUseEmbedMode.mockReturnValue({ isEnabled: computed(() => false) })
+    mockWithDownloadUrl.mockImplementation((space: unknown, resource: Resource) =>
+      Promise.resolve(resource)
+    )
     const mockElement = {
       clientWidth: 800
     } as HTMLElement
@@ -146,6 +158,71 @@ describe('ResourceTiles component', () => {
       })
       await wrapper.find('.oc-tiles-item .oc-resource-name').trigger('click')
       expect(wrapper.emitted().fileClick).toBeUndefined()
+    })
+
+    it('posts file-pick message when embed file picker mode is enabled and a file is clicked', async () => {
+      const postMessageMock = vi.fn()
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: ref(true),
+        isFilePicker: ref(true),
+        postMessage: postMessageMock
+      })
+      const { wrapper } = getWrapper({ props: { resources } })
+      await wrapper.find('.oc-tiles-item .oc-resource-name').trigger('click')
+      await flushPromises()
+
+      expect(mockWithDownloadUrl).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ name: 'forest.jpg' })
+      )
+      expect(postMessageMock).toHaveBeenCalledWith(
+        'owncloud-embed:file-pick',
+        expect.objectContaining({
+          resource: expect.objectContaining({ name: 'forest.jpg' })
+        })
+      )
+    })
+
+    it('posts the download URL resolved by withDownloadUrl, not the raw clicked resource', async () => {
+      const postMessageMock = vi.fn()
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: ref(true),
+        isFilePicker: ref(true),
+        postMessage: postMessageMock
+      })
+      mockWithDownloadUrl.mockImplementation((space: unknown, resource: Resource) =>
+        Promise.resolve({ ...resource, downloadURL: 'https://example.test/signed' })
+      )
+      const { wrapper } = getWrapper({ props: { resources } })
+      await wrapper.find('.oc-tiles-item .oc-resource-name').trigger('click')
+      await flushPromises()
+
+      expect(postMessageMock).toHaveBeenCalledWith(
+        'owncloud-embed:file-pick',
+        expect.objectContaining({
+          resource: expect.objectContaining({ downloadURL: 'https://example.test/signed' })
+        })
+      )
+    })
+
+    it('does not post file-pick message when embed file picker mode is enabled and a folder is clicked', async () => {
+      const postMessageMock = vi.fn()
+      mockUseEmbedMode.mockReturnValue({
+        isEnabled: ref(true),
+        isFilePicker: ref(true),
+        postMessage: postMessageMock
+      })
+      const folderResource = {
+        ...resources[0],
+        id: 'folder',
+        name: 'docs',
+        isFolder: true,
+        type: 'folder'
+      }
+      const { wrapper } = getWrapper({ props: { resources: [folderResource] } })
+      await wrapper.findComponent({ name: 'resource-tile' }).trigger('click')
+
+      expect(postMessageMock).not.toHaveBeenCalled()
     })
   })
 
@@ -284,6 +361,9 @@ describe('ResourceTiles component', () => {
 
   it('should not make resource clickable when it is not a password protected folder and does not have enough permissions', () => {
     const { wrapper } = getWrapper({
+      // a resource that cannot be downloaded is still clickable when secure view can open it,
+      // so secure view has to be off for this to be a "no permissions at all" case
+      canBeOpenedWithSecureView: false,
       props: {
         resources: [
           {

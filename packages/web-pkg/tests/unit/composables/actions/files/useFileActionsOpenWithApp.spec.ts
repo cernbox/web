@@ -87,7 +87,6 @@ function getWrapper({
               apps: {
                 'text-editor': mock<ApplicationInformation>({
                   name: 'text-editor',
-                  // the picker derives its allowed types from these
                   extensions: [{ extension: 'txt' }]
                 })
               }

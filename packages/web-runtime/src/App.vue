@@ -11,12 +11,14 @@
     </skip-to>
     <component :is="layout"></component>
     <modal-wrapper />
+    <session-expired-modal />
   </div>
 </template>
 <script lang="ts" setup>
 import { setCurrentLanguage } from './helpers/language'
 import SkipTo from './components/SkipTo.vue'
 import ModalWrapper from './components/ModalWrapper.vue'
+import SessionExpiredModal from './components/SessionExpiredModal.vue'
 import { useLayout } from './composables/layout'
 import { additionalTranslations } from './helpers/additionalTranslations' // eslint-disable-line
 import {

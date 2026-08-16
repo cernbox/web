@@ -40,6 +40,8 @@ export const useOpenEmptyEditor = () => {
       path: urlJoin(filePath, fileName)
     })
 
+    resourcesStore.upsertResource(emptyResource)
+
     const space = getMatchingSpace(emptyResource)
     const appFileExtension = appsStore.fileExtensions.find(
       ({ app, extension: ext }) => app === appId && ext === extension

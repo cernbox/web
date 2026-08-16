@@ -5,6 +5,7 @@
     :aria-label="$gettext('Copy link to clipboard')"
     appearance="raw"
     class="oc-files-public-link-copy-url"
+    :disabled="disabled"
     @click="copyLinkToClipboard"
   >
     <oc-icon :name="copied ? 'checkbox-circle' : 'file-copy'" fill-type="line" />
@@ -19,8 +20,9 @@ import { LinkShare } from '@ownclouders/web-client'
 
 interface Props {
   linkShare: LinkShare
+  disabled?: boolean
 }
-const { linkShare } = defineProps<Props>()
+const { linkShare, disabled = false } = defineProps<Props>()
 const { $gettext } = useGettext()
 const { showMessage } = useMessages()
 

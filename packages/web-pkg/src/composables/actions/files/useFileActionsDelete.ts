@@ -58,6 +58,14 @@ export const useFileActionsDelete = () => {
         }
 
         if (
+          isLocationPublicActive(router, 'files-public-link') &&
+          space?.driveType === 'public' &&
+          resources[0].path === '/'
+        ) {
+          return false
+        }
+
+        if (
           isLocationSpacesActive(router, 'files-spaces-generic') &&
           space?.driveType === 'share' &&
           resources[0].path === '/'

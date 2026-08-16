@@ -23,6 +23,12 @@
             v-text="$gettext(currentLinkRoleLabel)"
           />
         </div>
+        <oc-checkbox
+          v-if="isModifiable && isCurrentLinkRoleUploader"
+          :model-value="linkShare.notifyUploads"
+          :label="$gettext('Notify me on uploads')"
+          @update:model-value="toggleNotifyUploads"
+        />
       </div>
     </div>
     <div class="oc-flex oc-flex-middle">
@@ -142,6 +148,15 @@ const currentLinkRoleDescription = computed(() => {
 const currentLinkRoleLabel = computed(() => {
   return getLinkRoleByType(unref(currentLinkType))?.displayName || ''
 })
+
+const isCurrentLinkRoleUploader = computed(() => {
+  return unref(currentLinkType) === SharingLinkType.CreateOnly
+})
+const toggleNotifyUploads = () => {
+  const link = { ...linkShare }
+  link.notifyUploads = !link.notifyUploads
+  emit('updateLink', { linkShare: link, options: { type: null } })
+}
 
 const isExpired = computed(() => {
   return (

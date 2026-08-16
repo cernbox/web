@@ -119,6 +119,7 @@ import { RouteLocationNamedRaw } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { Resource } from '@ownclouders/web-client'
 import {
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isProjectSpaceResource,
   isPublicSpaceResource,
@@ -196,6 +197,7 @@ const capabilityStore = useCapabilityStore()
 const userStore = useUserStore()
 const { $gettext, $ngettext } = useGettext()
 const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
+const scrollToQuery = useRouteQuery('scrollTo')
 const clientService = useClientService()
 const { startWorker } = usePasteWorker()
 const { breadcrumbsFromPath, concatBreadcrumbs } = useBreadcrumbsFromPath()
@@ -276,7 +278,7 @@ const getSpacesBreadcrumbText = () => {
 
 const breadcrumbs = computed(() => {
   const rootBreadcrumbItems: BreadcrumbItem[] = []
-  if (isProjectSpaceResource(unref(space))) {
+  if (isProjectSpaceResource(unref(space)) || isFallbackSpaceResource(unref(space))) {
     rootBreadcrumbItems.push({
       id: uuidV4(),
       text: getSpacesBreadcrumbText(),
@@ -426,7 +428,7 @@ const {
   handleSort
 } = useResourcesViewDefaults<Resource, any, any[]>()
 
-const { triggerDefaultAction } = useFileActions()
+const { triggerDefaultAction, getDefaultAction } = useFileActions()
 
 const { loadPreview } = useLoadPreview(viewMode)
 
@@ -462,7 +464,7 @@ const performLoaderTask = async (sameRoute: boolean, path?: string, fileId?: str
   refreshFileListHeaderPosition()
   focusAndAnnounceBreadcrumb(sameRoute)
 
-  if (unref(openWithDefaultAppQuery) === 'true') {
+  if (!configOptions.value.cernFeatures && unref(openWithDefaultAppQuery) === 'true') {
     openWithDefaultApp({
       space: unref(space),
       resource: unref(selectedResources)[0]
@@ -578,7 +580,7 @@ const displayResourceAsSingleResource = computed(() => {
   if (unref(configOptions).runningOnEos) {
     if (
       !unref(currentFolder).fileId ||
-      unref(currentFolder).path === unref(paginatedResources)[0].path
+      unref(currentFolder).id === unref(paginatedResources)[0].id
     ) {
       return true
     }
@@ -600,4 +602,13 @@ watch(
   () => space,
   () => performLoaderTask(true)
 )
+
+watch(paginatedResources, () => {
+  if (unref(displayResourceAsSingleResource) && configOptions.value.cernFeatures) {
+    const defaultAction = getDefaultAction({ space, resources: unref(paginatedResources) })
+    if (!unref(scrollToQuery) && defaultAction?.label() !== 'Download') {
+      triggerDefaultAction({ space, resources: unref(paginatedResources) })
+    }
+  }
+})
 </script>

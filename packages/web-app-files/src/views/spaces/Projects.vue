@@ -6,7 +6,7 @@
         :has-bulk-actions="true"
         :has-hidden-files="false"
         :has-file-extensions="false"
-        :has-pagination="false"
+        :has-pagination="true"
         :is-side-bar-open="isSideBarOpen"
         :view-modes="viewModes"
         :view-mode-default="FolderViewModeConstants.name.tiles"
@@ -14,12 +14,12 @@
         <template #actions>
           <create-space v-if="hasCreatePermission" class="oc-mr-s" />
           <div v-if="!selectedResourcesIds?.length" class="oc-flex oc-flex-middle oc-pl-s">
-            <span v-text="$gettext('Learn about spaces')" />
+            <!-- <span v-text="$gettext('Learn about spaces')" />
             <oc-contextual-helper
               :list="spacesHelpList"
               :title="$gettext('Spaces')"
               class="oc-ml-xs"
-            />
+            /> -->
           </div>
         </template>
       </app-bar>
@@ -46,11 +46,33 @@
                   <span v-text="$gettext('Filter:')" />
                 </legend>
               </div>
-              <item-filter-toggle
-                :filter-label="$gettext('Include disabled')"
-                filter-name="includeDisabled"
-                class="spaces-list-filter-include-disabled oc-mr-s"
+              <item-filter-inline
+                class="project-visibility-filter"
+                filter-name="projectVisibility"
+                :filter-options="visibilityOptions"
               />
+              <!--<item-filter
+                :allow-multiple="true"
+                :filter-label="$gettext('Storage Type')"
+                :filterable-attributes="['label']"
+                :items="storageTypes"
+                :option-filter-label="$gettext('Filter storage types')"
+                :show-option-filter="true"
+                id-attribute="key"
+                class="storage-type-filter oc-ml-s"
+                display-name-attribute="label"
+                filter-name="storageType"
+              >
+                <template #item="{ item }">
+                  <span class="oc-ml-s" v-text="item.label" />
+                </template>
+              </item-filter>-->
+              <!-- FIXME: TEMPORARY REMOVAL OF FILTER -->
+              <!-- <item-filter-toggle -->
+              <!--   :filter-label="$gettext('Include disabled')" -->
+              <!--   filter-name="includeDisabled" -->
+              <!--   class="spaces-list-filter-include-disabled oc-mr-s" -->
+              <!-- /> -->
             </fieldset>
             <oc-text-input
               id="spaces-filter"
@@ -96,8 +118,8 @@
                 <resource-icon v-else class="oc-mr-s" :resource="resource" />
               </template>
             </template>
-            <template #actions="{ resource }">
-              <oc-button
+            <template #actions>
+              <!--<oc-button
                 v-if="!resource.disabled"
                 v-oc-tooltip="showSpaceMemberLabel"
                 class="spaces-list-show-members-button"
@@ -106,7 +128,7 @@
                 @click="openSidebarSharePanel(resource as SpaceResource)"
               >
                 <oc-icon name="group" fill-type="line" />
-              </oc-button>
+              </oc-button>-->
             </template>
             <template #contextMenu="{ resource }">
               <space-context-actions
@@ -167,10 +189,10 @@ import {
   useResourcesStore,
   useSpacesStore,
   useExtensionRegistry,
-  ItemFilterToggle,
   useRouteQuery,
   queryItemAsString,
-  useLoadPreview
+  useLoadPreview,
+  useUserStore
 } from '@ownclouders/web-pkg'
 
 import { AppBar, CreateSpace } from '@ownclouders/web-pkg'
@@ -192,6 +214,8 @@ import {
 import SpaceContextActions from '../../components/Spaces/SpaceContextActions.vue'
 import {
   getSpaceManagers,
+  isFallbackSpaceResource,
+  isPersonalSpaceResource,
   isProjectSpaceResource,
   ProjectSpaceResource,
   SpaceResource
@@ -211,8 +235,10 @@ import {
 import { orderBy } from 'lodash-es'
 import { useResourcesViewDefaults } from '../../composables'
 import { folderViewsProjectSpacesExtensionPoint } from '../../extensionPoints'
+import { ItemFilterInline } from '@ownclouders/web-pkg'
 
 const spacesStore = useSpacesStore()
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const clientService = useClientService()
@@ -227,13 +253,45 @@ const capabilityStore = useCapabilityStore()
 const { setSelection, initResourceList, clearResourceList, setAncestorMetaData } =
   useResourcesStore()
 
+// must be reactive: personal spaces are loaded on demand, so evaluating this once during
+// setup would pin it to `false` on a cold start
+const userHasPersonalSpace = computed(() =>
+  spacesStore.spaces.some(
+    (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+  )
+)
+
+const visibilityOption = useRouteQueryPersisted({
+  name: 'q_projectVisibility',
+  defaultValue: 'all'
+})
+const storageTypeQuery = useRouteQuery('q_storageType')
+
+const visibilityOptions = computed(() => [
+  { name: 'all', label: $gettext('All') },
+  { name: 'project', label: $gettext('My Spaces') },
+  { name: 'explorer', label: $gettext('Explorer') }
+])
+
+const storageTypes = computed(() => [
+  { key: 'eos', value: 'eos', label: 'EOS' },
+  { key: 'win', value: 'win', label: 'Winspaces' }
+])
+
 const loadResourcesTask = useTask(function* (signal) {
   clearResourceList()
   setAncestorMetaData({})
+  // project and mount point spaces are loaded on demand - refresh both here so newly created
+  // projects and newly accepted shares show up without a page reload
   yield spacesStore.reloadProjectSpaces({
     graphClient: clientService.graphAuthenticated,
     signal,
     isInVault: unref(route)?.params?.scope === 'vault'
+  })
+  yield spacesStore.loadMountPoints({
+    graphClient: clientService.graphAuthenticated,
+    signal,
+    force: true
   })
   initResourceList({ currentFolder: null, resources: unref(spaces) })
 })
@@ -251,7 +309,11 @@ let loadPreviewToken: string = null
 const { isSideBarOpen, sideBarActivePanel } = useSideBar()
 
 const runtimeSpaces = computed(() => {
-  return spacesStore.spaces.filter((space) => isProjectSpaceResource(space)) || []
+  return (
+    spacesStore.spaces.filter(
+      (space) => isProjectSpaceResource(space) || isFallbackSpaceResource(space)
+    ) || []
+  )
 })
 const selectedSpace = computed(() => {
   if (
@@ -290,6 +352,16 @@ const filter = (spaces: Array<ProjectSpaceResource>, filterTerm: string) => {
 
   if (!includeDisabled) {
     spaces = spaces.filter((space) => space.disabled !== true)
+  }
+
+  const selectedStorageTypes = queryItemAsString(unref(storageTypeQuery))?.split('+')
+  if (selectedStorageTypes) {
+    spaces = spaces.filter((space) =>
+      selectedStorageTypes.some((type) => space.mimeType?.includes(type))
+    )
+  }
+  if (unref(visibilityOption) !== 'all') {
+    spaces = spaces.filter((space) => space.driveType === unref(visibilityOption))
   }
 
   if (!(filterTerm || '').trim()) {
@@ -336,7 +408,10 @@ watch(filterTerm, async () => {
   })
 })
 
-const hasCreatePermission = computed(() => can('create-all', 'Drive'))
+const hasCreatePermission = computed(
+  // if user has a personal space, it's not a lightweight account
+  () => can('create-all', 'Drive') && unref(userHasPersonalSpace)
+)
 const canAccessVault = computed(() => capabilityStore.vaultEnabled && can('read-all', 'Vault'))
 
 const extensionRegistry = useExtensionRegistry()
@@ -376,20 +451,20 @@ const getManagerNames = (space: SpaceResource) => {
 }
 
 const getTotalQuota = (space: SpaceResource) => {
-  if (space.spaceQuota.total === 0) {
+  if (space.spaceQuota?.total === 0) {
     return $gettext('Unrestricted')
   }
 
-  return formatFileSize(space.spaceQuota.total, language.current)
+  return formatFileSize(space.spaceQuota?.total, language.current)
 }
 const getUsedQuota = (space: SpaceResource) => {
-  if (space.spaceQuota.used === undefined) {
+  if (space.spaceQuota?.used === undefined) {
     return '-'
   }
   return formatFileSize(space.spaceQuota.used, language.current)
 }
 const getRemainingQuota = (space: SpaceResource) => {
-  if (space.spaceQuota.remaining === undefined) {
+  if (space.spaceQuota?.remaining === undefined) {
     return '-'
   }
   return formatFileSize(space.spaceQuota.remaining, language.current)

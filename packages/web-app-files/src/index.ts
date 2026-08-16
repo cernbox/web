@@ -22,7 +22,12 @@ import { AppNavigationItem } from '@ownclouders/web-pkg'
 
 // dirty: importing view from other extension within project
 import SearchResults from '../../web-app-search/src/views/List.vue'
-import { isPersonalSpaceResource, isShareSpaceResource } from '@ownclouders/web-client'
+import {
+  isFallbackSpaceResource,
+  isPersonalSpaceResource,
+  isShareSpaceResource,
+  isProjectSpaceResource
+} from '@ownclouders/web-client'
 import { ComponentCustomProperties, unref } from 'vue'
 import { extensionPoints } from './extensionPoints'
 
@@ -59,8 +64,23 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       isActive: () => {
         return !spacesStores.currentSpace || spacesStores.currentSpace?.isOwner(userStore.user)
       },
+      activeFor: () => {
+        const personalSpace = spacesStores.spaces.find(
+          (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+        )
+
+        return personalSpace
+          ? [
+              {
+                path: `/${appInfo.id}/spaces/${personalSpace.driveAlias}`
+              }
+            ]
+          : []
+      },
       isVisible() {
-        if (!spacesStores.spacesInitialized) {
+        // personal spaces are fetched on demand, so "not loaded yet" must not read as "the user
+        // has none" - that would hide the item for the rest of the session
+        if (!spacesStores.initializedTypes.personal) {
           return true
         }
 
@@ -92,11 +112,21 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
         // last check is when fullShareOwnerPaths is enabled
         return !space || isShareSpaceResource(space) || !space?.isOwner(userStore.user)
       },
-      activeFor: [
-        { path: `/${appInfo.id}/spaces/share` },
-        { path: `/${appInfo.id}/spaces/ocm-share` },
-        { path: `/${appInfo.id}/spaces/personal` }
-      ],
+      activeFor: () => {
+        const shares = [
+          { path: `/${appInfo.id}/spaces/share` },
+          { path: `/${appInfo.id}/spaces/ocm-share` },
+          { path: `/${appInfo.id}/spaces/personal` }
+        ]
+        spacesStores.spaces.forEach((drive) => {
+          if (isShareSpaceResource(drive)) {
+            shares.push({
+              path: `/${appInfo.id}/spaces/${drive.driveAlias}`
+            })
+          }
+        })
+        return shares
+      },
       isVisible() {
         return capabilityStore.sharingApiEnabled !== false
       },
@@ -108,7 +138,31 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       route: {
         path: `/${appInfo.id}/spaces/projects`
       },
-      activeFor: [{ path: `/${appInfo.id}/spaces/project` }],
+      isActive: () => {
+        // `currentSpace` is briefly null while navigating (the outgoing route's resolver clears it),
+        // and it is permanently null on the projects overview itself - so "no space" has to stay
+        // active, and the href match in activeFor is what narrows it down.
+        const currentSpace = spacesStores.currentSpace
+        return (
+          !currentSpace ||
+          isProjectSpaceResource(currentSpace) ||
+          isFallbackSpaceResource(currentSpace)
+        )
+      },
+      activeFor: () => {
+        const projects = [{ path: `/${appInfo.id}/spaces/project` }]
+        spacesStores.spaces.forEach((drive) => {
+          // deliberately excludes the catch-all fallback space: its driveAlias ('eos') is a
+          // url-prefix of every real eos-backed driveAlias, so listing it here would match any
+          // eos route - including shares - and light this item up alongside the right one
+          if (isProjectSpaceResource(drive)) {
+            projects.push({
+              path: `/${appInfo.id}/spaces/${drive.driveAlias}`
+            })
+          }
+        })
+        return projects
+      },
       isVisible() {
         return capabilityStore.spacesProjects
       },
@@ -120,7 +174,7 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       route: {
         path: `/${appInfo.id}/trash/overview`
       },
-      activeFor: [{ path: `/${appInfo.id}/trash` }],
+      activeFor: () => [{ path: `/${appInfo.id}/trash` }],
       isVisible() {
         return (
           capabilityStore.davTrashbin === '1.0' &&

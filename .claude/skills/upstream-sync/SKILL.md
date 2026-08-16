@@ -21,18 +21,26 @@ options always produce the same output SHAs, which is what makes later syncs fas
 rather than fresh unrelated histories.
 
 ```bash
-git clone --filter=blob:none git@github.com:owncloud/ocis.git /tmp/ocis-mirror
-cd /tmp/ocis-mirror && git filter-repo --subdirectory-filter web
+dev/scripts/sync-upstream.sh
 ```
+
+The script does the derivation and the fetch. Two things it encodes, both learned the hard
+way:
+
+- **A full clone is required.** `git filter-repo` fails on a partial clone
+  (`--filter=blob:none`) with a `BrokenPipeError` partway through, and leaves `HEAD` at the
+  *unfiltered* tip - which looks exactly like success. The ocis clone takes about a minute.
+- **The filtered root is not the web import.** `web/` existed in ocis years earlier holding
+  unrelated konnectd content, so the filtered history has roots in 2019. The commit to graft
+  is the squashed *"merge and relicense ownCloud Web into oCIS"* import; the script finds and
+  prints it.
 
 Fetch it into this repository and graft the filtered root onto the upstream release this fork
 was based on:
 
 ```bash
-git remote add ocis-web /tmp/ocis-mirror
-git fetch ocis-web 'refs/heads/master:refs/remotes/ocis-web/master'
-git replace --graft <filtered-root-sha> b16a34fdf5
-git push origin 'refs/replace/*'    # so colleagues get the graft too
+git replace --graft <import-sha> b16a34fdf5   # the script prints the import sha
+git push origin 'refs/replace/*'              # so colleagues get the graft too
 ```
 
 After the graft, `git rebase --onto ocis-web/master b16a34fdf5 dev_future` behaves like any
@@ -42,10 +50,7 @@ other rebase. The first one surfaces the import's file removals (`LICENSE`, `CHA
 ## Each sync
 
 ```bash
-rm -rf /tmp/ocis-mirror
-git clone --filter=blob:none git@github.com:owncloud/ocis.git /tmp/ocis-mirror
-cd /tmp/ocis-mirror && git filter-repo --subdirectory-filter web
-cd - && git fetch ocis-web 'refs/heads/master:refs/remotes/ocis-web/master'
+dev/scripts/sync-upstream.sh
 ```
 
 Then rebase with the `cern-rebase` skill, which covers the conflict hot-spots and the
@@ -67,6 +72,7 @@ started.
 
 ## Verifying determinism
 
-The approach rests on filter-repo being reproducible. Confirm it once: derive the mirror
-twice from scratch and check the tip SHAs match. If they ever diverge, the graft breaks and
-every rebase looks like an unrelated history.
+The approach rests on filter-repo being reproducible. This has been verified - two
+derivations from scratch produced the same tip - and `dev/scripts/sync-upstream.sh --verify`
+re-checks it. If it ever diverges, the graft breaks and every rebase looks like an unrelated
+history, so re-run the check after upgrading git-filter-repo.

@@ -14,3 +14,9 @@ export abstract class ImageType {
   static readonly Preview: string = 'preview'
   static readonly Avatar: string = 'avatar'
 }
+
+// Re-exported from web-client where they are defined to avoid circular workspace dependency
+export {
+  HIDDEN_FILE_EXTENSIONS,
+  PASSWORD_PROTECTED_FOLDER_FILE_EXTENSION
+} from '@ownclouders/web-client'

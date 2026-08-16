@@ -25,6 +25,11 @@
     <oc-datepicker
       class="oc-mt-s"
       :min-date="DateTime.now()"
+      :max-date="
+        isFolder && selectedType === 'edit' && sharingPublicExpireDateMaxRWFolders
+          ? DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day')
+          : null
+      "
       :label="$gettext('Expiry date')"
       @date-changed="onExpiryDateChanged"
     />
@@ -46,7 +51,7 @@
         appearance="filled"
         variation="primary"
         :disabled="confirmButtonDisabled"
-        @click="$emit('confirm')"
+        @click="$emit('confirm', { isRW: selectedType === 'edit', isFolder })"
         >{{ confirmButtonText }}
       </oc-button>
       <oc-button
@@ -77,7 +82,13 @@
             <oc-button
               class="oc-modal-body-actions-confirm-password action-menu-item"
               appearance="raw"
-              @click="$emit('confirm', { copyPassword: true })"
+              @click="
+                $emit('confirm', {
+                  copyPassword: true,
+                  isRW: selectedType === 'edit',
+                  isFolder
+                })
+              "
               >{{ confirmPasswordButtonText }}
             </oc-button>
           </li>
@@ -100,7 +111,8 @@ import {
   useSharesStore,
   useClientService,
   useMessages,
-  Modal
+  Modal,
+  useCapabilityStore
 } from '../composables'
 import { LinkShare, SpaceResource } from '@ownclouders/web-client'
 import { Resource } from '@ownclouders/web-client'
@@ -123,7 +135,7 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'confirm', payload?: { copyPassword: boolean }): void
+  (e: 'confirm', payload?: { copyPassword?: boolean; isRW?: boolean; isFolder?: boolean }): void
   (e: 'cancel'): void
 }
 
@@ -140,6 +152,7 @@ const { isEnabled: isEmbedEnabled, postMessage } = useEmbedMode()
 const { defaultLinkType, getAvailableLinkTypes, getLinkRoleByType, isPasswordEnforcedForLinkType } =
   useLinkTypes()
 const { addLink } = useSharesStore()
+const { sharingPublicExpireDateMaxRWFolders } = useCapabilityStore()
 const isInvalidExpiryDate = ref(false)
 
 const isFolder = computed(() => resources.every(({ isFolder }) => isFolder))
@@ -292,7 +305,6 @@ const onConfirm = async (options: { copyPassword?: boolean } = {}) => {
 
     return clipboardText
   }
-
   const clipboardItem = new ClipboardItem({
     'text/plain': createLinks()
       .then(processResults)
@@ -321,6 +333,14 @@ const updatePassword = (value: string) => {
 
 const updateSelectedLinkType = (type: SharingLinkType) => {
   selectedType.value = type
+  onExpiryDateChanged({
+    date: unref(selectedExpiry),
+    error:
+      unref(selectedExpiry)?.toISO() >
+        DateTime.now().plus(sharingPublicExpireDateMaxRWFolders).endOf('day').toISO() &&
+      unref(isFolder) &&
+      unref(selectedType) === 'edit'
+  })
 }
 
 onMounted(() => {

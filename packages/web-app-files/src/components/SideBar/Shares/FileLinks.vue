@@ -97,6 +97,7 @@ import {
   useLinkTypes,
   useCanShare,
   UpdateLinkOptions,
+  useCapabilityStore,
   useRouter
 } from '@ownclouders/web-pkg'
 import { useContextualHelpers } from '../../../composables/contextualHelpers/useContextualHelpers'
@@ -107,9 +108,13 @@ import { isLocationSharesActive, useSharesStore } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
 import { storeToRefs } from 'pinia'
 import { SharingLinkType } from '@ownclouders/web-client/graph/generated'
+import { DateTime, Duration } from 'luxon'
 
+const { sharingPublicExpireDateDefaultRWFolders, sharingPublicExpireDateMaxRWFolders } =
+  useCapabilityStore()
 const { showMessage, showErrorMessage } = useMessages()
-const { $gettext } = useGettext()
+const language = useGettext()
+const { $gettext } = language
 const ability = useAbility()
 const clientService = useClientService()
 const { can } = ability
@@ -196,6 +201,39 @@ const handleLinkUpdate = async ({
   options: UpdateLinkOptions['options']
 }) => {
   try {
+    if (
+      unref(resource).isFolder &&
+      options.type === SharingLinkType.Edit &&
+      !linkShare.expirationDateTime &&
+      sharingPublicExpireDateDefaultRWFolders
+    ) {
+      Object.assign(options, {
+        ...options,
+        expirationDateTime: DateTime.now()
+          .plus(sharingPublicExpireDateDefaultRWFolders)
+          .endOf('day')
+          .toISO()
+      })
+    }
+    if (
+      unref(resource).isFolder &&
+      options.type === SharingLinkType.Edit &&
+      linkShare.expirationDateTime &&
+      sharingPublicExpireDateMaxRWFolders
+    ) {
+      if (
+        DateTime.fromISO(linkShare.expirationDateTime).diff(DateTime.now(), 'days').as('days') >
+        Duration.fromObject(sharingPublicExpireDateMaxRWFolders).as('days')
+      ) {
+        Object.assign(options, {
+          ...options,
+          expirationDateTime: DateTime.now()
+            .plus(sharingPublicExpireDateMaxRWFolders)
+            .endOf('day')
+            .toISO()
+        })
+      }
+    }
     await updateLink({
       clientService,
       space: unref(space),
@@ -204,6 +242,24 @@ const handleLinkUpdate = async ({
       options
     })
     showMessage({ title: $gettext('Link was updated successfully') })
+    if (
+      options.type === SharingLinkType.Edit &&
+      unref(resource).isFolder &&
+      unref(configOptions).alertRwFolders
+    ) {
+      if (!document.getElementById('files-file-link-warning')) {
+        const warningMessage = document.createElement('div')
+        warningMessage.className = 'oc-mb-m oc-p-s oc-background-secondary oc-rounded'
+        warningMessage.id = 'files-file-link-warning'
+        warningMessage.innerHTML =
+          unref(configOptions).alertRwFolders[language.current] ??
+          unref(configOptions).alertRwFolders[Object.keys(unref(configOptions).alertRwFolders)[0]]
+        document.getElementById('files-links-list').parentElement.prepend(warningMessage)
+        setTimeout(() => {
+          warningMessage.remove()
+        }, 10000)
+      }
+    }
   } catch (e) {
     console.error(e)
     showErrorMessage({
@@ -312,5 +368,10 @@ const displayLinks = computed(() => {
     grid-template-rows: 1fr;
     margin-top: var(--oc-space-medium);
   }
+}
+#files-file-link-warning {
+  color: var(--oc-color-swatch-danger-default);
+  text-align: center;
+  border: solid 1px var(--oc-color-swatch-danger-muted);
 }
 </style>

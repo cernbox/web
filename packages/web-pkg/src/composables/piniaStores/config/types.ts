@@ -126,7 +126,8 @@ const OptionsConfigSchema = z.object({
   hideAppSwitcher: z.boolean().optional(),
   hideAccountMenu: z.boolean().optional(),
   hideNavigation: z.boolean().optional(),
-  defaultLanguage: z.string().optional()
+  defaultLanguage: z.string().optional(),
+  alertRwFolders: z.record(z.string(), z.string()).optional()
 })
 
 export type OptionsConfig = z.infer<typeof OptionsConfigSchema>

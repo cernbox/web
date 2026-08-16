@@ -50,14 +50,15 @@
             fill-type="line"
             size="small"
           />
-          <oc-icon
-            v-if="resource.syncEnabled"
-            v-oc-tooltip="$gettext('Synced with your devices')"
-            :accessible-label="$gettext('Synced with your devices')"
-            name="loop-right"
-            class="sync-enabled"
-            size="small"
-          />
+          <!-- FIXME: temporary fix, not supported by clients yet -->
+          <!-- <oc-icon -->
+          <!--   v-if="resource.syncEnabled" -->
+          <!--   v-oc-tooltip="$gettext('Synced with your devices')" -->
+          <!--   :accessible-label="$gettext('Synced with your devices')" -->
+          <!--   name="loop-right" -->
+          <!--   class="sync-enabled" -->
+          <!--   size="small" -->
+          <!-- /> -->
         </div>
       </template>
       <template #contextMenu="{ resource }">
@@ -90,7 +91,10 @@
             <oc-icon :name="'arrow-' + (showMore ? 'up' : 'down') + '-s'" fill-type="line" />
           </oc-button>
         </div>
-        <list-info v-else class="oc-width-1-1 oc-my-s" />
+        <div v-else>
+          <pagination :pages="paginationPages" :current-page="paginationPage" />
+          <list-info class="oc-width-1-1 oc-my-s" />
+        </div>
       </template>
     </resource-table>
   </div>
@@ -104,6 +108,7 @@ import {
   useLoadPreview
 } from '@ownclouders/web-pkg'
 import { computed, unref, ref } from 'vue'
+import { useResourcesViewDefaults } from '../../composables'
 import { SortDir, useGetMatchingSpace } from '@ownclouders/web-pkg'
 import { createLocationSpaces } from '@ownclouders/web-pkg'
 import ListInfo from '../../components/FilesList/ListInfo.vue'
@@ -133,6 +138,8 @@ interface Props {
   resourceClickable?: boolean
   isSideBarOpen?: boolean
   fileListHeaderY?: number
+  paginationPages?: number | null
+  paginationPage?: number | null
 }
 const {
   title,
@@ -145,10 +152,17 @@ const {
   showMoreToggleCount = 3,
   resourceClickable = true,
   isSideBarOpen = false,
-  fileListHeaderY = 0
+  fileListHeaderY = 0,
+  paginationPages: externalPaginationPages = null,
+  paginationPage: externalPaginationPage = null
 } = defineProps<Props>()
 
 const { $gettext } = useGettext()
+const { paginationPages: defaultPaginationPages, paginationPage: defaultPaginationPage } =
+  useResourcesViewDefaults<IncomingShareResource, any, any[]>()
+
+const paginationPages = computed(() => externalPaginationPages ?? unref(defaultPaginationPages))
+const paginationPage = computed(() => externalPaginationPage ?? unref(defaultPaginationPage))
 const { getMatchingSpace } = useGetMatchingSpace()
 const { loadPreview } = useLoadPreview()
 const showMore = ref(false)

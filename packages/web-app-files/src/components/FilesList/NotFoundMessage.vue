@@ -7,9 +7,12 @@
     <div class="oc-text-muted oc-text-xlarge">
       <span v-translate>Resource not found</span>
     </div>
-    <div class="oc-text-muted">
+    <div class="oc-text-muted oc-flex oc-flex-column">
       <span v-translate>
         We went looking everywhere, but were unable to find the selected resource.
+      </span>
+      <span v-translate>
+        The access may be broken or you may not have the necessary permissions to access it.
       </span>
     </div>
     <div class="oc-mt-s">

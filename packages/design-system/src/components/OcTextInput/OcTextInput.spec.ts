@@ -116,6 +116,22 @@ describe('OcTextInput', () => {
     })
   })
 
+  describe('suffix slot', () => {
+    it('renders provided content next to the input', () => {
+      const wrapper = shallowMount(OcTextInput, {
+        props: defaultProps,
+        slots: { suffix: '<span class="suffix-content">suffix</span>' },
+        global: { plugins: [...defaultPlugins()] }
+      })
+      expect(wrapper.find('.suffix-content').exists()).toBeTruthy()
+    })
+
+    it('renders nothing by default', () => {
+      const wrapper = getShallowWrapper()
+      expect(wrapper.find('.suffix-content').exists()).toBeFalsy()
+    })
+  })
+
   describe('password input field', () => {
     describe('copy password button', () => {
       it('should not exist if type is not "password" or no value entered', () => {

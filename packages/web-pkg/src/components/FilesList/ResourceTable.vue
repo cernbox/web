@@ -63,7 +63,7 @@
         :label="getResourceCheckboxLabel(item)"
         :label-hidden="true"
         size="large"
-        :disabled="isResourceDisabled(item)"
+        :disabled="isResourceDisabled(item) || (isInlineAttach && item.isFolder)"
         :model-value="isResourceSelected(item)"
         :outline="isLatestSelectedItem(item)"
         @click.stop="toggleSelection(item.id)"
@@ -224,7 +224,10 @@
       </oc-button>
     </template>
     <template #actions="{ item }">
-      <div v-if="!isResourceDisabled(item)" class="resource-table-actions">
+      <div
+        v-if="!isResourceDisabled(item) && !(isEmbedModeEnabled && isFilePicker)"
+        class="resource-table-actions"
+      >
         <!-- @slot Add quick actions before the `context-menu / three dot` button in the actions column -->
         <slot name="quickActions" :resource="item" />
         <context-menu-quick-action
@@ -270,8 +273,10 @@ import {
   useGetMatchingSpace,
   useFolderLink,
   useEmbedMode,
+  useEmbedModeDownloadUrl,
   useAuthStore,
   useCapabilityStore,
+  useConfigStore,
   useClipboardStore,
   useResourcesStore,
   useRouter,
@@ -380,7 +385,7 @@ const {
   fieldsDisplayed = null,
   space = null,
   resourceType = 'file',
-  lazy = true,
+  lazy = true
 } = defineProps<Props>()
 
 const emit = defineEmits<Emits>()
@@ -402,16 +407,21 @@ const { isSticky } = useIsTopBarSticky()
 const {
   isLocationPicker,
   isFilePicker,
+  isInlineAttach,
   postMessage,
   isEnabled: isEmbedModeEnabled,
   fileTypes: embedModeFileTypes
 } = useEmbedMode()
+const { withDownloadUrl } = useEmbedModeDownloadUrl()
 const { getDefaultAction } = useFileActions()
 const language = useGettext()
 const { $pgettext, $gettext, $ngettext } = language
 
 const clipboardStore = useClipboardStore()
 const { resources: clipboardResources, action: clipboardAction } = storeToRefs(clipboardStore)
+
+const configStore = useConfigStore()
+const { options: configOptions } = storeToRefs(configStore)
 
 const authStore = useAuthStore()
 const { userContextReady } = storeToRefs(authStore)
@@ -696,6 +706,13 @@ const fields = computed(() => {
           return true
         }
 
+        // clicking the shared-with avatars would also trigger the row's own @highlight
+        // handler (the file-pick postMessage), same reason context menu/rename are
+        // hidden in this mode
+        if (field.name === 'sharedWith' && unref(isEmbedModeEnabled) && unref(isFilePicker)) {
+          return false
+        }
+
         let hasField: boolean
         if (field.prop) {
           hasField = get(firstResource, field.prop) !== undefined
@@ -781,6 +798,9 @@ function isLatestSelectedItem(item: Resource) {
   return item.id === unref(latestSelectedId)
 }
 function hasRenameAction(item: Resource) {
+  if (unref(isEmbedModeEnabled) && unref(isFilePicker)) {
+    return false
+  }
   if (isProjectSpaceResource(item)) {
     return unref(renameActionsSpace).filter((menuItem) => menuItem.isVisible({ resources: [item] }))
       .length
@@ -908,7 +928,7 @@ function rowMounted(resource: Resource, component: ComponentPublicInstance<unkno
    */
   emit('rowMounted', resource, component, unref(constants).ImageDimension.Thumbnail)
 }
-function fileClicked(data: [Resource, MouseEvent, boolean]) {
+async function fileClicked(data: [Resource, MouseEvent, boolean]) {
   /**
    * Triggered when the file row is clicked
    * @property {object} resource The resource for which the event is triggered
@@ -920,8 +940,10 @@ function fileClicked(data: [Resource, MouseEvent, boolean]) {
   }
 
   if (unref(isEmbedModeEnabled) && unref(isFilePicker) && !resource.isFolder) {
+    const clonedResource = JSON.parse(JSON.stringify(resource))
+    const resourceWithUrl = await withDownloadUrl(space, clonedResource)
     return postMessage<embedModeFilePickMessageData>('owncloud-embed:file-pick', {
-      resource: JSON.parse(JSON.stringify(resource)),
+      resource: resourceWithUrl,
       locationQuery: JSON.parse(JSON.stringify(routeToContextQuery(unref(router.currentRoute))))
     })
   }
@@ -970,6 +992,13 @@ function toggleSelectionAll() {
   )
 }
 function emitFileClick(resource: Resource) {
+  // in single-file embed mode, the row's own @highlight handler (fileClicked) already
+  // handles the click (file-pick postMessage) - the default-action dispatch this
+  // triggers (e.g. falling back to download-file) is unwanted and would run alongside it
+  if (unref(isEmbedModeEnabled) && unref(isFilePicker)) {
+    return
+  }
+
   const space = getMatchingSpace(resource)
 
   /**
@@ -1027,6 +1056,7 @@ function getSharedByAvatarItems(resource: Resource) {
   return resource.sharedBy.map((s) => ({
     displayName: s.displayName,
     name: s.displayName,
+    tooltip: unref(configOptions).cernFeatures ? `${s.displayName} (${s.id})` : s.displayName,
     shareType: ShareTypes.user.value,
     username: s.id
   }))
@@ -1041,6 +1071,7 @@ function getSharedWithAvatarItems(resource: Resource) {
     .map((s) => ({
       displayName: s.displayName,
       name: s.displayName,
+      tooltip: unref(configOptions).cernFeatures ? `${s.displayName} (${s.id})` : s.displayName,
       shareType: s.shareType,
       username: s.id
     }))

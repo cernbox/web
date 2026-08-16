@@ -137,30 +137,28 @@ const availableRoles = computed(() => {
   return unref(roles)
 })
 
-let initialSelectedRole: ShareRole
 const hasExistingShareRole = computed(() => !!existingShareRole)
 const hasExistingSharePermissions = computed(() => !!existingSharePermissions.length)
 const isDisabledRole = computed(
   () => !unref(hasExistingShareRole) && unref(hasExistingSharePermissions)
 )
-switch (true) {
-  // if no role is set and no permissions are set, we use the first available role as the default
-  case !unref(hasExistingShareRole) && !unref(hasExistingSharePermissions):
-    initialSelectedRole = unref(availableRoles)[0]
-    break
-  // in the rare case that a role is disabled and permissions are set aka a disabled unified role ...
-  case unref(isDisabledRole):
-    // ... we need to create a fake role as an indicator that the permissions are custom
-    initialSelectedRole = {
-      displayName: $gettext('Custom permissions')
-    }
-    break
-  default:
-    initialSelectedRole = existingShareRole
-    break
+
+// if a role is set, use it; if permissions are set without a role (a disabled unified role),
+// show a fake role as an indicator that the permissions are custom; otherwise default to the
+// first available role
+const resolveRoleForExistingState = (): ShareRole => {
+  if (unref(hasExistingShareRole)) {
+    return existingShareRole
+  }
+
+  if (unref(isDisabledRole)) {
+    return { displayName: $gettext('Custom permissions') }
+  }
+
+  return unref(availableRoles)[0]
 }
 
-const selectedRole = ref<ShareRole>(initialSelectedRole)
+const selectedRole = ref<ShareRole>(resolveRoleForExistingState())
 const isSelectedRole = (role: ShareRole) => {
   return unref(selectedRole).id === role.id
 }
@@ -181,6 +179,27 @@ const inviteLabel = computed(() => {
 })
 
 const roleLabelId = computed(() => `${unref(roleButtonId)}-label`)
+
+// Lets the parent roll back an optimistic role change when the update is
+// cancelled or rejected by the sharing-hierarchy conflict flow.
+const revertToExistingRole = () => {
+  if (mode !== 'edit') {
+    return
+  }
+
+  selectedRole.value = resolveRoleForExistingState()
+}
+
+defineExpose({ revertToExistingRole })
+
+watch(
+  () => existingShareRole,
+  (role) => {
+    if (mode === 'edit' && role) {
+      selectedRole.value = role
+    }
+  }
+)
 
 watch(
   () => isExternal,

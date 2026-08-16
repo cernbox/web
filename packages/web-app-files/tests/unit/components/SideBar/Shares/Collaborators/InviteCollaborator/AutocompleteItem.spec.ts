@@ -86,6 +86,43 @@ describe('AutocompleteItem component', () => {
       const { wrapper } = createWrapper({ shareType: ShareTypes.group.value })
       expect(wrapper.find('.files-collaborators-autocomplete-additionalInfo').exists()).toBeFalsy()
     })
+    it('shows the account name next to the mail when both are given', () => {
+      const { wrapper } = createWrapper({
+        shareType: ShareTypes.user.value,
+        onPremisesSamAccountName: 'jdoe',
+        mail: 'jane.doe@cern.ch'
+      })
+      expect(wrapper.find('.files-collaborators-autocomplete-additionalInfo').text()).toEqual(
+        'jdoe - jane.doe@cern.ch'
+      )
+    })
+    it('prefers the attributes over the account name', () => {
+      const { wrapper } = createWrapper({
+        shareType: ShareTypes.user.value,
+        attributes: ['foo'],
+        onPremisesSamAccountName: 'jdoe',
+        mail: 'jane.doe@cern.ch'
+      })
+      expect(wrapper.find('.files-collaborators-autocomplete-additionalInfo').text()).toEqual('foo')
+    })
+    it('shows the id for a group whose id differs from its display name', () => {
+      const { wrapper } = createWrapper({
+        shareType: ShareTypes.group.value,
+        id: 'cernbox-admins',
+        displayName: 'CERNBox Admins'
+      })
+      expect(wrapper.find('.files-collaborators-autocomplete-additionalInfo').text()).toEqual(
+        'cernbox-admins'
+      )
+    })
+    it('does not repeat the display name for a group whose id matches it', () => {
+      const { wrapper } = createWrapper({
+        shareType: ShareTypes.group.value,
+        id: 'CERNBox Admins',
+        displayName: 'CERNBox Admins'
+      })
+      expect(wrapper.find('.files-collaborators-autocomplete-additionalInfo').exists()).toBeFalsy()
+    })
   })
 })
 

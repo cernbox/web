@@ -109,7 +109,9 @@ import {
   useResourcesStore,
   useCanShare,
   useClientService,
-  useRouter
+  useRouter,
+  useSharingHierarchyConflictConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
 import { isLocationSharesActive } from '@ownclouders/web-pkg'
 import { textUtils } from '../../../helpers/textUtils'
@@ -120,6 +122,7 @@ import { useContextualHelpers } from '../../../composables/contextualHelpers/use
 import { computed, inject, ref, Ref, unref } from 'vue'
 import {
   isProjectSpaceResource,
+  isSharingHierarchyConflictUserAbortError,
   Resource,
   SpaceResource,
   CollaboratorShare,
@@ -137,6 +140,8 @@ const { canShare } = useCanShare()
 const { $gettext } = useGettext()
 const router = useRouter()
 const { showMessage, showErrorMessage } = useMessages()
+const confirmSharingHierarchyConflict = useSharingHierarchyConflictConfirm()
+const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
 
 const resourcesStore = useResourcesStore()
 const { removeResources, getAncestorById } = resourcesStore
@@ -309,12 +314,17 @@ async function setDenyShare({ value, share }: { value: boolean; share: Collabora
         clientService,
         space: unref(space),
         resource: unref(resource),
-        options: {}
+        options: {},
+        confirmSharingHierarchyConflict,
+        informSharingHierarchyConflict
       })
       showMessage({
         title: $gettext('Access was denied successfully')
       })
     } catch (e) {
+      if (isSharingHierarchyConflictUserAbortError(e)) {
+        return
+      }
       console.error(e)
       showErrorMessage({
         title: $gettext('Failed to deny access'),
@@ -329,12 +339,17 @@ async function setDenyShare({ value, share }: { value: boolean; share: Collabora
         resource: unref(resource),
         collaboratorShare: isSpaceResource(unref(resource))
           ? getDeniedSpaceMember(share)
-          : getDeniedShare(share)
+          : getDeniedShare(share),
+        confirmSharingHierarchyConflict,
+        informSharingHierarchyConflict
       })
       showMessage({
         title: $gettext('Access was granted successfully')
       })
     } catch (e) {
+      if (isSharingHierarchyConflictUserAbortError(e)) {
+        return
+      }
       console.error(e)
       showErrorMessage({
         title: $gettext('Failed to grant access'),
@@ -359,7 +374,9 @@ function deleteShareConfirmation(collaboratorShare: CollaboratorShare) {
           clientService,
           space: unref(space),
           resource: unref(resource),
-          collaboratorShare
+          collaboratorShare,
+          confirmSharingHierarchyConflict,
+          informSharingHierarchyConflict
         })
 
         showMessage({
@@ -369,6 +386,9 @@ function deleteShareConfirmation(collaboratorShare: CollaboratorShare) {
           removeResources([{ id: lastShareId }] as Resource[])
         }
       } catch (error) {
+        if (isSharingHierarchyConflictUserAbortError(error)) {
+          return
+        }
         console.error(error)
         showErrorMessage({
           title: $gettext('Failed to remove share'),
@@ -396,6 +416,11 @@ function getSharedParentRoute(collaborator: CollaboratorShare) {
 
 function isShareModifiable(collaborator: CollaboratorShare) {
   if (collaborator.indirect) {
+    return false
+  }
+
+  // users should not be able to add/edit themselves
+  if (collaborator.sharedWith.id === unref(user).id) {
     return false
   }
 

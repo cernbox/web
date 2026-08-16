@@ -38,7 +38,8 @@ const defaultOptions = {
   useRevaToken: false,
   tokenStorageLocal: true,
   userListRequiresFilter: false,
-  hideLogo: false
+  hideLogo: false,
+  alertRwFolders: {}
 } satisfies Partial<OptionsConfig>
 
 export const useConfigStore = defineStore('config', () => {

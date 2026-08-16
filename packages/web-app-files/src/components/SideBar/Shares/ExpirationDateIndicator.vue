@@ -4,6 +4,7 @@
       v-oc-tooltip="expirationDateTooltip"
       :accessible-label="screenreaderShareExpiration"
       name="calendar-event"
+      :color="isExpired ? 'var(--oc-color-swatch-danger-muted)' : ''"
       fill-type="line"
     />
   </div>
@@ -21,6 +22,10 @@ interface Props {
 const { expirationDate = null } = defineProps<Props>()
 const { $gettext, current: currentLanguage } = useGettext()
 
+const isExpired = computed(() => {
+  return expirationDate?.endOf('day') < DateTime.now().endOf('day')
+})
+
 const expirationDateRelative = computed(() => {
   return formatRelativeDateFromDateTime(expirationDate, currentLanguage)
 })
@@ -30,15 +35,19 @@ const dateExpire = computed(() => {
 })
 
 const expirationDateTooltip = computed(() => {
+  const expire = unref(isExpired) ? 'Expired' : 'Expires'
+
   return $gettext(
-    'Expires %{timeToExpiry} (%{expiryDate})',
+    `${expire} %{timeToExpiry} (%{expiryDate})`,
     { timeToExpiry: unref(expirationDateRelative), expiryDate: unref(dateExpire) },
     true
   )
 })
 
 const screenreaderShareExpiration = computed(() => {
-  return $gettext('Share expires %{ expiryDateRelative } (%{ expiryDate })', {
+  const expire = unref(isExpired) ? 'expired' : 'expires'
+
+  return $gettext(`Share ${expire} %{ expiryDateRelative } (%{ expiryDate })`, {
     expiryDateRelative: unref(expirationDateRelative),
     expiryDate: unref(dateExpire)
   })

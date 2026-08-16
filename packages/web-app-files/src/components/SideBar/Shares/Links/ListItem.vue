@@ -1,8 +1,8 @@
 <template>
   <div class="oc-width-1-1 oc-flex oc-flex-middle oc-flex-between files-links-details">
-    <div class="oc-flex oc-flex-middle files-links-content">
+    <div class="oc-flex oc-flex-middle oc-text-truncate">
       <oc-avatar-item :width="36" icon-size="medium" icon="link" name="df" />
-      <div class="files-links-name-wrapper oc-pl-s">
+      <div class="files-links-name-wrapper oc-pl-s oc-text-truncate">
         <div class="oc-flex oc-flex-middle">
           <div class="oc-text-truncate">
             <span aria-hidden="true" class="files-links-name" v-text="linkShare.displayName" />
@@ -41,7 +41,7 @@
         :expiration-date="DateTime.fromISO(linkShare.expirationDateTime)"
         class="oc-mx-xs"
       />
-      <copy-link :link-share="linkShare" class="oc-mx-xs" />
+      <copy-link :link-share="linkShare" :disabled="isExpired" class="oc-mx-xs" />
       <edit-dropdown
         :can-rename="canRename"
         :is-modifiable="isModifiable"
@@ -141,6 +141,13 @@ const currentLinkRoleDescription = computed(() => {
 
 const currentLinkRoleLabel = computed(() => {
   return getLinkRoleByType(unref(currentLinkType))?.displayName || ''
+})
+
+const isExpired = computed(() => {
+  return (
+    linkShare.expirationDateTime &&
+    DateTime.fromISO(linkShare.expirationDateTime).endOf('day') < DateTime.now().endOf('day')
+  )
 })
 </script>
 <style lang="scss" scoped>

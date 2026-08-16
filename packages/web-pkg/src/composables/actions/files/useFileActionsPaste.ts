@@ -236,6 +236,7 @@ export const useFileActionsPaste = () => {
 
   return {
     actions,
+    handler,
     isCuttingAndPastingIntoSameFolder
   }
 }

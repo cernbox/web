@@ -166,6 +166,15 @@ export const useClipboardStore = defineStore('clipboard', () => {
     showMessage({ title: $gettext('Cut to clipboard!'), status: 'success' })
   }
 
+  const duplicateResources = (r: Resource[]) => {
+    if (!r[0].canDownload()) {
+      return
+    }
+
+    action.value = ClipboardActions.Duplicate
+    resources.value = r
+  }
+
   const clearClipboard = () => {
     action.value = undefined
     resources.value = []
@@ -185,6 +194,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
 
     copyResources,
     cutResources,
+    duplicateResources,
     clearClipboard
   }
 })

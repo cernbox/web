@@ -4,7 +4,7 @@ import { ResolveStrategy, TransferType, type TransferData } from './types'
 import { ConflictDialog } from './conflictDialog'
 import { resolveFileNameDuplicate, isResourceBeeingMovedToSameLocation } from './conflictUtils'
 import type { ClientService } from '../../../services'
-import { useMessages } from '../../../composables'
+import { useMessages, useResourcesStore } from '../../../composables'
 import { Ref, unref } from 'vue'
 import type { Language } from 'vue3-gettext'
 import { HttpError } from '@ownclouders/web-client'
@@ -24,11 +24,16 @@ export class ResourceTransfer extends ConflictDialog {
   }
 
   hasRecursion(): boolean {
+    const resourceStore = useResourcesStore()
     if (this.sourceSpace.id !== this.targetSpace.id) {
       return false
     }
-    return this.resourcesToMove.some(
-      (resource: Resource) => this.targetFolder.path === resource.path
+    // Direct case: target folder is one of the resources being moved
+    if (this.resourcesToMove.some((resource: Resource) => resource.id === this.targetFolder.id)) {
+      return true
+    }
+    return this.resourcesToMove.some((resource: Resource) =>
+      Object.values(resourceStore.ancestorMetaData).some((ancestor) => ancestor.id === resource.id)
     )
   }
 
@@ -120,23 +125,47 @@ export class ResourceTransfer extends ConflictDialog {
       transferType = TransferType.COPY
     }
 
+    // Cutting to the same location: cancel operation
+    if (
+      this.resourcesToMove[0].parentFolderId === this.targetFolder.id &&
+      transferType === TransferType.MOVE
+    ) {
+      return []
+    }
+
+    const result: TransferData[] = []
+
     const targetFolderResources = (
       await this.clientService.webdav.listFiles(this.targetSpace, this.targetFolder)
     ).children
 
-    const resolvedConflicts =
-      transferType === TransferType.DUPLICATE
-        ? this.resourcesToMove.map((resource) => ({
-            resource,
-            strategy: ResolveStrategy.KEEP_BOTH
-          }))
-        : await this.resolveAllConflicts(
-            this.resourcesToMove,
-            this.targetFolder,
-            targetFolderResources
-          )
+    if (transferType === TransferType.DUPLICATE) {
+      for (const resourceToMove of this.resourcesToMove) {
+        const resource = { ...resourceToMove }
+        const { name, extension } = resource
+        const overwriteTarget = false
+        const targetName = resolveFileNameDuplicate(name, extension, targetFolderResources)
+        resource.name = targetName
 
-    const result: TransferData[] = []
+        result.push({
+          resource,
+          sourceSpace: this.sourceSpace,
+          targetSpace: this.targetSpace,
+          targetFolder: this.targetFolder,
+          path: join(this.targetFolder.path, targetName),
+          overwrite: overwriteTarget,
+          transferType: TransferType.COPY
+        })
+      }
+
+      return result
+    }
+
+    const resolvedConflicts = await this.resolveAllConflicts(
+      this.resourcesToMove,
+      this.targetFolder,
+      targetFolderResources
+    )
 
     for (const resourceToMove of this.resourcesToMove) {
       // shallow copy of resources to prevent modifying existing rows

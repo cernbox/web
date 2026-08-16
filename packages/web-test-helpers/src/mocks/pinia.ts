@@ -38,7 +38,11 @@ export type PiniaMockOptions = {
     publicLinkContextReady?: boolean
   }
   themeState?: { themes?: WebThemeType[]; currentTheme?: WebThemeType }
-  clipboardState?: { action?: ClipboardActions; resources?: Resource[] }
+  clipboardState?: {
+    action?: ClipboardActions
+    resources?: Resource[]
+    isPublicLinkSource?: boolean
+  }
   configState?: {
     server?: string
     options?: OptionsConfig
@@ -72,7 +76,16 @@ export type PiniaMockOptions = {
     graphRoles?: Record<string, ShareRole>
     loading?: boolean
   }
-  spacesState?: { spaces?: SpaceResource[]; currentSpace?: SpaceResource }
+  spacesState?: {
+    spaces?: SpaceResource[]
+    currentSpace?: SpaceResource
+    spacesInitialized?: boolean
+    /** convenience alias for `initializedTypes.mountpoint` */
+    mountPointsInitialized?: boolean
+    initializedTypes?: Partial<Record<'personal' | 'project' | 'mountpoint', boolean>>
+    /** derived from in-flight loads on the store, accepted here but ignored */
+    spacesLoading?: boolean
+  }
   userState?: { user?: User }
   capabilityState?: {
     capabilities?: Partial<Capabilities['capabilities']>
@@ -140,7 +153,20 @@ export function createMockStore({
       },
       resources: { resources: [], ...resourcesStore },
       shares: { collaboratorShares: [], linkShares: [], ...sharesState },
-      spaces: { spaces: [], ...spacesState },
+      spaces: {
+        spaces: [],
+        ...(({ mountPointsInitialized, initializedTypes, spacesLoading, ...rest }) => rest)(
+          spacesState
+        ),
+        // `mountPointsInitialized` / `spacesLoading` are computed on the store, so they can only
+        // be seeded through the state they derive from
+        initializedTypes: {
+          personal: true,
+          project: true,
+          mountpoint: spacesState?.mountPointsInitialized ?? true,
+          ...spacesState?.initializedTypes
+        }
+      },
       userSettings: { users: [], selectedUsers: [], ...userSettingsStore },
       groupSettings: { groups: [], selectedGroups: [], ...groupSettingsStore },
       spaceSettings: { spaces: [], selectedSpaces: [], ...spaceSettingsStore },

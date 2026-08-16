@@ -23,6 +23,13 @@ export const sortSpaceMembers = (shares: CollaboratorShare[]) => {
   return shares.sort((a, b) => b.permissions.length - a.permissions.length)
 }
 
+/**
+ * Drive types that are fetched from the graph API on demand. Ordered from cheapest/most likely to
+ * most expensive, which is also the order the drive resolver tries them in.
+ */
+export type LoadableDriveType = 'personal' | 'project' | 'mountpoint'
+export const LOADABLE_DRIVE_TYPES: LoadableDriveType[] = ['personal', 'project', 'mountpoint']
+
 export const getSpacesByType = async ({
   graphClient,
   driveType,
@@ -68,8 +75,8 @@ export const getSpacesByType = async ({
     buildSpace(
       {
         id: extractStorageId(id),
-        name: driveAlias, // FIXME: set a proper name
-        driveType: driveAlias.split('/')[0], // FIXME: can we retrieve this from api?
+        name: driveAlias.split('/').pop(),
+        driveType: 'share', // FIXME: can we retrieve this from api?
         driveAlias,
         path: '/',
         serverUrl: configStore.serverUrl
@@ -89,8 +96,24 @@ export const useSpacesStore = defineStore('spaces', () => {
   const spaces = ref<SpaceResource[]>([])
   const currentSpace = ref<SpaceResource>()
   const spacesInitialized = ref(false)
-  const mountPointsInitialized = ref(false)
+  const initializedTypes = ref<Record<LoadableDriveType, boolean>>({
+    personal: false,
+    project: false,
+    mountpoint: false
+  })
+  // in-flight loads, keyed by drive type, so concurrent callers share one promise and a type is
+  // never fetched twice
+  const pendingLoads = new Map<LoadableDriveType, Promise<void>>()
+
+  /**
+   * Whether the initial bootstrap is still running. This deliberately does NOT track on-demand
+   * loads: the application layout swaps the whole router view for a spinner while it is true, so
+   * letting a per-view refresh flip it would unmount and remount that view - and any view that
+   * refreshes spaces on mount would loop forever.
+   */
   const spacesLoading = ref(false)
+  const isTypeInitialized = (driveType: LoadableDriveType) => unref(initializedTypes)[driveType]
+  const mountPointsInitialized = computed(() => isTypeInitialized('mountpoint'))
 
   const personalSpace = computed(() => {
     return unref(spaces).find((s) => isPersonalSpaceResource(s) && s.isOwner(userStore.user))
@@ -100,8 +123,12 @@ export const useSpacesStore = defineStore('spaces', () => {
     spacesInitialized.value = value
   }
 
+  const setTypeInitialized = (driveType: LoadableDriveType, value: boolean) => {
+    initializedTypes.value = { ...unref(initializedTypes), [driveType]: value }
+  }
+
   const setMountPointsInitialized = (value: boolean) => {
-    mountPointsInitialized.value = value
+    setTypeInitialized('mountpoint', value)
   }
 
   const setSpacesLoading = (value: boolean) => {
@@ -194,6 +221,57 @@ export const useSpacesStore = defineStore('spaces', () => {
     }
   }
 
+  /**
+   * Loads all spaces of a single drive type, once per session unless `force` is given. Concurrent
+   * callers share the same request. Spaces are deduplicated by id and driveAlias, so a type that
+   * arrives late can't shadow an already loaded one, and a forced refresh picks up newly available
+   * spaces without duplicating the known ones.
+   */
+  const loadSpacesByType = (
+    driveType: LoadableDriveType,
+    {
+      graphClient,
+      signal,
+      force = false
+    }: { graphClient: Graph; signal?: AbortSignal; force?: boolean }
+  ): Promise<void> => {
+    if (!force && isTypeInitialized(driveType)) {
+      return Promise.resolve()
+    }
+    if (pendingLoads.has(driveType)) {
+      return pendingLoads.get(driveType)
+    }
+
+    const promise = (async () => {
+      try {
+        const loadedSpaces = await getSpacesByType({
+          graphClient,
+          driveType,
+          configStore,
+          graphRoles: sharesStore.graphRoles,
+          signal
+        })
+        const existingAliases = new Set(unref(spaces).map((s) => s.driveAlias))
+        const existingIds = new Set(unref(spaces).map((s) => s.id))
+        addSpaces(
+          loadedSpaces.filter((s) => !existingAliases.has(s.driveAlias) && !existingIds.has(s.id))
+        )
+        setTypeInitialized(driveType, true)
+      } finally {
+        pendingLoads.delete(driveType)
+      }
+    })()
+
+    pendingLoads.set(driveType, promise)
+    return promise
+  }
+
+  /**
+   * Bootstraps the store. The personal space is the one drive type virtually every part of the app
+   * needs, so it is loaded up front; project and mount point spaces are fetched on demand by
+   * `loadSpacesByType`, so a session never pays for listing potentially hundreds of project drives
+   * it doesn't touch.
+   */
   const loadSpaces = async ({
     graphClient,
     isInVault
@@ -203,60 +281,22 @@ export const useSpacesStore = defineStore('spaces', () => {
   }) => {
     spacesLoading.value = true
     try {
-      /**
-       * FIXME: this is bad for two reasons:
-       * 1. fetching by specific drive type is bad because if more drive types are being added it needs additional code.
-       *    as soon as the backend allows to filter by `driveType neq virtual` we want to use that here.
-       * 2. fetching the mountpoint drives only on first access is kind of error prone, because mount points are
-       *    trying to be accessed in multiple code locations. all of them need to check now if mountpoints need to be
-       *    fetched first. but at the moment fetching mountpoints is kind of expensive, so we need to accept that for now.
-       */
-      const [personalSpaces, projectSpaces] = await Promise.all([
-        getSpacesByType({
-          graphClient,
-          driveType: 'personal',
-          configStore,
-          graphRoles: sharesStore.graphRoles
-        }),
-        getSpacesByType({
-          graphClient,
-          driveType: 'project',
-          configStore,
-          graphRoles: sharesStore.graphRoles
-        })
-      ])
-
-      addSpaces([...personalSpaces, ...projectSpaces])
+      await loadSpacesByType('personal', { graphClient })
       spacesInitialized.value = true
     } finally {
       spacesLoading.value = false
     }
   }
 
-  const loadMountPoints = async ({
+  const loadMountPoints = ({
     graphClient,
-    signal
+    signal,
+    force
   }: {
     graphClient: Graph
     signal?: AbortSignal
-  }) => {
-    // fetching mount points is particularly expensive, so we do that only on first access.
-    if (unref(mountPointsInitialized)) {
-      return
-    }
-    try {
-      const mountPointSpaces = await getSpacesByType({
-        graphClient,
-        driveType: 'mountpoint',
-        configStore,
-        graphRoles: sharesStore.graphRoles,
-        signal
-      })
-      addSpaces(mountPointSpaces)
-    } finally {
-      mountPointsInitialized.value = true
-    }
-  }
+    force?: boolean
+  }) => loadSpacesByType('mountpoint', { graphClient, signal, force })
 
   const reloadProjectSpaces = async ({
     graphClient,
@@ -274,8 +314,17 @@ export const useSpacesStore = defineStore('spaces', () => {
       graphRoles: sharesStore.graphRoles,
       signal
     })
-    spaces.value = unref(spaces).filter((s) => !isProjectSpaceResource(s))
+    // only project spaces are being replaced here. The fallback space is not a project space and
+    // is only ever constructed once - dropping it would destroy it for the rest of the session.
+    // Same-alias share/mountpoint entries are dropped too: with lazy loading those can be fetched
+    // before the project spaces are, and a synthesized share root must never shadow the real
+    // project space it was derived from.
+    const projectAliases = new Set(projectSpaces.map((s) => s.driveAlias))
+    spaces.value = unref(spaces).filter(
+      (s) => !isProjectSpaceResource(s) && !projectAliases.has(s.driveAlias)
+    )
     addSpaces(projectSpaces)
+    setTypeInitialized('project', true)
   }
 
   const getSpacesByName = (name: string): SpaceResource[] => {
@@ -291,11 +340,17 @@ export const useSpacesStore = defineStore('spaces', () => {
     currentSpace,
     personalSpace,
 
+    // exposed as state rather than through `isTypeInitialized` so that consumers keep working
+    // under `createTestingPinia`, which stubs every function a store returns
+    initializedTypes,
+
     getSpace,
     createShareSpace,
     setSpacesInitialized,
     setMountPointsInitialized,
+    setTypeInitialized,
     setSpacesLoading,
+    isTypeInitialized,
     setCurrentSpace,
     getSpaceMembers,
     getMountPointForSpace,
@@ -305,6 +360,7 @@ export const useSpacesStore = defineStore('spaces', () => {
     upsertSpace,
     updateSpaceField,
     loadSpaces,
+    loadSpacesByType,
     loadMountPoints,
     reloadProjectSpaces,
     getSpacesByName

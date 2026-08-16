@@ -74,6 +74,7 @@ import { computed, unref } from 'vue'
 type Item = {
   displayName?: string
   name?: string
+  tooltip?: string
   shareType?: number
   username?: string
   avatar?: string
@@ -118,7 +119,7 @@ const isOverlapping = computed(() => {
 
 const tooltip = computed(() => {
   if (isTooltipDisplayed) {
-    const names = unref(avatars).map((user) => user.displayName)
+    const names = unref(avatars).map((user) => user.tooltip || user.displayName)
 
     if (unref(otherItems).length > 0) {
       names.push(...unref(otherItems).map((item) => item.name))

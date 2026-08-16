@@ -83,6 +83,7 @@ export function buildPublicSpaceResource(
     buildSpace(
       {
         ...data,
+        name: data.name || 'Public files',
         driveType: 'public',
         driveAlias,
         webDavPath

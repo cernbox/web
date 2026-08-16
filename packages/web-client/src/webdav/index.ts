@@ -117,7 +117,9 @@ export const webdav = (
     search,
     listFavoriteFiles,
     setFavorite,
-
-    registerExtraProp
+    registerExtraProp,
+    get extraProps() {
+      return dav.extraProps
+    }
   }
 }

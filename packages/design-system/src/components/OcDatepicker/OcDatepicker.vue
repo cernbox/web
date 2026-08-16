@@ -5,6 +5,7 @@
     :label="label"
     type="date"
     :min="minDate?.toISODate()"
+    :max="maxDate?.toISODate()"
     :fix-message-line="true"
     :error-message="errorMessage"
     :clear-button-enabled="isClearable"
@@ -23,6 +24,7 @@ interface Props {
   isClearable?: boolean
   currentDate?: DateTime
   minDate?: DateTime
+  maxDate?: DateTime
 }
 
 interface Emits {
@@ -34,7 +36,13 @@ defineOptions({
   release: '1.0.0'
 })
 
-const { label, isClearable = true, currentDate = null, minDate = null } = defineProps<Props>()
+const {
+  label,
+  isClearable = true,
+  currentDate = null,
+  minDate = null,
+  maxDate = null
+} = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const { $gettext, current } = useGettext()
 const dateInputString = ref<string>('')
@@ -51,10 +59,22 @@ const isMinDateUndercut = computed(() => {
   return unref(date) < minDate
 })
 
+const isMaxDateExceeded = computed(() => {
+  if (!maxDate || !unref(date)) {
+    return false
+  }
+  return unref(date) > maxDate
+})
+
 const errorMessage = computed(() => {
   if (unref(isMinDateUndercut)) {
     return $gettext('The date must be after %{date}', {
       date: minDate.minus({ day: 1 }).setLocale(current).toLocaleString(DateTime.DATE_SHORT)
+    })
+  }
+  if (unref(isMaxDateExceeded)) {
+    return $gettext('The date must be before %{date}', {
+      date: maxDate.plus({ day: 1 }).setLocale(current).toLocaleString(DateTime.DATE_SHORT)
     })
   }
   return ''
@@ -76,7 +96,10 @@ watch(
 watch(
   date,
   () => {
-    emit('dateChanged', { date: unref(date), error: unref(isMinDateUndercut) })
+    emit('dateChanged', {
+      date: unref(date),
+      error: unref(isMinDateUndercut) || unref(isMaxDateExceeded)
+    })
   },
   {
     deep: true
@@ -94,7 +117,7 @@ watch(
 ```js
 <template>
   <div>
-    <oc-datepicker :current-date="currentDate" :min-date="minDate" label="Enter or pick a date"
+    <oc-datepicker :current-date="currentDate" :min-date="minDate" :max-date="maxDate" label="Enter or pick a date"
                    @date-changed="onDateChanged"/>
     <p v-if="selectedDate" v-text="selectedDate"/>
   </div>
@@ -104,7 +127,7 @@ watch(
 
   export default {
     data: () => ({
-      minDate: DateTime.now(), currentDate: DateTime.now(), selectedDate: ''
+      minDate: DateTime.now(), currentDate: DateTime.now(), selectedDate: '', maxDate: null
     }),
     methods: {
       onDateChanged({date}) {

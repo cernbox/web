@@ -21,6 +21,12 @@ vi.mock('../../../../src/composables/resourcesViewDefaults')
 vi.mock('@ownclouders/web-pkg', async (importOriginal) => ({
   ...(await importOriginal<any>()),
   useSort: vi.fn().mockImplementation(() => useSortMock()),
+  usePagination: vi.fn().mockImplementation(({ items }) => ({
+    items,
+    total: ref(1),
+    page: ref(1),
+    perPage: ref(100)
+  })),
   queryItemAsString: vi.fn(),
   useRouteQuery: vi.fn(),
   useOpenWithDefaultApp: vi.fn()
@@ -200,8 +206,13 @@ function getMountedWrapper({
         components: {
           AppBar
         },
-        plugins: [...defaultPlugins()],
+        plugins: [
+          // the filters derive their options from the whole share list in the resources store,
+          // not from the current page, so the fixtures have to be seeded there
+          ...defaultPlugins({ piniaOptions: { resourcesStore: { resources: files } } })
+        ],
         mocks: defaultMocks,
+        provide: defaultMocks,
         stubs: { ...defaultStubs, itemFilterInline: true, ItemFilter: true }
       }
     })

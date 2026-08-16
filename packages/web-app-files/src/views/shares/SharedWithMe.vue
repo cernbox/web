@@ -82,6 +82,8 @@
           :empty-message="
             areHiddenFilesShown ? $gettext('No hidden shares') : $gettext('No shares')
           "
+          :pagination-pages="paginationPages"
+          :pagination-page="paginationPage"
         />
       </template>
     </files-view-wrapper>
@@ -103,13 +105,14 @@ import {
   FileSideBar,
   InlineFilterOption,
   ItemFilter,
+  usePagination,
   useAppsStore,
   useResourcesStore
 } from '@ownclouders/web-pkg'
 import { AppBar, ItemFilterInline } from '@ownclouders/web-pkg'
-import { queryItemAsString, useRouteQuery } from '@ownclouders/web-pkg'
+import { queryItemAsString, useRouteQuery, useRouter } from '@ownclouders/web-pkg'
 import SharedWithMeSection from '../../components/Shares/SharedWithMeSection.vue'
-import { computed, onMounted, ref, unref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, unref, watch } from 'vue'
 import FilesViewWrapper from '../../components/FilesViewWrapper.vue'
 import { useGetMatchingSpace, useSort } from '@ownclouders/web-pkg'
 import SharesNavigation from '../../components/AppBar/SharesNavigation.vue'
@@ -130,7 +133,6 @@ const {
   selectedResources,
   sideBarActivePanel,
   isSideBarOpen,
-  paginatedResources,
   scrollToResourceFromRoute
 } = useResourcesViewDefaults<IncomingShareResource, any, any>()
 
@@ -164,8 +166,13 @@ const setAreHiddenFilesShown = (value: InlineFilterOption) => {
       )
 }
 
-const visibleShares = computed(() => unref(paginatedResources).filter((r) => !r.hidden))
-const hiddenShares = computed(() => unref(paginatedResources).filter((r) => r.hidden))
+// Use all active resources as the base — filtering must happen before pagination
+const allResources = computed(
+  () => resourcesStore.activeResources as unknown as IncomingShareResource[]
+)
+
+const visibleShares = computed(() => unref(allResources).filter((r) => !r.hidden))
+const hiddenShares = computed(() => unref(allResources).filter((r) => r.hidden))
 const currentItems = computed(() => {
   return unref(areHiddenFilesShown) ? unref(hiddenShares) : unref(visibleShares)
 })
@@ -216,11 +223,36 @@ watch(filteredItems, () => {
   }
 })
 
-const { sortBy, sortDir, items, handleSort } = useSort({
+const {
+  sortBy,
+  sortDir,
+  items: sortedFilteredItems,
+  handleSort
+} = useSort({
   items: filteredItems,
   fields: sortFields
 })
 
+const {
+  items: paginatedFilteredItems,
+  total: paginationPages,
+  page: paginationPage
+} = usePagination({ items: sortedFilteredItems, perPageStoragePrefix: 'files' })
+
+// Reset to page 1 whenever the active filter set changes
+const router = useRouter()
+watch(
+  [selectedShareTypesQuery, selectedSharedByQuery, filterTerm, areHiddenFilesShown],
+  async () => {
+    await nextTick()
+    if (unref(paginationPage) > unref(paginationPages)) {
+      router.push({ query: { ...router.currentRoute.value.query, page: 1 } })
+    }
+  }
+)
+
+// Keep items alias for backward compat
+const items = paginatedFilteredItems
 
 const { getMatchingSpace } = useGetMatchingSpace()
 
@@ -235,7 +267,7 @@ const selectedShareSpace = computed(() => {
 const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
 const performLoaderTask = async () => {
   await loadResourcesTask.perform()
-  scrollToResourceFromRoute(unref(items), 'files-app-bar')
+  scrollToResourceFromRoute(unref(sortedFilteredItems), 'files-app-bar')
   if (queryItemAsString(unref(openWithDefaultAppQuery)) === 'true') {
     openWithDefaultApp({
       space: unref(selectedShareSpace),
@@ -245,7 +277,7 @@ const performLoaderTask = async () => {
 }
 
 const shareTypes = computed(() => {
-  const uniqueShareTypes = uniq(unref(paginatedResources).flatMap((i) => i.shareTypes))
+  const uniqueShareTypes = uniq(unref(allResources).flatMap((i) => i.shareTypes))
 
   const ocmAvailable = appsStore.appIds.includes('open-cloud-mesh')
   if (ocmAvailable && !uniqueShareTypes.includes(ShareTypes.remote.value)) {
@@ -262,10 +294,22 @@ const shareTypes = computed(() => {
 })
 
 const fileOwners = computed(() => {
-  const flatList = unref(paginatedResources)
+  const flatList = unref(allResources)
     .map((i) => i.sharedBy)
     .flat()
-  return [...new Map(flatList.map((item) => [item.displayName, item])).values()]
+  const uniqueById = [...new Map(flatList.map((item) => [item.id, item])).values()]
+  const nameCounts = uniqueById.reduce(
+    (acc, item) => {
+      acc[item.displayName] = (acc[item.displayName] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>
+  )
+  return uniqueById.map((item) =>
+    nameCounts[item.displayName] > 1
+      ? { ...item, displayName: `${item.displayName} (${item.id})` }
+      : item
+  )
 })
 
 onMounted(() => {
@@ -277,7 +321,7 @@ watch(scrollToTarget, (value) => {
     return
   }
 
-  scrollToResourceFromRoute(unref(items), 'files-app-bar')
+  scrollToResourceFromRoute(unref(sortedFilteredItems), 'files-app-bar')
 })
 </script>
 

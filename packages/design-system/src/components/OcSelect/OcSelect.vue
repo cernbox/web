@@ -247,6 +247,11 @@ const select: VNodeRef = ref()
 const attrs = useAttrs()
 const listboxId = computed(() => `${id}-listbox`)
 
+const clearSearch = () => {
+  unref(select).search = ''
+}
+defineExpose({ clearSearch })
+
 const userInput = (event: Event) => {
   /**
    * Triggers when a value of search input is changed

@@ -152,12 +152,13 @@ describe('Collaborator ListItem component', () => {
       const sharesStore = useSharesStore()
       ;(sharesStore.updateShare as Mock).mockRejectedValueOnce(new Error())
       wrapper.findComponent<typeof RoleDropdown>('role-dropdown-stub').vm.$emit('optionChange', {
-        share: getShareMock({ shareType: ShareTypes.user.value }),
-        resource
+        id: 'editor',
+        displayName: 'Can edit'
       })
 
       await flushPromises()
 
+      expect(sharesStore.updateShare).toHaveBeenCalled()
       const messagesStore = useMessages()
       expect(messagesStore.showErrorMessage).toHaveBeenCalled()
     })
@@ -185,6 +186,8 @@ describe('Collaborator ListItem component', () => {
         })
 
       await flushPromises()
+
+      expect(sharesStore.updateShare).toHaveBeenCalled()
       const messagesStore = useMessages()
       expect(messagesStore.showErrorMessage).toHaveBeenCalled()
     })

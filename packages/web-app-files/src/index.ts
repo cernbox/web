@@ -6,6 +6,7 @@ import SharedWithOthers from './views/shares/SharedWithOthers.vue'
 import SharedViaLink from './views/shares/SharedViaLink.vue'
 import SpaceDriveResolver from './views/spaces/DriveResolver.vue'
 import SpaceProjects from './views/spaces/Projects.vue'
+import OfficeFiles from './views/OfficeFiles.vue'
 import TrashOverview from './views/trash/Overview.vue'
 import translations from '../l10n/translations.json'
 import {
@@ -102,6 +103,17 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       priority: 20
     },
     {
+      name: $gettext('My office files'),
+      icon: 'file-list',
+      route: {
+        path: `/${appInfo.id}/office-files`
+      },
+      isVisible() {
+        return capabilityStore.groupCapabilities?.includes('office-view')
+      },
+      priority: 25
+    },
+    {
       name: $gettext('Shares'),
       icon: 'share-forward',
       route: {
@@ -194,6 +206,7 @@ export default defineWebApplication({
       routes: buildRoutes({
         App,
         Favorites,
+        OfficeFiles,
         FilesDrop,
         SearchResults,
         Shares: {

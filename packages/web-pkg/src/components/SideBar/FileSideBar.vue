@@ -134,6 +134,7 @@ const isSharedWithOthersLocation = useActiveLocation(
 const isSharedViaLinkLocation = useActiveLocation(isLocationSharesActive, 'files-shares-via-link')
 const isProjectsLocation = isLocationSpacesActive(router, 'files-spaces-projects')
 const isFavoritesLocation = useActiveLocation(isLocationCommonActive, 'files-common-favorites')
+const isOfficeFilesLocation = useActiveLocation(isLocationCommonActive, 'files-common-office')
 const isSearchLocation = useActiveLocation(isLocationCommonActive, 'files-common-search')
 
 const closeSideBar = () => {
@@ -161,7 +162,12 @@ const isShareLocation = computed(() => {
   )
 })
 const isFlatFileList = computed(() => {
-  return unref(isShareLocation) || unref(isSearchLocation) || unref(isFavoritesLocation)
+  return (
+    unref(isShareLocation) ||
+    unref(isSearchLocation) ||
+    unref(isFavoritesLocation) ||
+    unref(isOfficeFilesLocation)
+  )
 })
 
 const availablePanels = computed(() =>

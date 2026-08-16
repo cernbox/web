@@ -20,6 +20,7 @@ import { DAV } from './client/dav'
 import { ListFileVersionsFactory } from './listFileVersions'
 import { SetFavoriteFactory } from './setFavorite'
 import { ListFavoriteFilesFactory } from './listFavoriteFiles'
+import { ListOfficeFilesFactory } from './listOfficeFiles'
 import { shouldResponseTriggerMaintenance } from '../helpers/maintenance'
 
 export * from './constants'
@@ -97,6 +98,8 @@ export const webdav = (
   const { listFavoriteFiles } = ListFavoriteFilesFactory(dav, options)
   const { setFavorite } = SetFavoriteFactory(dav, options)
 
+  const { listOfficeFiles } = ListOfficeFilesFactory(dav, options)
+
   return {
     copyFiles,
     createFolder,
@@ -117,6 +120,7 @@ export const webdav = (
     search,
     listFavoriteFiles,
     setFavorite,
+    listOfficeFiles,
     registerExtraProp,
     get extraProps() {
       return dav.extraProps

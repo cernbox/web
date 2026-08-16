@@ -37,6 +37,7 @@ export const useFileActionsDownloadFile = () => {
           !isLocationSpacesActive(router, 'files-spaces-generic') &&
           !isLocationPublicActive(router, 'files-public-link') &&
           !isLocationCommonActive(router, 'files-common-favorites') &&
+          !isLocationCommonActive(router, 'files-common-office') &&
           !isLocationCommonActive(router, 'files-common-search') &&
           !isLocationSharesActive(router, 'files-shares-with-me') &&
           !isLocationSharesActive(router, 'files-shares-with-others') &&

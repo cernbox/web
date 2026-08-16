@@ -12,6 +12,7 @@ type Component = ReturnType<typeof defineComponent>
 export interface RouteComponents {
   App: Component
   Favorites: Component
+  OfficeFiles: Component
   FilesDrop: Component
   SearchResults: Component
   Shares: {

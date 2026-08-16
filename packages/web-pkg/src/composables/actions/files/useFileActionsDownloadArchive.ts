@@ -16,7 +16,7 @@ import { FileAction, FileActionOptions } from '../types'
 import { useGettext } from 'vue3-gettext'
 import { useArchiverService } from '../../archiverService'
 import { formatFileSize } from '../../../helpers/filesize'
-import { useAuthStore, useMessages } from '../../piniaStores'
+import { useAuthStore, useConfigStore, useMessages } from '../../piniaStores'
 
 export const useFileActionsDownloadArchive = () => {
   const { showErrorMessage } = useMessages()
@@ -25,6 +25,7 @@ export const useFileActionsDownloadArchive = () => {
   const archiverService = useArchiverService()
   const { $ngettext, $gettext, current } = useGettext()
   const authStore = useAuthStore()
+  const configStore = useConfigStore()
   const isFilesAppActive = useIsFilesAppActive()
 
   const handler = ({ space, resources }: FileActionOptions) => {
@@ -104,6 +105,7 @@ export const useFileActionsDownloadArchive = () => {
             !isLocationSpacesActive(router, 'files-spaces-generic') &&
             !isLocationPublicActive(router, 'files-public-link') &&
             !isLocationCommonActive(router, 'files-common-favorites') &&
+            !isLocationCommonActive(router, 'files-common-office') &&
             !isLocationCommonActive(router, 'files-common-search') &&
             !isLocationSharesActive(router, 'files-shares-with-me') &&
             !isLocationSharesActive(router, 'files-shares-with-others') &&
@@ -125,7 +127,10 @@ export const useFileActionsDownloadArchive = () => {
           if (resources.length > 1 && resources.every((r) => isProjectSpaceResource(r))) {
             return false
           }
-          if (isProjectSpaceResource(resources[0]) && resources[0].disabled) {
+          if (
+            isProjectSpaceResource(resources[0]) &&
+            (configStore.options.cernFeatures || resources[0].disabled)
+          ) {
             return false
           }
           if (

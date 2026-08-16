@@ -50,8 +50,8 @@ describe('Web app files', () => {
         ({ currentSpace, expectedResult }) => {
           const spacesStore = useSpacesStore()
           spacesStore.currentSpace = currentSpace
-          const spacesItem = navItems(undefined).find(({ name }) => name === 'Spaces')
-          expect(spacesItem.isActive()).toBe(expectedResult)
+          const items = navItems(undefined)
+          expect(items[4].isActive()).toBe(expectedResult)
         }
       )
 
@@ -69,15 +69,14 @@ describe('Web app files', () => {
           })
         ]
 
-        const spacesItem = navItems(undefined).find(({ name }) => name === 'Spaces')
-        const paths = spacesItem.activeFor().map(({ path }) => path)
+        const paths = navItems(undefined)[4]
+          .activeFor()
+          .map(({ path }) => path)
 
         expect(paths).not.toContain('/files/spaces/eos')
         expect(paths).toContain('/files/spaces/eos/project/c/cernbox')
         // a share's owner path must not be claimed by any of them
-        expect(
-          paths.some((p) => '/files/spaces/eos/user/p/pmedinar/sub'.startsWith(p))
-        ).toBeFalsy()
+        expect(paths.some((p) => '/files/spaces/eos/user/p/pmedinar/sub'.startsWith(p))).toBeFalsy()
       })
     })
   })

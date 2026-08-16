@@ -65,7 +65,8 @@ import {
   formatFileSize,
   useClientService,
   useDownloadFile,
-  useResourcesStore
+  useResourcesStore,
+  useMessages
 } from '@ownclouders/web-pkg'
 import { computed, inject, Ref, unref } from 'vue'
 import { isShareSpaceResource, Resource, SpaceResource } from '@ownclouders/web-client'
@@ -77,8 +78,10 @@ interface Props {
 const { isReadOnly } = defineProps<Props>()
 const clientService = useClientService()
 const language = useGettext()
+const { $gettext } = language
 const { downloadFile } = useDownloadFile({ clientService })
 const { updateResourceField } = useResourcesStore()
+const { showMessage, showErrorMessage } = useMessages()
 
 const space = inject<Ref<SpaceResource>>('space')
 const resource = inject<Ref<Resource>>('resource')
@@ -99,7 +102,16 @@ const isRevertible = computed(() => {
 })
 
 const revertToVersion = async (version: Resource) => {
-  await clientService.webdav.restoreFileVersion(unref(space), unref(resource), version.name)
+  try {
+    await clientService.webdav.restoreFileVersion(unref(space), unref(resource), version.name)
+    showMessage({ title: $gettext('Version was successfully restored') })
+  } catch (error) {
+    showErrorMessage({
+      title: $gettext('Failed to restore version'),
+      errors: [error]
+    })
+    return
+  }
   const restoredResource = await clientService.webdav.getFileInfo(unref(space), unref(resource))
 
   const fieldsToUpdate = ['size', 'mdate'] as const

@@ -101,7 +101,7 @@ export const PermissionsFactory = ({
       permId: string,
       data: Permission,
       graphRoles: Record<string, ShareRole>,
-      requestOptions: GraphRequestOptions
+      requestOptions: GraphRequestOptions = {}
     ): Promise<T> {
       let permission: Permission
 
@@ -137,7 +137,7 @@ export const PermissionsFactory = ({
       }) as T
     },
 
-    async deletePermission(driveId, itemId, permId, requestOptions) {
+    async deletePermission(driveId, itemId, permId, requestOptions: GraphRequestOptions = {}) {
       if (driveId === itemId) {
         await drivesRootApiFactory.deletePermissionSpaceRoot(driveId, permId, requestOptions)
         return
@@ -146,7 +146,13 @@ export const PermissionsFactory = ({
       await drivesPermissionsApiFactory.deletePermission(driveId, itemId, permId, requestOptions)
     },
 
-    async createInvite(driveId, itemId, data, graphRoles, requestOptions) {
+    async createInvite(
+      driveId,
+      itemId,
+      data,
+      graphRoles,
+      requestOptions: GraphRequestOptions = {}
+    ) {
       let permission: Permission | undefined
 
       if (driveId === itemId) {

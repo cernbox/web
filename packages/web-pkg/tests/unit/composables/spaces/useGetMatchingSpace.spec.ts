@@ -45,6 +45,89 @@ describe('useSpaceHelpers', () => {
     })
   })
 
+  describe('fallback space', () => {
+    it('returns the fallback space for a resource it listed', () => {
+      const { spaces } = getWrapper({
+        includeFallbackSpace: true,
+        setup: ({ getMatchingSpace }) => {
+          // storageId points at the real project space, but the resource was listed through the
+          // fallback space, so its path is relative to the fallback's webdav root
+          const resource = mock<Resource>({
+            storageId: '1',
+            webDavPath: '/files/jdoe/eos/project/c/cernbox/foo.txt'
+          })
+          expect(getMatchingSpace(resource).driveType).toEqual('explorer')
+        }
+      })
+      expect(spaces.some((s) => s.driveType === 'explorer')).toBe(true)
+    })
+
+    it("returns the resource's own space while a fallback route is open", () => {
+      const fallbackSpace = mock<SpaceResource>({
+        id: 'fallback',
+        driveType: 'explorer',
+        webDavPath: '/files/jdoe/eos'
+      })
+
+      getWrapper({
+        includeFallbackSpace: true,
+        currentSpace: fallbackSpace,
+        setup: ({ getMatchingSpace }) => {
+          // e.g. a clipboard entry copied from a project space, pasted while browsing the fallback
+          const resource = mock<Resource>({
+            spaceId: undefined,
+            storageId: '1',
+            webDavPath: '/spaces/1/foo.txt'
+          })
+          expect(getMatchingSpace(resource).id).toEqual('1')
+        }
+      })
+    })
+
+    it('ignores the fallback space when an explicit space is passed', () => {
+      const explicitSpace = mock<SpaceResource>({ id: 'explicit', driveType: 'project' })
+
+      getWrapper({
+        includeFallbackSpace: true,
+        options: { space: ref(explicitSpace) },
+        setup: ({ getMatchingSpace }) => {
+          const resource = mock<Resource>({
+            storageId: '1',
+            webDavPath: '/files/jdoe/eos/project/c/cernbox/foo.txt'
+          })
+          expect(getMatchingSpace(resource)).toEqual(explicitSpace)
+        }
+      })
+    })
+
+    it('does not treat a string-prefix webDavPath as fallback-listed', () => {
+      getWrapper({
+        includeFallbackSpace: true,
+        setup: ({ getMatchingSpace }) => {
+          const resource = mock<Resource>({
+            spaceId: undefined,
+            storageId: '1',
+            webDavPath: '/files/jdoe/eos-archive/foo.txt'
+          })
+          expect(getMatchingSpace(resource).id).toEqual('1')
+        }
+      })
+    })
+
+    it('resolves normally when the deployment has no fallback space', () => {
+      getWrapper({
+        includeFallbackSpace: false,
+        setup: ({ getMatchingSpace }) => {
+          const resource = mock<Resource>({
+            spaceId: undefined,
+            storageId: '1',
+            webDavPath: '/files/jdoe/eos/project/c/cernbox/foo.txt'
+          })
+          expect(getMatchingSpace(resource).id).toEqual('1')
+        }
+      })
+    })
+  })
 })
 
 function getWrapper({

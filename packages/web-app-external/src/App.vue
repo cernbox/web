@@ -66,7 +66,7 @@ import {
   isPublicSpaceResource,
   isShareSpaceResource
 } from '@ownclouders/web-client'
-import { useOfficePostMessageRegistry } from './composables'
+import { useOfficeAlert, useOfficePostMessageRegistry } from './composables'
 
 type ExtendedNavigator = Navigator & {
   userAgentData?: {
@@ -117,6 +117,15 @@ const appName = computed(() => {
 // The grouped Save-As control is a Collabora-specific WOPI extension; other app
 // providers don't implement it.
 const isCollabora = computed(() => unref(appName) === 'Collabora')
+
+// navigates to the same resource, opened with a different external app
+const switchToApp = (targetAppName: string) => {
+  router.push({
+    name: `external-${targetAppName.toLowerCase()}-apps`,
+    params: unref(route).params,
+    query: unref(route).query
+  })
+}
 
 const appUrl = ref()
 const formParameters = ref({})
@@ -170,6 +179,153 @@ const errorPopup = (error: string) => {
   })
 }
 
+const getAlertsContainer = () => {
+  let alertsContainer = document.getElementById('app-alerts-container')
+  if (!alertsContainer) {
+    alertsContainer = document.createElement('div')
+    alertsContainer.id = 'app-alerts-container'
+    alertsContainer.classList.add('oc-px-xl', 'oc-pt-xxl', 'oc-mt-xs')
+    alertsContainer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+    `
+    document.body.appendChild(alertsContainer)
+  }
+  return alertsContainer
+}
+
+// the container itself is position:fixed, full-width, z-index:9999 - even with no
+// alerts left, its own padding still occupies space and blocks clicks on whatever's
+// underneath, so it needs to go once the last alert in it is removed
+const removeAlert = (alert: HTMLElement) => {
+  const container = alert.parentElement
+  alert.remove()
+  if (container?.id === 'app-alerts-container' && !container.hasChildNodes()) {
+    container.remove()
+  }
+}
+
+// remixicon error-warning-fill
+const alertIcon =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z"></path></svg>'
+
+const alertStyles = {
+  danger: {
+    background: '#f8d7da',
+    color: '#721c1c'
+  },
+  warning: {
+    background: '#fff3cd',
+    color: '#856404'
+  }
+}
+
+const showAlert = (
+  id: string,
+  status: keyof typeof alertStyles,
+  buildContent: (content: HTMLElement) => void,
+  onClose?: () => void,
+  action?: { label: string; onClick: () => void }
+) => {
+  const { background, color } = alertStyles[status]
+
+  const alert = document.createElement('div')
+  alert.id = id
+  alert.classList.add('oc-mb-xs', 'oc-p-m', 'oc-text-center', 'oc-rounded')
+  alert.style.cssText = `
+    background-color: ${background};
+    color: ${color};
+    text-align: left;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 3px 8px 1px rgb(0 0 0 / 14%);
+  `
+
+  const iconWrapper = document.createElement('span')
+  iconWrapper.innerHTML = alertIcon
+  iconWrapper.style.cssText = `
+    display: flex;
+    align-items: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+  `
+  alert.appendChild(iconWrapper)
+
+  const contentWrapper = document.createElement('span')
+  contentWrapper.style.cssText = `
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  `
+
+  const content = document.createElement('span')
+  buildContent(content)
+  contentWrapper.appendChild(content)
+
+  if (action) {
+    const actionButton = document.createElement('button')
+    actionButton.type = 'button'
+    actionButton.textContent = action.label
+    actionButton.style.cssText = `
+      font: inherit;
+      font-weight: bold;
+      background: none;
+      border: 1px solid currentColor;
+      border-radius: 16px;
+      color: inherit;
+      cursor: pointer;
+      padding: 4px 12px;
+      margin-left: 12px;
+      flex-shrink: 0;
+    `
+    actionButton.onclick = () => {
+      removeAlert(alert)
+      action.onClick()
+    }
+    contentWrapper.appendChild(actionButton)
+  }
+
+  alert.appendChild(contentWrapper)
+
+  const closeButton = document.createElement('span')
+  closeButton.innerHTML = '&times;'
+  closeButton.style.cssText = `
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 12px;
+    flex-shrink: 0;
+  `
+  closeButton.onclick = () => {
+    removeAlert(alert)
+    onClose?.()
+  }
+  alert.appendChild(closeButton)
+
+  getAlertsContainer().appendChild(alert)
+}
+
+const { isOfficeAlertClosed, showOfficeAlert } = useOfficeAlert(showAlert)
+
+const showWarningAlert = (message: string, action?: { label: string; onClick: () => void }) => {
+  showAlert(
+    'warning-alert',
+    'warning',
+    (content) => {
+      content.innerHTML = message
+    },
+    undefined,
+    action
+  )
+}
+
 const loadAppUrl = useTask(function* (signal, viewMode: string) {
   try {
     if (props.isReadOnly && viewMode === 'write') {
@@ -221,6 +377,30 @@ const loadAppUrl = useTask(function* (signal, viewMode: string) {
       : response.data.app_url
     method.value = response.data.method
 
+    if (response.data.forced_viewmode_reason && response.data.forced_viewmode_reason !== '') {
+      // Check if an alternative app can be used in Web to open in write mode
+      // We will suggest the user changing to that app
+      const lockedByAppName = response.data.app_for_editing as string | undefined
+      const matchedAppName = lockedByAppName
+        ? appProviderService.appNames.find(
+            (name) => name.toLowerCase() === lockedByAppName.toLowerCase()
+          )
+        : undefined
+
+      const canSwitchToApp =
+        matchedAppName && matchedAppName.toLowerCase() !== unref(appName)?.toLowerCase()
+
+      showWarningAlert(
+        response.data.forced_viewmode_reason,
+        canSwitchToApp
+          ? {
+              label: $gettext('Switch to %{appName}', { appName: matchedAppName }),
+              onClick: () => switchToApp(matchedAppName)
+            }
+          : undefined
+      )
+    }
+
     if (response.data.form_parameters) {
       formParameters.value = response.data.form_parameters
     }
@@ -245,6 +425,7 @@ const {
   unregister: unregisterOfficePostMessageHandler,
   handleMessage: handleOfficePostMessage,
   notifyResourceChanged: notifyOfficePostMessageResourceChanged,
+  isAppLoaded: isOfficeAppLoaded,
   hasPendingMentions: hasPendingOfficeMentions
 } = useOfficePostMessageRegistry(appName, {
   space: toRef(props, 'space'),
@@ -276,6 +457,10 @@ const warnAboutPendingMentions = (event: BeforeUnloadEvent) => {
 }
 
 onMounted(() => {
+  if (unref(appName) === 'MS365' && !unref(isOfficeAlertClosed)) {
+    showOfficeAlert(isOfficeAppLoaded)
+  }
+
   window.addEventListener('message', catchOfficePostMessage)
   window.addEventListener('beforeunload', warnAboutPendingMentions)
   registerOfficePostMessageHandler()

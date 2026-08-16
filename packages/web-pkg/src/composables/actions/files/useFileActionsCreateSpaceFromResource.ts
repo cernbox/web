@@ -129,7 +129,8 @@ export const useFileActionsCreateSpaceFromResource = () => {
 
           if (
             !isLocationSpacesActive(router, 'files-spaces-generic') ||
-            !isPersonalSpaceResource(space)
+            !isPersonalSpaceResource(space) ||
+            configStore.options.cernFeatures
           ) {
             return false
           }

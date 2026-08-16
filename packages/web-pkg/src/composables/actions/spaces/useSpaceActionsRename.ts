@@ -11,6 +11,7 @@ import {
   useModals,
   useSharesStore,
   useSpacesStore,
+  useConfigStore,
   useUserStore
 } from '../../piniaStores'
 
@@ -25,6 +26,7 @@ export const useSpaceActionsRename = () => {
   const { dispatchModal } = useModals()
   const spacesStore = useSpacesStore()
   const sharesStore = useSharesStore()
+  const configStore = useConfigStore()
 
   const renameSpace = (space: SpaceResource, name: string) => {
     const graphClient = clientService.graphAuthenticated
@@ -75,7 +77,10 @@ export const useSpaceActionsRename = () => {
           return false
         }
 
-        return resources[0].canRename({ user: userStore.user, ability })
+        return (
+          resources[0].canRename({ user: userStore.user, ability }) &&
+          !configStore.options.cernFeatures
+        )
       },
       class: 'oc-files-actions-rename-trigger'
     }

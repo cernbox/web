@@ -84,6 +84,9 @@ export const useFileActionsEnableSync = () => {
       handler: (args) => loadingService.addTask(() => handler(args)),
       label: () => $gettext('Enable sync'),
       isVisible: ({ space, resources }) => {
+        if (configStore.options.cernFeatures) {
+          return false
+        }
         if (
           !isLocationSharesActive(router, 'files-shares-with-me') &&
           !isLocationSpacesActive(router, 'files-spaces-generic')

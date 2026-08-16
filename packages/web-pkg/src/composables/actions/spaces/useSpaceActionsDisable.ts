@@ -6,7 +6,13 @@ import { useRoute, useRouter } from '../../router'
 import { useAbility } from '../../ability'
 import { useClientService } from '../../clientService'
 import { isProjectSpaceResource } from '@ownclouders/web-client'
-import { useMessages, useModals, useSpacesStore, useUserStore } from '../../piniaStores'
+import {
+  useConfigStore,
+  useMessages,
+  useModals,
+  useSpacesStore,
+  useUserStore
+} from '../../piniaStores'
 
 export const useSpaceActionsDisable = () => {
   const { showMessage, showErrorMessage } = useMessages()
@@ -18,6 +24,7 @@ export const useSpaceActionsDisable = () => {
   const router = useRouter()
   const { dispatchModal } = useModals()
   const spacesStore = useSpacesStore()
+  const configStore = useConfigStore()
 
   const filterResourcesToDisable = (resources: SpaceResource[]): SpaceResource[] => {
     return resources.filter(
@@ -117,7 +124,7 @@ export const useSpaceActionsDisable = () => {
       label: () => $gettext('Disable'),
       handler,
       isVisible: ({ resources }) => {
-        return !!filterResourcesToDisable(resources).length
+        return !!filterResourcesToDisable(resources).length && !configStore.options.cernFeatures
       },
       class: 'oc-files-actions-disable-trigger'
     }

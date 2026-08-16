@@ -42,7 +42,7 @@ export const shareInviteCollaboratorHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/auth-share/'
     },
     options
   )
@@ -66,7 +66,7 @@ export const shareSpaceAddMemberHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/auth-share/'
     },
     options
   )
@@ -77,11 +77,11 @@ export const shareViaLinkHelp = (options: ContextualHelperOptions) =>
       list: [
         {
           text: $gettext(
-            'No login required. Everyone with the link can access. If you share this link with people from the list "Invited people", they need to login so that their individual assigned permissions can take effect. If they are not logged-in, the permissions of the link take effect.'
+            'Everyone with the link can access, no login required. Open it to provide users with direct paths if needed. Users in the "Invited people" list should use the Direct link instead.'
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/public-share/'
     },
     options
   )
@@ -101,7 +101,7 @@ export const shareViaIndirectLinkHelp = (options: ContextualHelperOptions) =>
           )
         }
       ],
-      readMoreLink: 'https://doc.owncloud.com/go?to=webui-users-sharing'
+      readMoreLink: 'https://cernbox.docs.cern.ch/web/sharing/#permissions-inheritance'
     },
     options
   )

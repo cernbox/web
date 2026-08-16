@@ -82,6 +82,9 @@ export const useFileActionsDisableSync = () => {
       handler: (args) => loadingService.addTask(() => handler(args)),
       label: () => $gettext('Disable sync'),
       isVisible: ({ space, resources }) => {
+        if (configStore.options.cernFeatures) {
+          return false
+        }
         if (
           !isLocationSharesActive(router, 'files-shares-with-me') &&
           !isLocationSpacesActive(router, 'files-spaces-generic')
@@ -91,7 +94,6 @@ export const useFileActionsDisableSync = () => {
         if (resources.length === 0) {
           return false
         }
-
         if (
           isLocationSpacesActive(router, 'files-spaces-generic') &&
           (space?.driveType !== 'share' || resources.length > 1 || resources[0].path !== '/')

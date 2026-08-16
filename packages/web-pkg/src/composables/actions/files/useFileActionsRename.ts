@@ -3,11 +3,7 @@ import { isLocationTrashActive, isLocationSharesActive } from '../../../router'
 import { Resource } from '@ownclouders/web-client'
 import { dirname, join } from 'path'
 import { WebDAV } from '@ownclouders/web-client/webdav'
-import {
-  SpaceResource,
-  isShareSpaceResource,
-  extractNameWithoutExtension
-} from '@ownclouders/web-client'
+import { SpaceResource, extractNameWithoutExtension } from '@ownclouders/web-client'
 import { createFileRouteOptions } from '../../../helpers/router'
 import { renameResource as _renameResource } from '../../../helpers/resource'
 import { computed } from 'vue'
@@ -100,26 +96,26 @@ export const useFileActionsRename = () => {
 
       const isCurrentFolder = isSameResource(resource, currentFolder)
 
-      if (isShareSpaceResource(space) && resource.isReceivedShare()) {
-        space.rename(newName)
+      // if (isShareSpaceResource(space) && resource.isReceivedShare()) {
+      //   space.rename(newName)
 
-        if (isCurrentFolder) {
-          currentFolder = { ...currentFolder } as Resource
-          currentFolder.name = newName
-          setCurrentFolder(currentFolder)
-          return router.push(
-            createFileRouteOptions(space, {
-              path: '',
-              fileId: resource.fileId
-            })
-          )
-        }
+      //   if (isCurrentFolder) {
+      //     currentFolder = { ...currentFolder } as Resource
+      //     currentFolder.name = newName
+      //     setCurrentFolder(currentFolder)
+      //     return router.push(
+      //       createFileRouteOptions(space, {
+      //         path: '',
+      //         fileId: resource.fileId
+      //       })
+      //     )
+      //   }
 
-        const sharedResource = { ...resource }
-        sharedResource.name = newName
-        upsertResource(sharedResource)
-        return
-      }
+      //   const sharedResource = { ...resource }
+      //   sharedResource.name = newName
+      //   upsertResource(sharedResource)
+      //   return
+      // }
 
       if (isCurrentFolder) {
         currentFolder = { ...currentFolder } as Resource

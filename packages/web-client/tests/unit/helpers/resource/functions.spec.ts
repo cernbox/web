@@ -82,14 +82,22 @@ describe('filterResources', () => {
   })
 })
 
+const buildMockWebDavResponse = (
+  props: Record<string, unknown>,
+  basename = 'file.txt'
+): WebDavResponseResource =>
+  mockDeep<WebDavResponseResource>({
+    filename: `/files/user/${basename}`,
+    basename,
+    props
+  })
+
 describe('buildResource', () => {
   describe('canShare', () => {
     it('is true when ability and share permissions are given', () => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          [DavProperty.Permissions]: DavPermission.Shareable,
-          [DavProperty.Tags]: undefined
-        }
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]: DavPermission.Shareable,
+        [DavProperty.Tags]: undefined
       })
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
@@ -98,11 +106,9 @@ describe('buildResource', () => {
       expect(ability.can).toHaveBeenCalledWith('create-all', 'Share')
     })
     it('is false when ability is not given', () => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          [DavProperty.Permissions]: DavPermission.Shareable,
-          [DavProperty.Tags]: undefined
-        }
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]: DavPermission.Shareable,
+        [DavProperty.Tags]: undefined
       })
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
@@ -111,11 +117,9 @@ describe('buildResource', () => {
       expect(ability.can).toHaveBeenCalledWith('create-all', 'Share')
     })
     it('is false when share permissions are not given', () => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          [DavProperty.Permissions]: '',
-          [DavProperty.Tags]: undefined
-        }
+      const webDavResponse = buildMockWebDavResponse({
+        [DavProperty.Permissions]: '',
+        [DavProperty.Tags]: undefined
       })
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
@@ -128,9 +132,8 @@ describe('buildResource', () => {
   it.each(HIDDEN_FILE_EXTENSIONS)(
     'should disable all permission excluding canBeDeleted when extension is %s',
     (extension) => {
-      const webDavResponse = mockDeep<WebDavResponseResource>({
-        props: {
-          name: `forest.${extension}`,
+      const webDavResponse = buildMockWebDavResponse(
+        {
           [DavProperty.Permissions]:
             DavPermission.Shareable +
             DavPermission.Renameable +
@@ -138,8 +141,9 @@ describe('buildResource', () => {
             DavPermission.FileUpdateable +
             DavPermission.Deletable,
           [DavProperty.Tags]: undefined
-        }
-      })
+        },
+        `forest.${extension}`
+      )
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()
       ability.can.mockReturnValue(true)
@@ -154,6 +158,8 @@ describe('buildResource', () => {
 
   it('handles extraProps', () => {
     const webDavResponse = mockDeep<WebDavResponseResource>({
+      basename: 'file.txt',
+      filename: '/files/admin/file.txt',
       props: {
         'first-custom-prop': '1',
 
@@ -173,5 +179,76 @@ describe('buildResource', () => {
     expect(resource.extraProps['first-custom-prop']).toBe('1')
     expect(resource.extraProps['x:second-custom-prop']).toBe('2')
     expect(resource.extraProps['non-existing-prop']).toBeUndefined()
+  })
+  describe('path', () => {
+    it('resolves to "/" when the filename is an exact match of webDavBasePath', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc',
+        basename: 'abc',
+        props: {}
+      })
+      const resource = buildResource(webDavResponse, [], '/spaces/abc')
+      expect(resource.path).toBe('/')
+    })
+
+    it('strips webDavBasePath as a prefix when the filename is nested underneath it', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc/sub/dir/file.txt',
+        basename: 'file.txt',
+        props: {}
+      })
+      const resource = buildResource(webDavResponse, [], '/spaces/abc')
+      expect(resource.path).toBe('/sub/dir/file.txt')
+    })
+
+    it('falls back to the legacy heuristic when webDavBasePath only shares a string prefix, not a real path segment', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abcdef/foo',
+        basename: 'foo',
+        props: {}
+      })
+      const resource = buildResource(webDavResponse, [], '/spaces/abc')
+      // '/spaces/abc' doesn't actually match '/spaces/abcdef/foo' (different space id), so this
+      // falls through to the legacy heuristic rather than being falsely treated as a prefix match
+      expect(resource.path).toBe('/foo')
+    })
+
+    it('falls back to the legacy /files-or/space heuristic when no webDavBasePath is given', () => {
+      const webDavResponse = buildMockWebDavResponse({})
+      const resource = buildResource(webDavResponse)
+      expect(resource.path).toBe('/file.txt')
+    })
+  })
+
+  describe('isShareRoot', () => {
+    it('is false when the ShareRoot prop is absent', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc',
+        basename: 'abc',
+        props: { [DavProperty.ShareRoot]: undefined }
+      })
+      const resource = buildResource(webDavResponse, [], '/spaces/abc')
+      expect(resource.isShareRoot()).toBeFalsy()
+    })
+
+    it('is true when the ShareRoot prop is present and the resource is the root', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc',
+        basename: 'abc',
+        props: { [DavProperty.ShareRoot]: '/some/remote/path' }
+      })
+      const resource = buildResource(webDavResponse, [], '/spaces/abc')
+      expect(resource.isShareRoot()).toBeTruthy()
+    })
+
+    it('is false when the ShareRoot prop is present but the resource is a descendant of the root', () => {
+      const webDavResponse = mockDeep<WebDavResponseResource>({
+        filename: '/spaces/abc/sub',
+        basename: 'sub',
+        props: { [DavProperty.ShareRoot]: '/some/remote/path' }
+      })
+      const resource = buildResource(webDavResponse, [], '/spaces/abc')
+      expect(resource.isShareRoot()).toBeFalsy()
+    })
   })
 })

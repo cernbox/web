@@ -87,25 +87,39 @@ const convertObjectToCamelCaseKeys = (data: Record<string, any>) => {
   return converted
 }
 
-export function buildResource(
-  resource: WebDavResponseResource,
-  extraPropNames: string[] = []
-): Resource {
-  const name = resource.props[DavProperty.Name]?.toString() || basename(resource.filename)
-  const id = resource.props[DavProperty.FileId]
-
-  const isFolder = resource.type === 'directory'
-  let resourcePath: string
-
-  if (resource.filename.startsWith('/files') || resource.filename.startsWith('/space')) {
-    resourcePath = resource.filename.split('/').slice(3).join('/')
-  } else {
-    resourcePath = resource.filename
+function deriveResourcePath(filename: string, webDavBasePath?: string): string {
+  if (webDavBasePath) {
+    const base = urlJoin(webDavBasePath, { leadingSlash: true, trailingSlash: false })
+    if (filename === base) {
+      return '/'
+    }
+    if (filename.startsWith(`${base}/`)) {
+      return filename.slice(base.length)
+    }
+    // supplied base didn't match this resource -> fall through to the legacy heuristic below
   }
 
+  let resourcePath = filename
+  if (filename.startsWith('/files') || filename.startsWith('/space')) {
+    resourcePath = filename.split('/').slice(3).join('/')
+  }
   if (!resourcePath.startsWith('/')) {
     resourcePath = `/${resourcePath}`
   }
+  return resourcePath
+}
+
+export function buildResource(
+  resource: WebDavResponseResource,
+  extraPropNames: string[] = [],
+  webDavBasePath?: string
+): Resource {
+  const name =
+    resource.basename || resource.props[DavProperty.Name]?.toString() || basename(resource.filename)
+  const id = resource.props[DavProperty.FileId]
+
+  const isFolder = resource.type === 'directory'
+  const resourcePath = deriveResourcePath(resource.filename, webDavBasePath)
 
   const extension = extractExtensionFromFile({
     ...resource,
@@ -224,9 +238,7 @@ export function buildResource(
       return this.permissions.indexOf(DavPermission.Shared) >= 0
     },
     isShareRoot(): boolean {
-      return resource.props[DavProperty.ShareRoot]
-        ? resource.filename.split('/').length === 3
-        : false
+      return resource.props[DavProperty.ShareRoot] ? resourcePath === '/' : false
     },
     canDeny: function () {
       return this.permissions.indexOf(DavPermission.Deny) >= 0

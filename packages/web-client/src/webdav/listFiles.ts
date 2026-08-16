@@ -88,10 +88,10 @@ export const ListFilesFactory = (
               driveAlias: space.driveAlias,
               webDavPath: space.webDavPath
             }),
-            children: children.map((c) => buildResource(c, dav.extraProps))
+            children: children.map((c) => buildResource(c, dav.extraProps, space.webDavPath))
           } as ListFilesResult
         }
-        const resources = webDavResources.map((r) => buildResource(r, dav.extraProps))
+        const resources = webDavResources.map((r) => buildResource(r, dav.extraProps, space.webDavPath))
         return { resource: resources[0], children: resources.slice(1) } as ListFilesResult
       }
 
@@ -115,12 +115,12 @@ export const ListFilesFactory = (
         })
         if (isTrash) {
           return {
-            resource: buildResource(webDavResources[0], dav.extraProps),
+            resource: buildResource(webDavResources[0], dav.extraProps, webDavPath),
             children: webDavResources.slice(1).map(buildDeletedResource)
           } as ListFilesResult
         }
 
-        const resources = webDavResources.map((r) => buildResource(r, dav.extraProps))
+        const resources = webDavResources.map((r) => buildResource(r, dav.extraProps, space.webDavPath))
 
         const resourceIsSpace = fileId === space.id
         if (fileId && !resourceIsSpace && fileId !== resources[0].fileId) {

@@ -8,18 +8,9 @@ export interface UrlSignOptions {
   baseURI: string
 }
 
-export type SignUrlPayload = {
-  url: string
-  username: string
-  publicToken?: string
-  publicLinkPassword?: string
-}
-
 export class UrlSign {
   private axiosClient: AxiosInstance
   private baseURI: string
-
-  private signingKey: string
 
   private ALGORITHM = 'sha512'
   private TTL = 1200
@@ -31,18 +22,16 @@ export class UrlSign {
     this.baseURI = baseURI
   }
 
-  public async signUrl({ url, username, publicToken, publicLinkPassword }: SignUrlPayload) {
+  public async signUrl(url: string, username: string) {
+    const now = new Date().toISOString()
     const signedUrl = new URL(url)
     signedUrl.searchParams.set('OC-Credential', username)
-    signedUrl.searchParams.set('OC-Date', new Date().toISOString())
+    signedUrl.searchParams.set('OC-Date', now)
     signedUrl.searchParams.set('OC-Expires', this.TTL.toString())
     signedUrl.searchParams.set('OC-Verb', 'GET')
 
-    const hashedKey = await this.createHashedKey(
-      signedUrl.toString(),
-      publicToken,
-      publicLinkPassword
-    )
+    const signignKey = await this.getSignKey(now)
+    const hashedKey = this.createHashedKey(signedUrl.toString(), signignKey)
 
     signedUrl.searchParams.set('OC-Algo', `PBKDF2/${this.ITERATION_COUNT}-SHA512`)
     signedUrl.searchParams.set('OC-Signature', hashedKey)
@@ -50,33 +39,21 @@ export class UrlSign {
     return signedUrl.toString()
   }
 
-  private async getSignKey(publicToken?: string, publicLinkPassword?: string) {
-    if (this.signingKey) {
-      return this.signingKey
-    }
-
+  // The key is bound to the date sent along with the request, so it cannot be
+  // cached across calls.
+  private async getSignKey(date: string) {
     const data = await this.axiosClient.get(
-      urlJoin(this.baseURI, 'ocs/v2.php/cloud/user/signing-key'),
+      urlJoin(this.baseURI, `ocs/v1.php/cloud/user/signing-key?OC-Date=${date}`),
       {
-        params: {
-          ...(publicToken && { 'public-token': publicToken })
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...(publicLinkPassword && {
-            Authorization: `Basic ${Buffer.from(['public', publicLinkPassword].join(':')).toString('base64')}`
-          })
-        }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       }
     )
 
     const parsedXML = convert.xml2js(data.data, { compact: true }) as any
-    this.signingKey = parsedXML.ocs.data['signing-key']._text
-    return this.signingKey
+    return parsedXML.ocs.data['signing-key']._text
   }
 
-  private async createHashedKey(url: string, publicToken?: string, publicLinkPassword?: string) {
-    const signignKey = await this.getSignKey(publicToken, publicLinkPassword)
+  private createHashedKey(url: string, signignKey: string) {
     const hashedKey = pbkdf2Sync(
       url,
       signignKey,

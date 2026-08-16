@@ -31,7 +31,8 @@
     "not ExplorerMobile > 0",
     "not BlackBerry > 0",
     "not OperaMini all",
-    "not OperaMobile > 0"
+    "not OperaMobile > 0",
+    "Firefox ESR"
   ],
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

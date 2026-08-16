@@ -9,7 +9,7 @@ import { ActionOptions, FileAction } from '../types'
 import { computed, unref } from 'vue'
 import { useRouter } from '../../router'
 import { useClipboardStore, useResourcesStore } from '../../piniaStores'
-import { Resource } from '@ownclouders/web-client'
+import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { storeToRefs } from 'pinia'
 
 export const useFileActionsMove = () => {
@@ -32,8 +32,8 @@ export const useFileActionsMove = () => {
     return $gettext('Ctrl + X')
   })
 
-  const handler = ({ resources }: ActionOptions) => {
-    cutResources(resources as Resource[])
+  const handler = ({ space, resources }: ActionOptions) => {
+    cutResources(resources as Resource[], space as SpaceResource)
   }
   const actions = computed((): FileAction[] => [
     {

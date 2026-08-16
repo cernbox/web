@@ -9,7 +9,12 @@ import { useGetMatchingSpace } from '../../spaces'
 import { useClientService } from '../../clientService'
 import { useRouter } from '../../router'
 import { FileAction, FileActionOptions } from '../types'
-import { Resource, SpaceResource, isShareSpaceResource } from '@ownclouders/web-client'
+import {
+  Resource,
+  SpaceResource,
+  isPublicSpaceResource,
+  isShareSpaceResource
+} from '@ownclouders/web-client'
 import {
   ClipboardMode,
   useClipboardStore,
@@ -43,6 +48,15 @@ export const useFileActionsPaste = () => {
     )
   })
 
+  /**
+   * A webdav COPY/MOVE carries either the public link token or the user's bearer token, never
+   * both, so a transfer between a public link and an authenticated space is built for one context
+   * and rejected by the other. Nothing downstream can recover from that, so don't offer it.
+   */
+  const crossesAuthBoundary = (targetSpace: SpaceResource) => {
+    return isPublicSpaceResource(targetSpace) !== clipboardStore.isPublicLinkSource
+  }
+
   const getSourceSpace = (resource: Resource): SpaceResource => {
     const sourceBucketId = clipboardStore.getClipboardSourceSpaceKey(resource)
     const persistedSpace = clipboardStore.sourceSpaces[sourceBucketId]
@@ -64,6 +78,10 @@ export const useFileActionsPaste = () => {
   const transferType = computed(() => {
     if (clipboardStore.action === ClipboardActions.Cut) {
       return TransferType.MOVE
+    }
+
+    if (clipboardStore.action === ClipboardActions.Duplicate) {
+      return TransferType.DUPLICATE
     }
 
     return TransferType.COPY
@@ -158,6 +176,11 @@ export const useFileActionsPaste = () => {
   })
 
   const handler = async ({ space: targetSpace }: FileActionOptions) => {
+    // also guarded here, not just in isVisible: the keyboard shortcut invokes the handler directly
+    if (crossesAuthBoundary(targetSpace)) {
+      return
+    }
+
     if (!unref(isCrossModePasteAllowed)) {
       showErrorMessage({
         title: $gettext('Pasting from Vault into the default mode is not supported.')
@@ -204,8 +227,11 @@ export const useFileActionsPaste = () => {
       handler,
       label: () => $gettext('Paste'),
       shortcut: unref(pasteShortcutString),
-      isVisible: ({ resources }) => {
+      isVisible: ({ space, resources }) => {
         if (clipboardStore.resources.length === 0) {
+          return false
+        }
+        if (crossesAuthBoundary(space)) {
           return false
         }
         if (!unref(isCrossModePasteAllowed)) {
@@ -221,7 +247,13 @@ export const useFileActionsPaste = () => {
         if (resources.length === 0) {
           return false
         }
-
+        if (
+          Object.values(resourcesStore.ancestorMetaData)
+            .filter((ancestor) => ancestor.id)
+            .some((ancestor) => ancestor.id === unref(resources[0].id))
+        ) {
+          return false
+        }
         if (isLocationPublicActive(router, 'files-public-link') && unref(currentFolder)) {
           return unref(currentFolder)?.canCreate()
         }

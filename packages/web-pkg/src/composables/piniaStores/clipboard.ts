@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, unref } from 'vue'
-import { Resource, SpaceResource } from '@ownclouders/web-client'
+import { isPublicSpaceResource, Resource, SpaceResource } from '@ownclouders/web-client'
 import { ClipboardActions } from '../../helpers'
 import { useGettext } from 'vue3-gettext'
 import { useMessages } from './messages'
@@ -40,6 +40,7 @@ type PersistedClipboardPayload = {
   resources: ClipboardResourceSnapshot[]
   sourceMode: ClipboardMode
   sourceSpaces: Record<string, ClipboardSpaceSnapshot>
+  isPublicLinkSource: boolean
 }
 
 export const useClipboardStore = defineStore('clipboard', () => {
@@ -52,6 +53,13 @@ export const useClipboardStore = defineStore('clipboard', () => {
   const resources = ref<Resource[]>([])
   const sourceMode = ref<ClipboardMode>()
   const sourceSpaces = ref<Record<string, ClipboardSpaceSnapshot>>({})
+  /**
+   * Whether the clipboard was filled from a public link. A webdav COPY/MOVE carries either the
+   * public link token or the user's bearer token, never both, so a transfer that crosses that
+   * boundary is built for one context and rejected by the other. Recorded here because it can't
+   * be recovered later: public link listings strip the token from the resources they build.
+   */
+  const isPublicLinkSource = ref(false)
 
   const currentMode = computed(() =>
     unref(configStore.isInVault) ? ClipboardMode.Vault : ClipboardMode.Default
@@ -110,7 +118,8 @@ export const useClipboardStore = defineStore('clipboard', () => {
       action: action.value,
       resources: resources.value.map(toClipboardSnapshot),
       sourceMode: sourceMode.value,
-      sourceSpaces: sourceSpaces.value
+      sourceSpaces: sourceSpaces.value,
+      isPublicLinkSource: isPublicLinkSource.value
     }
 
     try {
@@ -133,12 +142,13 @@ export const useClipboardStore = defineStore('clipboard', () => {
       resources.value = payload.resources as Resource[]
       sourceMode.value = payload.sourceMode
       sourceSpaces.value = payload.sourceSpaces || {}
+      isPublicLinkSource.value = payload.isPublicLinkSource || false
     } catch {
       removePersistedClipboard()
     }
   }
 
-  const copyResources = (r: Resource[]) => {
+  const copyResources = (r: Resource[], sourceSpace?: SpaceResource) => {
     if (!r.length || !r[0].canDownload?.()) {
       return
     }
@@ -147,12 +157,13 @@ export const useClipboardStore = defineStore('clipboard', () => {
     resources.value = r
     sourceMode.value = unref(currentMode)
     sourceSpaces.value = buildSourceSpaces(r.map(getMatchingSpace))
+    isPublicLinkSource.value = isPublicSpaceResource(sourceSpace)
     persistClipboard()
 
     showMessage({ title: $gettext('Copied to clipboard!'), status: 'success' })
   }
 
-  const cutResources = (r: Resource[]) => {
+  const cutResources = (r: Resource[], sourceSpace?: SpaceResource) => {
     if (!r.length || !r[0].canDownload?.()) {
       return
     }
@@ -161,18 +172,20 @@ export const useClipboardStore = defineStore('clipboard', () => {
     resources.value = r
     sourceMode.value = unref(currentMode)
     sourceSpaces.value = buildSourceSpaces(r.map(getMatchingSpace))
+    isPublicLinkSource.value = isPublicSpaceResource(sourceSpace)
     persistClipboard()
 
     showMessage({ title: $gettext('Cut to clipboard!'), status: 'success' })
   }
 
-  const duplicateResources = (r: Resource[]) => {
+  const duplicateResources = (r: Resource[], sourceSpace?: SpaceResource) => {
     if (!r[0].canDownload()) {
       return
     }
 
     action.value = ClipboardActions.Duplicate
     resources.value = r
+    isPublicLinkSource.value = isPublicSpaceResource(sourceSpace)
   }
 
   const clearClipboard = () => {
@@ -180,6 +193,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
     resources.value = []
     sourceMode.value = undefined
     sourceSpaces.value = {}
+    isPublicLinkSource.value = false
     removePersistedClipboard()
   }
 
@@ -190,6 +204,7 @@ export const useClipboardStore = defineStore('clipboard', () => {
     resources,
     sourceMode,
     sourceSpaces,
+    isPublicLinkSource,
     getClipboardSourceSpaceKey,
 
     copyResources,

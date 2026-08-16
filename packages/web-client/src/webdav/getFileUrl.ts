@@ -66,6 +66,7 @@ export const GetFileUrlFactory = (
 
       if (!signed || inlineDisposition) {
         const response = await getFileContentsFactory.getFileContents(space, resource, {
+          version,
           responseType: 'blob',
           ...opts
         })

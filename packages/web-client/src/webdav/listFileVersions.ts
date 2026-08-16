@@ -6,9 +6,9 @@ import { buildResource } from '../helpers'
 export const ListFileVersionsFactory = (dav: DAV, options: WebDavOptions) => {
   return {
     async listFileVersions(id: string, opts: DAVRequestOptions = {}) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const webDavPath = urlJoin('meta', id, 'v', { leadingSlash: true })
-      const [currentFolder, ...versions] = await dav.propfind(webDavPath, opts)
+      // the first entry is the folder itself, not a version
+      const [, ...versions] = await dav.propfind(webDavPath, opts)
       return versions.map((v) => buildResource(v, dav.extraProps, webDavPath))
     }
   }

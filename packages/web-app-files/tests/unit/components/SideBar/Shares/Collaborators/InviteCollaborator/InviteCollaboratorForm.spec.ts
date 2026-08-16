@@ -8,7 +8,7 @@ import {
   VueWrapper
 } from '@ownclouders/web-test-helpers'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
-import { useSharesStore } from '@ownclouders/web-pkg'
+import { useMessages, useSharesStore } from '@ownclouders/web-pkg'
 import { CollaboratorAutoCompleteItem, CollaboratorShare, ShareRole } from '@ownclouders/web-client'
 import { Group, User } from '@ownclouders/web-client/graph/generated'
 import { OcButton } from '@ownclouders/design-system/components'
@@ -111,6 +111,105 @@ describe('InviteCollaboratorForm', () => {
       await wrapper.vm.fetchRecipientsTask.last
 
       expect(wrapper.vm.autocompleteResults.length).toBe(1)
+    })
+    it('does not filter out existing indirect shares, since their role can still be increased', async () => {
+      const { wrapper } = getWrapper({
+        users: [{ id: '2' } as User],
+        groups: [{ id: '3' }],
+        existingCollaborators: [
+          mock<CollaboratorShare>({ sharedWith: { id: '2' }, indirect: true })
+        ]
+      })
+
+      await wrapper.vm.fetchRecipientsTask.last
+
+      expect(wrapper.vm.autocompleteResults.length).toBe(2)
+    })
+  })
+  describe('pasting a list of emails', () => {
+    it('resolves the addresses instead of live-searching when the input looks like a pasted email list', () => {
+      const { wrapper, mocks } = getWrapper()
+
+      wrapper.vm.onSearch('Jane Doe <jane@example.com>; John Doe <john@example.com>')
+
+      expect(wrapper.vm.resolvingEmails).toBe(true)
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalledWith({
+        search: '"jane@example.com"'
+      })
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalledWith({
+        search: '"john@example.com"'
+      })
+    })
+    it('keeps the normal live-search behavior for a plain, typed query', () => {
+      const { wrapper, mocks } = getWrapper()
+      // the lodash-es mock at the top of this file turns `mounted()`'s debounce-wrapping
+      // into an immediate call, leaving `fetchRecipients` as its (unawaited) return value
+      wrapper.vm.fetchRecipients = vi.fn()
+
+      wrapper.vm.onSearch('jane')
+
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).not.toHaveBeenCalledWith({
+        search: '"jane"'
+      })
+      expect(wrapper.vm.searchInProgress).toBe(true)
+      expect(wrapper.vm.resolvingEmails).toBe(false)
+    })
+    it('selects the users matching the pasted email addresses', async () => {
+      const { wrapper, mocks } = getWrapper()
+      mocks.$clientService.graphAuthenticated.users.listUsers
+        .mockResolvedValueOnce([{ id: '2', mail: 'jane@example.com' } as User])
+        .mockResolvedValueOnce([{ id: '3', mail: 'john@example.com' } as User])
+
+      await wrapper.vm.resolveEmailList(['jane@example.com', 'john@example.com'])
+
+      expect(wrapper.vm.selectedCollaborators.map(({ id }: { id: string }) => id)).toEqual([
+        '2',
+        '3'
+      ])
+    })
+    it('blocks the search box and shows a spinner while resolving', async () => {
+      const { wrapper, mocks } = getWrapper()
+      let resolveListUsers: (users: User[]) => void
+      mocks.$clientService.graphAuthenticated.users.listUsers.mockReturnValueOnce(
+        new Promise((resolve) => (resolveListUsers = resolve))
+      )
+
+      const pending = wrapper.vm.resolveEmailList(['jane@example.com'])
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.resolvingEmails).toBe(true)
+      expect(wrapper.vm.searchInProgress).toBe(true)
+
+      resolveListUsers([])
+      await pending
+
+      expect(wrapper.vm.resolvingEmails).toBe(false)
+      expect(wrapper.vm.searchInProgress).toBe(false)
+    })
+    it('shows an error message for emails that could not be matched to a user', async () => {
+      const { wrapper, mocks } = getWrapper()
+      mocks.$clientService.graphAuthenticated.users.listUsers.mockResolvedValue([])
+
+      const { showErrorMessage } = useMessages()
+      await wrapper.vm.resolveEmailList(['unknown@example.com'])
+
+      expect(showErrorMessage).toHaveBeenCalled()
+      expect(wrapper.vm.selectedCollaborators.length).toBe(0)
+    })
+    it('does not select a match that is already selected or already directly shared', async () => {
+      const { wrapper, mocks } = getWrapper({
+        existingCollaborators: [
+          mock<CollaboratorShare>({ sharedWith: { id: '2' }, indirect: false })
+        ]
+      })
+      mocks.$clientService.graphAuthenticated.users.listUsers
+        .mockResolvedValueOnce([{ id: '2', mail: 'jane@example.com' } as User])
+        .mockResolvedValueOnce([{ id: '3', mail: 'john@example.com' } as User])
+      wrapper.vm.selectedCollaborators = [mock<CollaboratorAutoCompleteItem>({ id: '3' })]
+
+      await wrapper.vm.resolveEmailList(['jane@example.com', 'john@example.com'])
+
+      expect(wrapper.vm.selectedCollaborators.length).toBe(1)
     })
   })
   describe('share action', () => {

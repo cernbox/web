@@ -2,22 +2,6 @@
   <div id="new-collaborators-form" data-testid="new-collaborators-form">
     <div :class="['oc-flex', 'oc-width-1-1', { 'new-collaborators-form-cern': isRunningOnEos }]">
       <oc-select
-        v-if="isRunningOnEos"
-        id="files-share-account-type-input"
-        v-model="accountType"
-        :options="accountTypes"
-        :label="$gettext('Account type')"
-        class="cern-account-type-input"
-        :reduce="(option: AccountType) => option.description"
-      >
-        <template #option="{ description }">
-          <span class="option oc-text-xsmall" v-text="description" />
-        </template>
-        <template #selected-option="{ description }">
-          <span class="option oc-text-xsmall" v-text="description" />
-        </template>
-      </oc-select>
-      <oc-select
         id="files-share-invite-input"
         ref="ocSharingAutocomplete"
         :class="['oc-width-1-1', { 'cern-files-share-invite-input': isRunningOnEos }]"
@@ -29,8 +13,7 @@
         :filter="filterRecipients"
         :label="selectedCollaboratorsLabel"
         :dropdown-should-open="
-          ({ open, search }: DropDownShouldOpenOptions) =>
-            open && search.length >= minSearchLength && !searchInProgress
+          ({ open, search }: DropDownShouldOpenOptions) => open && search.length >= minSearchLength
         "
         @search:input="onSearch"
         @update:model-value="resetFocusOnInvite"
@@ -85,6 +68,7 @@
     </div>
     <div class="oc-flex oc-flex-between oc-flex-middle oc-mb-l oc-mt-s">
       <role-dropdown
+        :key="currentShareRoleType.id"
         mode="create"
         :show-icon="isRunningOnEos"
         class="role-selection-dropdown"
@@ -92,7 +76,7 @@
         @option-change="collaboratorRoleChanged"
       />
       <div class="oc-flex oc-flex-middle oc-flex-nowrap">
-        <expiration-date-indicator
+        <!-- <expiration-date-indicator
           v-if="expirationDate"
           :expiration-date="DateTime.fromISO(expirationDate)"
           class="files-collaborators-collaborator-expiration"
@@ -121,7 +105,7 @@
               </li>
             </oc-list>
           </oc-drop>
-        </oc-button>
+        </oc-button> -->
         <oc-button
           id="new-collaborators-form-create-button"
           key="new-collaborator-save-button"
@@ -152,13 +136,16 @@ import { storeToRefs } from 'pinia'
 import AutocompleteItem from './AutocompleteItem.vue'
 import RoleDropdown from '../RoleDropdown.vue'
 import RecipientContainer from './RecipientContainer.vue'
-import ExpirationDatepicker from './ExpirationDatepicker.vue'
 import {
   CollaboratorAutoCompleteItem,
   CollaboratorShare,
   ShareRole,
   ShareTypes,
-  call
+  call,
+  isSharingHierarchyConflictPendingError,
+  isSharingHierarchyConflictUserAbortError,
+  shareHierarchyForceRequestOptions,
+  type SharingHierarchyConflict
 } from '@ownclouders/web-client'
 import {
   useCapabilityStore,
@@ -167,24 +154,19 @@ import {
   useSpacesStore,
   useConfigStore,
   useSharesStore,
-  useUserStore
+  useUserStore,
+  useSharingHierarchyConflictsConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
 
 import { computed, inject, ref, unref, watch, onMounted, nextTick, Ref, useTemplateRef } from 'vue'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
-import { DateTime } from 'luxon'
 import { OcDrop, OcSelect } from '@ownclouders/design-system/components'
 import { useTask } from 'vue-concurrency'
 import { useGettext } from 'vue3-gettext'
 import { isProjectSpaceResource } from '@ownclouders/web-client'
-import { isEmailListPaste, parseEmailList } from '../../../../../helpers/share'
 import { Group } from '@ownclouders/web-client/graph/generated'
-import ExpirationDateIndicator from '../../ExpirationDateIndicator.vue'
-
-type AccountType = {
-  prefix: string
-  description: string
-}
+import { isEmailListPaste, parseEmailList } from '../../../../../helpers/share'
 
 type DropDownShouldOpenOptions = { open: boolean; search: string[] }
 
@@ -210,11 +192,14 @@ const sharesStore = useSharesStore()
 const { addShare } = sharesStore
 const { collaboratorShares } = storeToRefs(sharesStore)
 
+const confirmSharingHierarchyConflicts = useSharingHierarchyConflictsConfirm()
+const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
+
 const searchQuery = ref('')
 const searchInProgress = ref(false)
 const resolvingEmails = ref(false)
-const ocSharingAutocomplete = useTemplateRef<InstanceType<typeof OcSelect>>('ocSharingAutocomplete')
 const autocompleteResults = ref<CollaboratorAutoCompleteItem[]>([])
+const ocSharingAutocomplete = useTemplateRef<InstanceType<typeof OcSelect>>('ocSharingAutocomplete')
 
 const saving = ref(false)
 const savingDelayed = ref(false)
@@ -229,7 +214,7 @@ const space = inject<SpaceResource>('space')
 const availableInternalRoles = inject<Ref<ShareRole[]>>('availableInternalShareRoles')
 const availableExternalRoles = inject<Ref<ShareRole[]>>('availableExternalShareRoles')
 
-const showMoreShareOptionsDropRef = useTemplateRef('showMoreShareOptionsDropRef')
+const showMoreShareOptionsDropRef = ref<InstanceType<typeof OcDrop>>()
 
 const markInstance = ref(null)
 
@@ -282,6 +267,8 @@ onMounted(async () => {
   markInstance.value = new Mark('.mark-element')
 })
 
+type AccountType = { prefix: string; description: string }
+
 const accountType = ref('standard')
 const accountTypes: AccountType[] = [
   { prefix: '', description: 'standard' },
@@ -312,8 +299,13 @@ const isEligibleCollaborator = (collaborator: CollaboratorAutoCompleteItem) => {
 const fetchRecipientsTask = useTask(function* (signal, query: string) {
   let filter: string
   if (unref(isExternalShareRoleType)) {
-    // filter for external user types only
     filter = `(userType eq 'Federated')`
+  } else if (unref(isSecondaryShareRoleType)) {
+    filter = `(userType eq 'Secondary')`
+  } else if (unref(isServiceShareRoleType)) {
+    filter = `(userType eq 'Service')`
+  } else if (unref(isLightweightShareRoleType)) {
+    filter = `(userType eq 'Lightweight')`
   }
 
   const client = clientService.graphAuthenticated
@@ -322,7 +314,7 @@ const fetchRecipientsTask = useTask(function* (signal, query: string) {
   )
 
   let groupData: Group[]
-  if (!unref(isExternalShareRoleType)) {
+  if (unref(isInternalShareRoleType)) {
     // groups are only available for internal shares
     groupData = yield* call(
       client.groups.listGroups({ orderBy: ['displayName'], search: `"${query}"` }, { signal })
@@ -357,6 +349,17 @@ let fetchRecipients = async (query: string) => {
   await fetchRecipientsTask.perform(query)
 }
 
+const getRecipientType = (shareType: number): string => {
+  switch (shareType) {
+    case ShareTypes.group.value:
+      return 'group'
+    case ShareTypes.remote.value:
+      return 'remote'
+    default:
+      return 'user'
+  }
+}
+
 const share = async () => {
   saving.value = true
 
@@ -364,40 +367,98 @@ const share = async () => {
   const savePromises: Promise<void>[] = []
   const errors: { displayName: string; error: Error }[] = []
   const addedShares: CollaboratorShare[] = []
+  const pendingForceShares: {
+    displayName: string
+    conflict: SharingHierarchyConflict
+    addShareParams: Parameters<typeof addShare>[0]
+  }[] = []
+
+  const finishAddedShare = (share: CollaboratorShare) => {
+    addedShares.push(share)
+
+    if (unref(notifyEnabled)) {
+      clientService.httpAuthenticated.post(
+        `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
+      ) as any
+    }
+  }
 
   unref(selectedCollaborators).forEach(({ id, shareType, displayName }) => {
-    const type = shareType === ShareTypes.group.value ? 'group' : 'user'
+    const type = getRecipientType(shareType)
+    const addShareParams = {
+      clientService,
+      space: unref(space),
+      resource: unref(resource),
+      options: {
+        roles: [unref(selectedRole).id],
+        expirationDateTime: unref(expirationDate),
+        recipients: [
+          {
+            objectId: id,
+            '@libre.graph.recipient.type': type
+          }
+        ]
+      }
+    }
 
     savePromises.push(
       saveQueue.add(async () => {
         try {
           const share = await addShare({
-            clientService,
-            space: unref(space),
-            resource: unref(resource),
-            options: {
-              roles: [unref(selectedRole).id],
-              expirationDateTime: unref(expirationDate),
-              recipients: [
-                {
-                  objectId: id,
-                  '@libre.graph.recipient.type': type
-                }
-              ]
-            }
+            ...addShareParams,
+            informSharingHierarchyConflict,
+            deferSharingHierarchyConflictConfirm: true
           })
 
-          addedShares.push(share)
+          finishAddedShare(share)
         } catch (error) {
+          if (isSharingHierarchyConflictPendingError(error)) {
+            pendingForceShares.push({
+              displayName,
+              conflict: error.conflict,
+              addShareParams
+            })
+            return
+          }
+          if (isSharingHierarchyConflictUserAbortError(error)) {
+            return
+          }
           console.error(error)
-          errors.push({ displayName, error })
+          errors.push({ displayName, error: error as Error })
           throw error
         }
       })
     )
   })
 
-  const results = await Promise.allSettled(savePromises)
+  await Promise.allSettled(savePromises)
+
+  // conflicts are collected across all recipients so the user only confirms once
+  if (pendingForceShares.length > 0) {
+    const proceed = await confirmSharingHierarchyConflicts(
+      pendingForceShares.map(({ conflict }) => conflict)
+    )
+
+    if (proceed) {
+      for (const { displayName, addShareParams } of pendingForceShares) {
+        try {
+          const share = await addShare({
+            ...addShareParams,
+            informSharingHierarchyConflict,
+            graphRequestOptions: shareHierarchyForceRequestOptions()
+          })
+
+          finishAddedShare(share)
+        } catch (error) {
+          if (isSharingHierarchyConflictUserAbortError(error)) {
+            continue
+          }
+          console.error(error)
+          errors.push({ displayName, error: error as Error })
+        }
+      }
+    }
+  }
 
   if (isProjectSpaceResource(unref(resource))) {
     const updatedSpace = await clientService.graphAuthenticated.drives.getDrive(
@@ -408,7 +469,7 @@ const share = async () => {
     upsertSpace(updatedSpace)
   }
 
-  if (results.length !== errors.length) {
+  if (addedShares.length > 0) {
     showMessage({ title: $gettext('Share was added successfully') })
   }
 
@@ -427,15 +488,37 @@ const share = async () => {
 }
 
 const externalShareRolesEnabled = computed(() => unref(availableExternalRoles).length)
+const isRunningOnEos = computed(() => configStore.options.runningOnEos)
 
 const internalShareRoleType = '1'
 const externalShareRoleType = '2'
+const secondaryShareRoleType = '3'
+const serviceShareRoleType = '4'
+const lightweightShareRoleType = '5'
 const shareRoleTypes = computed<ShareRoleType[]>(() => [
   {
     id: internalShareRoleType,
     label: $gettext('Internal'),
     longLabel: $gettext('Internal users')
   },
+  ...((unref(isRunningOnEos) && [
+    {
+      id: secondaryShareRoleType,
+      label: $gettext('Secondary'),
+      longLabel: $gettext('Secondary accounts')
+    },
+    {
+      id: serviceShareRoleType,
+      label: $gettext('Service'),
+      longLabel: $gettext('Service accounts')
+    },
+    {
+      id: lightweightShareRoleType,
+      label: $gettext('Guests'),
+      longLabel: $gettext('Guest users')
+    }
+  ]) ||
+    []),
   ...((unref(externalShareRolesEnabled) && [
     {
       id: externalShareRoleType,
@@ -446,6 +529,18 @@ const shareRoleTypes = computed<ShareRoleType[]>(() => [
     [])
 ])
 const currentShareRoleType = ref<ShareRoleType>(unref(shareRoleTypes)[0])
+const isInternalShareRoleType = computed(
+  () => unref(currentShareRoleType).id === internalShareRoleType
+)
+const isSecondaryShareRoleType = computed(
+  () => unref(currentShareRoleType).id === secondaryShareRoleType
+)
+const isServiceShareRoleType = computed(
+  () => unref(currentShareRoleType).id === serviceShareRoleType
+)
+const isLightweightShareRoleType = computed(
+  () => unref(currentShareRoleType).id === lightweightShareRoleType
+)
 const isExternalShareRoleType = computed(
   () => unref(currentShareRoleType).id === externalShareRoleType
 )
@@ -483,8 +578,6 @@ const showShareTypeFilter = computed(
 const isValid = computed(() => {
   return unref(selectedCollaborators).length > 0
 })
-
-const isRunningOnEos = computed(() => configStore.options.runningOnEos)
 
 const selectedCollaboratorsLabel = computed(() => {
   return unref(inviteLabel) || $gettext('Search')
@@ -595,7 +688,22 @@ function onSearch(query: string) {
 }
 
 function filterRecipients(recipients: CollaboratorAutoCompleteItem[], query: string) {
-  return unref(recipients)
+  if (recipients.length < 1) {
+    return []
+  }
+
+  // Strip account type prefix (e.g. "a:", "l:", "sm:") before client-side match
+  query = query.split(':')[1] || query
+
+  return recipients.filter(
+    (recipient) =>
+      recipient.shareType === ShareTypes.remote.value ||
+      recipient.displayName?.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) > -1 ||
+      recipient.id?.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) > -1 ||
+      recipient.onPremisesSamAccountName?.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) >
+        -1 ||
+      recipient.mail?.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) > -1
+  )
 }
 
 function collaboratorRoleChanged(role: ShareRole) {
@@ -663,14 +771,6 @@ function resetFocusOnInvite(event: CollaboratorAutoCompleteItem[]) {
   .oc-spinner {
     margin-left: -0.5rem;
   }
-}
-
-.new-collaborators-form-cern > .cern-files-share-invite-input {
-  width: 75%;
-}
-
-.new-collaborators-form-cern > .cern-account-type-input {
-  width: 30%;
 }
 
 #new-collaborators-form {

@@ -38,6 +38,9 @@
         <div class="files-collaborators-collaborator-name-wrapper oc-pl-s">
           <div class="oc-text-truncate">
             <span
+              v-oc-tooltip="
+                shareDisplayName + (share.sharedWith.id ? ` (${share.sharedWith.id})` : '')
+              "
               aria-hidden="true"
               class="files-collaborators-collaborator-name"
               v-text="shareDisplayName"
@@ -66,6 +69,7 @@
             <template v-else>
               <div v-if="modifiable" class="oc-flex oc-flex-nowrap oc-flex-middle">
                 <role-dropdown
+                  ref="roleDropdown"
                   :dom-selector="shareDomSelector"
                   :existing-share-role="share.role"
                   :existing-share-permissions="share.permissions"
@@ -135,10 +139,18 @@ import {
   useModals,
   useSpacesStore,
   useUserStore,
-  useSharesStore
+  useSharesStore,
+  useConfigStore,
+  useSharingHierarchyConflictConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
-import { Resource, extractDomSelector } from '@ownclouders/web-client'
-import { computed, inject, Ref, unref } from 'vue'
+import {
+  Resource,
+  extractDomSelector,
+  isSharingHierarchyConflictRemoveShareError,
+  isSharingHierarchyConflictUserAbortError
+} from '@ownclouders/web-client'
+import { computed, inject, Ref, unref, useTemplateRef } from 'vue'
 import { formatDateFromDateTime } from '@ownclouders/web-pkg'
 import { useClientService } from '@ownclouders/web-pkg'
 import { RouteLocationNamedRaw } from 'vue-router'
@@ -184,9 +196,20 @@ const language = useGettext()
 const { $gettext } = language
 const { dispatchModal } = useModals()
 
+const configStore = useConfigStore()
+const cernFeatures = configStore.options.cernFeatures
+
 const sharesStore = useSharesStore()
 const { graphRoles } = storeToRefs(sharesStore)
-const { updateShare } = sharesStore
+const { updateShare, deleteShare } = sharesStore
+const confirmSharingHierarchyConflict = useSharingHierarchyConflictConfirm({
+  introVariant: 'update-share'
+})
+const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
+const informRoleUpdateHierarchyConflict = useSharingHierarchyConflictInform({
+  offerRemoveShare: true
+})
+const roleDropdownRef = useTemplateRef<InstanceType<typeof RoleDropdown>>('roleDropdown')
 const { upsertSpace } = useSpacesStore()
 
 const { user } = storeToRefs(userStore)
@@ -216,8 +239,20 @@ const showNotifyShareModal = () => {
   })
 }
 const notifyShare = async () => {
-  // FIXME: cern code
-  // const response = await clientService.owncloudSdk.shares.notifyShare(props.share.id)
+  try {
+    const resp = (await clientService.httpAuthenticated.post(
+      `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
+    )) as any
+    showMessage({
+      title: $gettext(`Reminder sent to ${resp.data.recipients[0]}`)
+    })
+  } catch (error) {
+    console.error(error)
+    showErrorMessage({
+      title: $gettext('Failed to send email reminder'),
+      errors: [error]
+    })
+  }
 }
 
 const sharedViaTooltip = computed(() =>
@@ -294,6 +329,10 @@ const accessDetails = computed(() => {
   const list: ContextualHelperDataListItem[] = []
 
   list.push({ text: $gettext('Name'), headline: true }, { text: unref(shareDisplayName) })
+
+  if (share.sharedWith.id && cernFeatures) {
+    list.push({ text: $gettext('Username'), headline: true }, { text: share.sharedWith.id })
+  }
   unref(isExternalShare) &&
     list.push(
       { text: $gettext('Domain'), headline: true },
@@ -321,46 +360,57 @@ function removeShare() {
   emit('onDelete', share)
 }
 
+const revertRoleDropdown = () => {
+  unref(roleDropdownRef)?.revertToExistingRole?.()
+}
+
 async function shareRoleChanged(role: ShareRole) {
   const expirationDateTime = share.expirationDateTime
-  try {
-    await saveShareChanges({ role, expirationDateTime })
-  } catch (e) {
-    console.error(e)
-    showErrorMessage({
-      title: $gettext('Failed to apply new permissions'),
-      errors: [e]
-    })
-  }
+  // a direct share can be dropped in favour of the inherited one, an indirect
+  // share has nothing to remove
+  await saveShareChanges({
+    role,
+    expirationDateTime,
+    offerRemoveShareOnConflict: !share.indirect
+  })
 }
 
 async function shareExpirationChanged({ expirationDateTime }: { expirationDateTime: string }) {
   const role = share.role
-  try {
-    await saveShareChanges({ role, expirationDateTime })
-  } catch (e) {
-    console.error(e)
-    showErrorMessage({
-      title: $gettext('Failed to apply expiration date'),
-      errors: [e]
-    })
+  await saveShareChanges({ role, expirationDateTime })
+}
+
+function handleShareConflictError(error: Error, title: string) {
+  revertRoleDropdown()
+  if (isSharingHierarchyConflictUserAbortError(error)) {
+    return
   }
+  console.error(error)
+  showErrorMessage({ title, errors: [error] })
 }
 
 async function saveShareChanges({
   role,
-  expirationDateTime
+  expirationDateTime,
+  offerRemoveShareOnConflict = false
 }: {
   role: ShareRole
   expirationDateTime?: string
+  offerRemoveShareOnConflict?: boolean
 }) {
+  const informConflict = offerRemoveShareOnConflict
+    ? informRoleUpdateHierarchyConflict
+    : informSharingHierarchyConflict
+
   try {
     await updateShare({
       clientService,
       space: unref(space),
       resource: unref(resource),
       collaboratorShare: share,
-      options: { roles: [role.id], expirationDateTime }
+      options: { roles: [role.id], expirationDateTime },
+      confirmSharingHierarchyConflict,
+      informSharingHierarchyConflict: informConflict
     })
 
     if (isProjectSpaceResource(unref(resource))) {
@@ -372,11 +422,24 @@ async function saveShareChanges({
 
     showMessage({ title: $gettext('Share successfully changed') })
   } catch (e) {
-    console.error(e)
-    showErrorMessage({
-      title: $gettext('Error while editing the share.'),
-      errors: [e]
-    })
+    if (isSharingHierarchyConflictRemoveShareError(e)) {
+      try {
+        await deleteShare({
+          clientService,
+          space: unref(space),
+          resource: unref(resource),
+          collaboratorShare: share,
+          confirmSharingHierarchyConflict,
+          informSharingHierarchyConflict
+        })
+        showMessage({ title: $gettext('Share successfully removed') })
+      } catch (deleteError) {
+        handleShareConflictError(deleteError, $gettext('Error while removing the share.'))
+      }
+      return
+    }
+
+    handleShareConflictError(e, $gettext('Error while editing the share.'))
   }
 }
 </script>

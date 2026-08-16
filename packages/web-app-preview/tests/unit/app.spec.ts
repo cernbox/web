@@ -1,12 +1,13 @@
 import App from '../../src/App.vue'
 import { nextTick, ref } from 'vue'
 import { defaultComponentMocks, defaultPlugins, shallowMount } from '@ownclouders/web-test-helpers'
-import { FileContext, queryItemAsString } from '@ownclouders/web-pkg'
+import { FileContext, isLocationSharesActive, queryItemAsString } from '@ownclouders/web-pkg'
 import { mock } from 'vitest-mock-extended'
 
 vi.mock('@ownclouders/web-pkg', async (importOriginal) => ({
   ...(await importOriginal<any>()),
   queryItemAsString: vi.fn(),
+  isLocationSharesActive: vi.fn(),
   createFileRouteOptions: vi.fn(() => ({ params: {}, query: {} }))
 }))
 
@@ -14,6 +15,7 @@ const activeFiles = [
   {
     id: '1',
     fileId: '1',
+    remoteItemId: 'remote-1',
     spaceId: '1',
     name: 'bear.png',
     mimeType: 'image/png',
@@ -24,6 +26,7 @@ const activeFiles = [
   {
     id: '2',
     fileId: '2',
+    remoteItemId: 'remote-2',
     spaceId: '1',
     name: 'elephant.png',
     mimeType: 'image/png',
@@ -142,16 +145,43 @@ describe('Preview app', () => {
       expect((wrapper.vm as any).filteredFiles.length).toStrictEqual(7)
     })
   })
+
+  describe('Method "setActiveFile"', () => {
+    it('matches on remoteItemId on Shared with me', async () => {
+      const { wrapper } = createShallowMountWrapper({ sharedWithMe: true, fileId: 'remote-2' })
+      await nextTick()
+      expect((wrapper.vm as any).activeFilteredFile.id).toStrictEqual('2')
+    })
+
+    it('matches on fileId on Shared with me when fullShareOwnerPaths is enabled', async () => {
+      // the owner's real space is resolved instead of a share space, so resources carry no
+      // remoteItemId and matching has to fall back to the regular fileId
+      const { wrapper } = createShallowMountWrapper({
+        sharedWithMe: true,
+        fullShareOwnerPaths: true,
+        fileId: '2'
+      })
+      await nextTick()
+      expect((wrapper.vm as any).activeFilteredFile.id).toStrictEqual('2')
+    })
+  })
 })
 
 function createShallowMountWrapper({
-  currentFileContext
+  currentFileContext,
+  sharedWithMe = false,
+  fullShareOwnerPaths = false,
+  fileId = '1'
 }: {
   currentFileContext?: Partial<FileContext>
+  sharedWithMe?: boolean
+  fullShareOwnerPaths?: boolean
+  fileId?: string
 } = {}) {
   const mocks = defaultComponentMocks()
   mocks.$previewService.loadPreview.mockResolvedValue('')
-  vi.mocked(queryItemAsString).mockImplementationOnce(() => '1')
+  vi.mocked(queryItemAsString).mockImplementation(() => fileId)
+  vi.mocked(isLocationSharesActive).mockReturnValue(sharedWithMe)
 
   return {
     wrapper: shallowMount(App, {
@@ -167,7 +197,13 @@ function createShallowMountWrapper({
         loadFolderForFileContext: vi.fn()
       },
       global: {
-        plugins: [...defaultPlugins()],
+        plugins: [
+          ...defaultPlugins({
+            piniaOptions: {
+              configState: { options: { routing: { fullShareOwnerPaths } } } as any
+            }
+          })
+        ],
         mocks,
         provide: mocks
       }

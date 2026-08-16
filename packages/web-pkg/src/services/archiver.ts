@@ -1,6 +1,7 @@
 import { RuntimeError } from '../errors'
 import { ClientService } from '../services'
-import { SignatureAuth, urlJoin } from '@ownclouders/web-client'
+import { HttpError, SignatureAuth, urlJoin } from '@ownclouders/web-client'
+import { triggerDownloadWithFilename } from '../helpers/download'
 
 import { Ref, ref, computed, unref } from 'vue'
 import { ArchiverCapability } from '@ownclouders/web-client/ocs'
@@ -84,26 +85,50 @@ export class ArchiverService {
       throw new RuntimeError('download url could not be built')
     }
 
-    if (options.publicToken && (!options.publicLinkPassword || options.signatureAuth)) {
-      window.open(downloadUrl, '_blank')
-      return downloadUrl
+    // A password-protected link cannot be signed, so the archive has to be
+    // fetched with basic auth and handed to the browser as a blob.
+    if (options.publicLinkPassword) {
+      return this.fetchAndDownload(downloadUrl, options.publicLinkPassword)
     }
 
-    const url = await this.clientService.ocs.signUrl({
-      url: downloadUrl,
-      username: options.publicLinkShareOwner || this.userStore.user?.onPremisesSamAccountName,
-      publicToken: options.publicToken,
-      publicLinkPassword: options.publicLinkPassword
-    })
+    const url = options.publicToken
+      ? downloadUrl
+      : await this.clientService.ocs.signUrl(
+          downloadUrl,
+          this.userStore.user?.onPremisesSamAccountName
+        )
 
-    window.open(url, '_blank')
-    return downloadUrl
+    triggerDownloadWithFilename(url, 'download')
+    return url
+  }
+
+  private async fetchAndDownload(url: string, password: string): Promise<string> {
+    try {
+      const response = await this.clientService.httpUnAuthenticated.get<ArrayBuffer>(url, {
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(`public:${password}`).toString('base64')
+        },
+        responseType: 'arraybuffer'
+      })
+
+      const blob = new Blob([response.data], { type: 'application/octet-stream' })
+      const objectUrl = URL.createObjectURL(blob)
+      const fileName = (response.headers as Record<string, string>)['content-disposition']?.split(
+        '"'
+      )[1]
+      triggerDownloadWithFilename(objectUrl, fileName ? decodeURI(fileName) : 'download')
+      return url
+    } catch (e) {
+      throw new HttpError('archive could not be fetched', e.response)
+    }
   }
 
   private buildDownloadUrl(options: TriggerDownloadOptions): string {
     const url = new URL(this.url)
 
-    if (options.publicToken && (options.signatureAuth || !options.publicLinkPassword)) {
+    // password-protected links are authenticated with basic auth in fetchAndDownload
+    // rather than a signature, so the token is always needed
+    if (options.publicToken) {
       url.searchParams.set('public-token', options.publicToken)
     }
 

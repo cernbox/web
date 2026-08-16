@@ -2,7 +2,10 @@ import {
   Log,
   WebStorageStateStore,
   UserManager as OidcUserManager,
-  UserManagerSettings
+  UserManagerSettings,
+  User,
+  ErrorResponse,
+  SigninResponse
 } from 'oidc-client-ts'
 import { buildUrl, useAppsStore } from '@ownclouders/web-pkg'
 import { getAbilities } from './abilities'
@@ -194,7 +197,15 @@ export class UserManager extends OidcUserManager {
 
   private async fetchUserInfo() {
     const graphClient = this.clientService.graphAuthenticated
-    const [graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
+    let graphUser: Awaited<ReturnType<typeof graphClient.users.getMe>>, roles: SettingsBundle[]
+    try {
+      ;[graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
+    } catch (e) {
+      if (e?.response?.status === 409) {
+        throw new ErrorResponse({ error: 'low_assurance_level' } as any)
+      }
+      throw e
+    }
     const role = await this.fetchRole({ graphUser, roles })
 
     this.userStore.setUser({
@@ -268,6 +279,67 @@ export class UserManager extends OidcUserManager {
         user: userCapabilities
       }
     })
+  }
+
+  // copied from upstream oidc-client-ts UserManager with CERN customization
+  protected async _buildUser(signinResponse: SigninResponse, verifySub?: string) {
+    if (!this.configStore.options.useRevaToken) {
+      return (super._buildUser as any)(signinResponse, verifySub)
+    }
+
+    const logger = this._logger.create('_buildUser')
+    const user = new User(signinResponse)
+    if (verifySub) {
+      if (verifySub !== user.profile.sub) {
+        logger.debug(
+          'current user does not match user returned from signin. sub from signin:',
+          user.profile.sub
+        )
+        throw new ErrorResponse({ ...signinResponse, error: 'login_required' })
+      }
+      logger.debug('current user matches user returned from signin')
+    }
+
+    // Check if this user should still be forced to use the SSO token
+    if (
+      user.profile.hasOwnProperty('cern_roles') &&
+      (user.profile.cern_roles as Array<string>).includes('force-sso-token')
+    ) {
+      console.log('CERNBox: current user has role to force use of SSO token')
+      return (super._buildUser as any)(signinResponse, verifySub)
+    }
+
+    /* CERNBox customization
+     * Do a call to the backend, as this will reply with the internal reva token.
+     * Use that longer token in all calls to the backend (so, replace the default store token)
+     */
+    try {
+      console.log('CERNBox: login successful, exchange sso token with reva token')
+      // Use the unauthenticated client, as the authenticated one would replace the
+      // bearer token, failing the request
+      const httpClient = this.clientService.httpUnAuthenticated
+      const requestConfig = {
+        headers: { Authorization: 'Bearer ' + user.access_token }
+      }
+      const revaTokenReq = await httpClient.get('/ocs/v1.php/cloud/user', requestConfig)
+      const revaToken = revaTokenReq.headers['x-access-token']
+      const claims = JSON.parse(atob(revaToken.split('.')[1]))
+      user.access_token = revaToken
+      user.expires_at = claims.exp
+    } catch (e) {
+      // We do not want to fail/raise exception here, even on 409.
+      // If we get a 409 we still want the user to be persisted, so that
+      // we can terminate the session in the SSO as well (on logout).
+      // The 409 will be catched later.
+      console.error('Failed to get reva token, continue with sso one', e)
+    }
+    // end
+
+    await this.storeUser(user)
+    logger.debug('user stored')
+    await this._events.load(user)
+
+    return user
   }
 
   private async fetchPermissions({ user }: { user: OcUser }) {

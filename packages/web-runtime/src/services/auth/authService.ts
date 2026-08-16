@@ -1,3 +1,4 @@
+import { ErrorResponse } from 'oidc-client-ts'
 import { UserManager } from './userManager'
 import { PublicLinkManager } from './publicLinkManager'
 import {
@@ -50,6 +51,8 @@ export class AuthService implements AuthServiceInterface {
   // number of seconds before an access token is to expire to raise the accessTokenExpiring event
   private accessTokenExpiryThreshold = 10
 
+  public lowAssuranceError: boolean
+
   public initialize(
     configStore: ConfigStore,
     clientService: ClientService,
@@ -64,6 +67,7 @@ export class AuthService implements AuthServiceInterface {
     this.configStore = configStore
     this.clientService = clientService
     this.router = router
+    this.lowAssuranceError = false
     this.ability = ability
     this.language = language
     this.userStore = userStore
@@ -190,6 +194,10 @@ export class AuthService implements AuthServiceInterface {
             await this.userManager.updateContext(user.access_token, fetchUserData)
             this.updateMfaExpiryTimer()
           } catch (e) {
+            if (this.isLowAssuranceLevelError(e)) {
+              this.lowAssuranceError = true
+              return
+            }
             console.error(e)
             await this.handleAuthError(unref(this.router.currentRoute))
           }
@@ -252,6 +260,10 @@ export class AuthService implements AuthServiceInterface {
             this.tokenTimerInitialized = true
           }
         } catch (e) {
+          if (this.isLowAssuranceLevelError(e)) {
+            this.lowAssuranceError = true
+            return
+          }
           console.error(e)
           await this.handleAuthError(unref(this.router.currentRoute))
         }
@@ -317,6 +329,10 @@ export class AuthService implements AuthServiceInterface {
         ...(redirectRoute.query && { query: redirectRoute.query })
       })
     } catch (e) {
+      if (this.isLowAssuranceLevelError(e)) {
+        this.lowAssuranceError = true
+        return this.router.push({ name: 'accessDenied', query: { reason: 'lowAssuranceLevel' } })
+      }
       console.warn('error during authentication:', e)
       return this.handleAuthError(unref(this.router.currentRoute))
     }
@@ -397,6 +413,10 @@ export class AuthService implements AuthServiceInterface {
     // User WAS logged in — this is a mid-session auth failure.
     this.tokenTimerWorker?.resetTokenTimer()
     this.authStore.setSessionExpired(true)
+  }
+
+  private isLowAssuranceLevelError(e: unknown): boolean {
+    return e instanceof ErrorResponse && e.error === 'low_assurance_level'
   }
 
   public async resolvePublicLink(

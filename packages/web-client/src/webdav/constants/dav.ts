@@ -106,11 +106,15 @@ const DavPropertyMapping = {
   PublicLinkExpiration: defString('public-link-expiration' as const),
   PublicLinkShareDate: defString('public-link-share-datetime' as const),
   PublicLinkShareOwner: defString('public-link-share-owner' as const),
+
+  Projects: defStringArray('projects' as const),
+  MyOfficeFiles: defString('my-office-files' as const),
+
+  SpaceId: defString('spaceid' as const),
   SignatureAuth: {
     value: 'signature-auth',
     type: null as Record<'signature' | 'expiration', string>
-  },
-  SpaceId: defString('spaceid' as const)
+  }
 } as const satisfies Record<string, M<unknown, unknown>>
 
 type DavPropertyMappingType = typeof DavPropertyMapping

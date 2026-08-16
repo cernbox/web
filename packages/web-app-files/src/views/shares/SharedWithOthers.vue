@@ -52,7 +52,6 @@
           :header-position="fileListHeaderY"
           :sort-by="sortBy"
           :sort-dir="sortDir"
-          :grouping-settings="groupingSettings"
           @file-click="triggerDefaultAction"
           @item-visible="loadPreview({ space: getMatchingSpace($event), resource: $event })"
           @sort="handleSort"
@@ -101,7 +100,6 @@ import FilesViewWrapper from '../../components/FilesViewWrapper.vue'
 
 import { useResourcesViewDefaults } from '../../composables'
 import { computed, unref } from 'vue'
-import { useGroupingSettings } from '@ownclouders/web-pkg'
 import { useGetMatchingSpace } from '@ownclouders/web-pkg'
 import SharesNavigation from '../../components/AppBar/SharesNavigation.vue'
 import { OutgoingShareResource, ShareTypes } from '@ownclouders/web-client'
@@ -186,7 +184,6 @@ resourcesStore.$onAction((action) => {
   selectedResourcesIds.value = [matchedNewResource.id]
 })
 const isEmpty = computed(() => unref(filteredItems).length < 1)
-const { groupingSettings } = useGroupingSettings({ sortBy, sortDir })
 
 async function created() {
   await unref(loadResourcesTask).perform()

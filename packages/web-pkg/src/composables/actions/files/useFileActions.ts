@@ -10,8 +10,7 @@ import {
   Action,
   FileAction,
   FileActionOptions,
-  useIsSearchActive,
-  useWindowOpen
+  useIsSearchActive
 } from '../../actions'
 
 import {
@@ -58,8 +57,6 @@ export const useFileActions = () => {
   const isSearchActive = useIsSearchActive()
   const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
   const { requestExtensions } = useExtensionRegistry()
-
-  const { openUrl } = useWindowOpen()
 
   const configStore = useConfigStore()
   const { options } = storeToRefs(configStore)
@@ -244,13 +241,6 @@ export const useFileActions = () => {
     const routeName = appFileExtension.routeName || appFileExtension.app
     const routeOpts = getEditorRouteOpts(routeName, space, resource, mode, remoteItemId)
 
-    if (unref(options).cernFeatures) {
-      const path = router.resolve(routeOpts).href
-      const target = `${appFileExtension.routeName}-${resource.path}`
-
-      openUrl(path, target, true)
-      return
-    }
 
     router.push(routeOpts)
   }

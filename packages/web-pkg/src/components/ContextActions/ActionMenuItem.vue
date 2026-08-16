@@ -56,9 +56,12 @@
 
 <script lang="ts" setup>
 import { computed, unref } from 'vue'
-import { Action, ActionOptions, useConfigStore } from '../../composables'
+// side-effect import: web-pkg's barrels form ~200 import cycles (inherited from upstream), and
+// eliding this module - which happens when only types are imported from it - leaves composables
+// such as useRouter undefined at call time. Remove once the barrel structure is untangled.
+import '../../composables'
+import type { Action, ActionOptions } from '../../composables'
 import { useGettext } from 'vue3-gettext'
-import { storeToRefs } from 'pinia'
 
 interface Props {
   action: Action
@@ -81,8 +84,6 @@ const {
   hasLimitedScreenSpace = false
 } = defineProps<Props>()
 const { $gettext } = useGettext()
-const configStore = useConfigStore()
-const { options } = storeToRefs(configStore)
 
 const componentType = computed<string>(() => {
   if (Object.hasOwn(action, 'route')) {
@@ -126,9 +127,6 @@ const componentProps = computed(() => {
     }),
     ...(unref(componentType) === 'a' && {
       href: action.href(actionOptions)
-    }),
-    ...(['router-link', 'a'].includes(unref(componentType)) && {
-      target: options.value.cernFeatures ? '_blank' : '_self'
     })
   }
 })

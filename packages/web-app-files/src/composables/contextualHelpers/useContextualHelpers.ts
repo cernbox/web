@@ -49,20 +49,6 @@ export const useContextualHelpers = () => {
     })
   )
 
-  const shareInviteCollaboratorHelpCern = computed<ContextualHelperData>(() =>
-    filterContextHelper({
-      title: '',
-      list: [
-        { text: $gettext('Search for service or secondary Account'), headline: true },
-        {
-          text: $gettext(
-            'To search for service or secondary accounts prefix the username with "a:" (like "a:doe") and for guest accounts prefix the username with "l:" (like "l:doe").'
-          )
-        }
-      ]
-    })
-  )
-
   const shareSpaceAddMemberHelp = computed<ContextualHelperData>(() =>
     filterContextHelper({
       title: $gettext('Add members to this Space'),
@@ -133,7 +119,6 @@ export const useContextualHelpers = () => {
 
   return {
     shareInviteCollaboratorHelp,
-    shareInviteCollaboratorHelpCern,
     shareSpaceAddMemberHelp,
     shareViaLinkHelp,
     shareViaIndirectLinkHelp,

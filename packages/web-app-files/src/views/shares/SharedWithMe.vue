@@ -82,7 +82,6 @@
           :empty-message="
             areHiddenFilesShown ? $gettext('No hidden shares') : $gettext('No shares')
           "
-          :grouping-settings="groupingSettings"
         />
       </template>
     </files-view-wrapper>
@@ -113,7 +112,6 @@ import SharedWithMeSection from '../../components/Shares/SharedWithMeSection.vue
 import { computed, onMounted, ref, unref, watch } from 'vue'
 import FilesViewWrapper from '../../components/FilesViewWrapper.vue'
 import { useGetMatchingSpace, useSort } from '@ownclouders/web-pkg'
-import { useGroupingSettings } from '@ownclouders/web-pkg'
 import SharesNavigation from '../../components/AppBar/SharesNavigation.vue'
 import { useGettext } from 'vue3-gettext'
 import { useOpenWithDefaultApp, defaultFuseOptions } from '@ownclouders/web-pkg'
@@ -223,7 +221,6 @@ const { sortBy, sortDir, items, handleSort } = useSort({
   fields: sortFields
 })
 
-const { groupingSettings } = useGroupingSettings({ sortBy, sortDir })
 
 const { getMatchingSpace } = useGetMatchingSpace()
 

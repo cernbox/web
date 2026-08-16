@@ -164,7 +164,6 @@ import { useGettext } from 'vue3-gettext'
  * @prop {Boolean} lazy - Whether table content should be loaded lazily, defaults to false.
  * @prop {String} sortDir - Current sort direction ('asc' or 'desc').
  * @prop {String} sortBy - Current sort column name.
- * @prop {Object} groupingSettings - Grouping configuration (CERN-specific).
  *
  * @event item-dropped - Emitted when an item is dropped during drag and drop.
  * @event item-dragged - Emitted when an item starts being dragged.

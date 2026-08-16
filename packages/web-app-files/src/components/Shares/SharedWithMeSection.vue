@@ -25,7 +25,6 @@
       :header-position="fileListHeaderY"
       :sort-by="sortBy"
       :sort-dir="sortDir"
-      :grouping-settings="groupingSettings"
       @file-click="triggerDefaultAction"
       @item-visible="loadPreview({ space: getMatchingSpace($event), resource: $event })"
       @sort="sortHandler"
@@ -102,8 +101,7 @@ import {
   ResourceTable,
   useFileActions,
   useFileActionsToggleHideShare,
-  useLoadPreview,
-  type GroupingSettings
+  useLoadPreview
 } from '@ownclouders/web-pkg'
 import { computed, unref, ref } from 'vue'
 import { SortDir, useGetMatchingSpace } from '@ownclouders/web-pkg'
@@ -135,7 +133,6 @@ interface Props {
   resourceClickable?: boolean
   isSideBarOpen?: boolean
   fileListHeaderY?: number
-  groupingSettings?: GroupingSettings
 }
 const {
   title,
@@ -148,8 +145,7 @@ const {
   showMoreToggleCount = 3,
   resourceClickable = true,
   isSideBarOpen = false,
-  fileListHeaderY = 0,
-  groupingSettings = null
+  fileListHeaderY = 0
 } = defineProps<Props>()
 
 const { $gettext } = useGettext()

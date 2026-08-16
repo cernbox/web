@@ -146,7 +146,7 @@ const { getSpaceMembers } = useSpacesStore()
 const configStore = useConfigStore()
 const { options: configOptions } = storeToRefs(configStore)
 
-const { shareInviteCollaboratorHelp, shareInviteCollaboratorHelpCern } = useContextualHelpers()
+const { shareInviteCollaboratorHelp } = useContextualHelpers()
 
 const sharesStore = useSharesStore()
 const { addShare, deleteShare } = sharesStore
@@ -203,17 +203,7 @@ const collaborators = computed(() => {
   return unref(collaboratorShares).sort(collaboratorsComparator)
 })
 
-const inviteCollaboratorHelp = computed(() => {
-  const cernFeatures = configOptions.value.cernFeatures
-
-  if (cernFeatures) {
-    const mergedHelp = { ...unref(shareInviteCollaboratorHelp) }
-    mergedHelp.list = [...unref(shareInviteCollaboratorHelpCern).list, ...mergedHelp.list]
-    return mergedHelp
-  }
-
-  return unref(shareInviteCollaboratorHelp)
-})
+const inviteCollaboratorHelp = computed(() => unref(shareInviteCollaboratorHelp))
 
 const helpersEnabled = computed(() => {
   return configOptions.value.contextHelpers

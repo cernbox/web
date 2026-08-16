@@ -25,7 +25,6 @@
     :sort-by="sortBy"
     :sort-dir="sortDir"
     :lazy="lazy"
-    :grouping-settings="groupingSettings"
     padding-x="medium"
     @highlight="fileClicked"
     @row-mounted="rowMounted"
@@ -312,16 +311,6 @@ import { useGettext } from 'vue3-gettext'
 
 const TAGS_MINIMUM_SCREEN_WIDTH = 850
 
-interface GroupingSettings {
-  groupingBy: string
-  showGroupingOptions: boolean
-  groupingFunctions: {
-    [key: string]: (row: IncomingShareResource) => string | void
-  }
-  sortGroups: {
-    [key: string]: (groups: { name: string }[]) => { name: string }[]
-  }
-}
 /**
  * Resources to be displayed in the table.
  * Required fields:
@@ -358,7 +347,6 @@ interface Props {
   space?: SpaceResource | null
   resourceType?: 'file' | 'space'
   lazy?: boolean
-  groupingSettings?: GroupingSettings
 }
 interface Emits {
   (e: 'fileClick', data: { space: SpaceResource; resources: Resource[] }): void
@@ -393,7 +381,6 @@ const {
   space = null,
   resourceType = 'file',
   lazy = true,
-  groupingSettings = null
 } = defineProps<Props>()
 
 const emit = defineEmits<Emits>()

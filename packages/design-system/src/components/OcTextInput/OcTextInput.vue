@@ -3,47 +3,59 @@
     <slot name="label">
       <label class="oc-label" :for="id" v-text="label" />
     </slot>
-    <div class="oc-position-relative">
-      <oc-icon
-        v-if="readOnly"
-        name="lock"
-        size="small"
-        class="oc-mt-s oc-ml-s oc-position-absolute"
-      />
-      <component
-        :is="inputComponent"
-        :id="id"
-        v-bind="additionalAttributes"
-        ref="input"
-        :aria-invalid="ariaInvalid"
-        class="oc-text-input oc-input oc-rounded"
-        :class="{
-          'oc-text-input-warning': !!warningMessage,
-          'oc-text-input-danger': !!errorMessage,
-          'oc-pl-l': !!readOnly,
-          'clear-action-visible': showClearButton
-        }"
-        :type="type"
-        :value="displayValue"
-        :disabled="disabled || readOnly"
-        v-on="additionalListeners"
-        @change="onChange(($event.target as HTMLInputElement).value)"
-        @input="onInput(($event.target as HTMLInputElement).value)"
-        @password-challenge-completed="$emit('passwordChallengeCompleted')"
-        @password-challenge-failed="$emit('passwordChallengeFailed')"
-        @focus="onFocus($event.target)"
-        @keydown.enter="$emit('enterKeyDown')"
-      />
-      <oc-button
-        v-if="showClearButton"
-        :aria-label="clearButtonAccessibleLabelValue"
-        class="oc-pr-s oc-position-center-right oc-text-input-btn-clear"
-        :class="{ 'oc-mr-rm': type === 'date' }"
-        appearance="raw"
-        @click="onClear"
-      >
-        <oc-icon name="close" size="small" variation="passive" />
-      </oc-button>
+    <div
+      :class="
+        $slots.suffix && {
+          'oc-text-input-has-suffix': true,
+          'oc-text-input-has-suffix-warning': !!warningMessage,
+          'oc-text-input-has-suffix-danger': !!errorMessage,
+          'oc-text-input-has-suffix-disabled': disabled || readOnly
+        }
+      "
+    >
+      <div class="oc-text-input-wrapper oc-position-relative">
+        <oc-icon
+          v-if="readOnly"
+          name="lock"
+          size="small"
+          class="oc-mt-s oc-ml-s oc-position-absolute"
+        />
+        <component
+          :is="inputComponent"
+          :id="id"
+          v-bind="additionalAttributes"
+          ref="input"
+          :aria-invalid="ariaInvalid"
+          class="oc-text-input oc-input oc-rounded"
+          :class="{
+            'oc-text-input-warning': !!warningMessage,
+            'oc-text-input-danger': !!errorMessage,
+            'oc-pl-l': !!readOnly,
+            'clear-action-visible': showClearButton
+          }"
+          :type="type"
+          :value="displayValue"
+          :disabled="disabled || readOnly"
+          v-on="additionalListeners"
+          @change="onChange(($event.target as HTMLInputElement).value)"
+          @input="onInput(($event.target as HTMLInputElement).value)"
+          @password-challenge-completed="$emit('passwordChallengeCompleted')"
+          @password-challenge-failed="$emit('passwordChallengeFailed')"
+          @focus="onFocus($event.target)"
+          @keydown.enter="$emit('enterKeyDown')"
+        />
+        <oc-button
+          v-if="showClearButton"
+          :aria-label="clearButtonAccessibleLabelValue"
+          class="oc-pr-s oc-position-center-right oc-text-input-btn-clear"
+          :class="{ 'oc-mr-rm': type === 'date' }"
+          appearance="raw"
+          @click="onClear"
+        >
+          <oc-icon name="close" size="small" variation="passive" />
+        </oc-button>
+      </div>
+      <slot name="suffix" />
     </div>
     <div
       v-if="showMessageLine"
@@ -321,6 +333,56 @@ async function onFocus(target: HTMLInputElement) {
     position: absolute;
     left: var(--oc-space-xsmall);
     top: var(--oc-space-xsmall);
+  }
+}
+
+// With a suffix, the container draws the field's border and background instead of the input,
+// so the suffix looks like it sits inside the field while flexbox keeps the text and the clear
+// button from running underneath it.
+.oc-text-input-has-suffix {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-xsmall);
+  padding-right: var(--oc-space-xsmall);
+  background-color: var(--oc-color-background-highlight);
+  border: 1px solid var(--oc-color-input-border);
+  border-radius: 5px;
+  box-sizing: border-box;
+
+  > .oc-text-input-wrapper {
+    flex: 1;
+    min-width: 0;
+
+    > .oc-text-input {
+      background-color: transparent;
+      border: none;
+    }
+  }
+
+  &:focus-within {
+    border-color: var(--oc-color-input-text-default);
+  }
+
+  &-warning,
+  &-warning:focus-within {
+    border-color: var(--oc-color-swatch-warning-default);
+  }
+
+  &-danger,
+  &-danger:focus-within {
+    border-color: var(--oc-color-swatch-danger-default);
+  }
+
+  &-disabled {
+    background-color: var(--oc-color-background-muted);
+  }
+}
+
+.oc-background-highlight .oc-text-input-has-suffix:not(.oc-text-input-has-suffix-disabled) {
+  background-color: var(--oc-color-input-bg);
+
+  &:focus-within {
+    background-color: var(--oc-color-background-default);
   }
 }
 

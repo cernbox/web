@@ -118,7 +118,7 @@ const saveFile = async ({
     {
       fileId: destinationFolder.fileId
     },
-    { davProperties: [DavProperty.Name] }
+    { davProperties: [DavProperty.Name, DavProperty.FileId] }
   )
   const resourceAlreadyExists = existingResources.find(
     (existingResource) => existingResource.name === fileName

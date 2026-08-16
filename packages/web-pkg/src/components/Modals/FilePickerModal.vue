@@ -16,41 +16,33 @@
 <script lang="ts" setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import {
-  EDITOR_MODE_EDIT,
+  LocationQuery,
   Modal,
   useEmbedMode,
-  useGetMatchingSpace,
   useModals,
   useRouter,
   useThemeStore,
-  useFileActions,
   embedModeFilePickMessageData
 } from '../../composables'
-import { ApplicationInformation } from '../../apps'
+import { Resource } from '@ownclouders/web-client'
 import { RouteLocationRaw } from 'vue-router'
 import AppLoadingSpinner from '../AppLoadingSpinner.vue'
-import { isShareSpaceResource } from '@ownclouders/web-client'
 import { unref } from 'vue'
 
 interface Props {
   modal: Modal
-  app: ApplicationInformation
+  allowedFileTypes?: string[]
   parentFolderLink: RouteLocationRaw
+  callbackFn: (payload: { resource: Resource; locationQuery?: LocationQuery }) => void
 }
-const { modal, app, parentFolderLink } = defineProps<Props>()
+const { modal, allowedFileTypes = [], parentFolderLink, callbackFn } = defineProps<Props>()
 const iframeRef = ref<HTMLIFrameElement>()
 const isLoading = ref(true)
 const router = useRouter()
 const { removeModal } = useModals()
-const { getMatchingSpace } = useGetMatchingSpace()
 const themeStore = useThemeStore()
-const { getEditorRouteOpts } = useFileActions()
 const { verifyMessageOrigin } = useEmbedMode()
 const parentFolderRoute = router.resolve(parentFolderLink)
-
-const availableFileTypes = (app as ApplicationInformation).extensions.map((e) =>
-  e.extension ? e.extension : e.mimeType
-)
 
 const iframeTitle = themeStore.currentTheme.common?.name
 const iframeUrl = new URL(parentFolderRoute.href, window.location.origin)
@@ -58,7 +50,7 @@ iframeUrl.searchParams.append('hide-logo', 'true')
 iframeUrl.searchParams.append('embed', 'true')
 iframeUrl.searchParams.append('embed-target', 'file')
 iframeUrl.searchParams.append('embed-delegate-authentication', 'false')
-iframeUrl.searchParams.append('embed-file-types', availableFileTypes.join(','))
+iframeUrl.searchParams.append('embed-file-types', allowedFileTypes.join(','))
 
 const iframeSrc = iframeUrl.href
 
@@ -78,23 +70,8 @@ const onFilePick = ({ data, origin }: MessageEvent) => {
 
   const { resource, locationQuery }: embedModeFilePickMessageData = data.data
 
-  const space = getMatchingSpace(resource)
-  const remoteItemId = isShareSpaceResource(space) ? space.id : undefined
-
-  const routeOpts = getEditorRouteOpts(
-    unref(router.currentRoute).name,
-    space,
-    resource,
-    EDITOR_MODE_EDIT,
-    remoteItemId
-  )
-  routeOpts.query = { ...routeOpts.query, ...locationQuery }
-
-  const editorRoute = router.resolve(routeOpts)
-  const editorRouteUrl = new URL(editorRoute.href, window.location.origin)
-
   removeModal(modal.id)
-  window.open(editorRouteUrl.href, '_blank')
+  callbackFn({ resource, locationQuery })
 }
 
 const onCancel = ({ data, origin }: MessageEvent) => {

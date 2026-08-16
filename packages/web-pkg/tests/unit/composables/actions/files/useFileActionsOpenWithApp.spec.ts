@@ -84,7 +84,13 @@ function getWrapper({
           piniaOptions: {
             spacesState: { spaces: [spaceMock] },
             appsState: {
-              apps: { 'text-editor': mock<ApplicationInformation>({ name: 'text-editor' }) }
+              apps: {
+                'text-editor': mock<ApplicationInformation>({
+                  name: 'text-editor',
+                  // the picker derives its allowed types from these
+                  extensions: [{ extension: 'txt' }]
+                })
+              }
             }
           }
         }

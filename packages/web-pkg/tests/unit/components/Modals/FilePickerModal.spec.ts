@@ -1,11 +1,8 @@
 import FilePickerModal from '../../../../src/components/Modals/FilePickerModal.vue'
 import { defaultComponentMocks, defaultPlugins, shallowMount } from '@ownclouders/web-test-helpers'
 import { mock } from 'vitest-mock-extended'
-import { Resource, SpaceResource } from '@ownclouders/web-client'
+import { Resource } from '@ownclouders/web-client'
 import { Modal, useModals } from '../../../../src/composables/piniaStores'
-import { RouteLocation } from 'vue-router'
-
-window.open = vi.fn()
 
 describe('FilePickerModal', () => {
   describe('iframe', () => {
@@ -22,30 +19,33 @@ describe('FilePickerModal', () => {
   })
   describe('method "onFilePick"', () => {
     it('does nothing if the event message does not equal "owncloud-embed:file-pick"', () => {
-      const { wrapper } = getWrapper()
+      const callbackFn = vi.fn()
+      const { wrapper } = getWrapper({ callbackFn })
       ;(wrapper.vm as any).onFilePick(mock<MessageEvent>({ data: { name: 'some-other-event' } }))
-      expect(window.open).not.toHaveBeenCalled()
+      expect(callbackFn).not.toHaveBeenCalled()
     })
-    it('opens resource in new window when message does equal "owncloud-embed:file-pick"', () => {
-      const { wrapper } = getWrapper()
+    it('closes the modal and invokes callbackFn when message equals "owncloud-embed:file-pick"', () => {
+      const callbackFn = vi.fn()
+      const { wrapper } = getWrapper({ callbackFn })
       const modalStore = useModals()
+      const resource = mock<Resource>({ spaceId: '1' })
+      const locationQuery = { fileId: 'abc' }
+
       ;(wrapper.vm as any).onFilePick(
         mock<MessageEvent>({
           origin: window.location.origin,
           data: {
             name: 'owncloud-embed:file-pick',
-            data: {
-              resource: mock<Resource>({ spaceId: '1' }),
-              originRoute: mock<RouteLocation>()
-            }
+            data: { resource, locationQuery }
           }
         })
       )
       expect(modalStore.removeModal).toHaveBeenCalled()
-      expect(window.open).toHaveBeenCalled()
+      expect(callbackFn).toHaveBeenCalledWith({ resource, locationQuery })
     })
     it('does nothing when the message originates from an untrusted origin', () => {
-      const { wrapper } = getWrapper()
+      const callbackFn = vi.fn()
+      const { wrapper } = getWrapper({ callbackFn })
       ;(wrapper.vm as any).onFilePick(
         mock<MessageEvent>({
           origin: 'https://attacker.example.com',
@@ -53,17 +53,17 @@ describe('FilePickerModal', () => {
             name: 'owncloud-embed:file-pick',
             data: {
               resource: mock<Resource>({ spaceId: '1' }),
-              originRoute: mock<RouteLocation>()
+              locationQuery: { fileId: 'abc' }
             }
           }
         })
       )
-      expect(window.open).not.toHaveBeenCalled()
+      expect(callbackFn).not.toHaveBeenCalled()
     })
   })
 })
 
-function getWrapper() {
+function getWrapper({ callbackFn = vi.fn() } = {}) {
   const mocks = defaultComponentMocks()
 
   return {
@@ -71,11 +71,7 @@ function getWrapper() {
     wrapper: shallowMount(FilePickerModal, {
       props: {
         modal: mock<Modal>(),
-        resource: mock<Resource>(),
-        app: {
-          name: 'text-editor',
-          extensions: [{ extension: 'text' }, { extension: 'md' }, { mimeType: 'text/rtf' }]
-        },
+        allowedFileTypes: ['text', 'md', 'text/rtf'],
         parentFolderLink: {
           name: 'files-spaces-generic',
           params: {
@@ -85,14 +81,11 @@ function getWrapper() {
             fileId:
               '61dcd768-0bc4-4dd5-975a-2fe2bc9bc664$f1e4f3ec-1f24-460d-9f9a-4416ab6ddb6b!36cce768-8c9d-45e4-9c7d-4c9611962a75'
           }
-        }
+        },
+        callbackFn
       },
       global: {
-        plugins: [
-          ...defaultPlugins({
-            piniaOptions: { spacesState: { spaces: [mock<SpaceResource>({ id: '1' })] } }
-          })
-        ],
+        plugins: [...defaultPlugins()],
         mocks,
         provide: mocks
       }

@@ -23,14 +23,20 @@ vi.mock('@ownclouders/web-pkg', async (importOriginal) => ({
   queryItemAsString: vi.fn()
 }))
 
-const { mockRouterReplace } = vi.hoisted(() => ({ mockRouterReplace: vi.fn() }))
+const { mockRouterReplace, mockCurrentRoutePath } = vi.hoisted(() => ({
+  mockRouterReplace: vi.fn(),
+  mockCurrentRoutePath: { value: '/' }
+}))
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<any>()
-  const { ref } = await import('vue')
+  const { computed } = await import('vue')
   return {
     ...actual,
-    useRouter: () => ({ replace: mockRouterReplace, currentRoute: ref({ query: {} }) })
+    useRouter: () => ({
+      replace: mockRouterReplace,
+      currentRoute: computed(() => ({ query: {}, path: mockCurrentRoutePath.value }))
+    })
   }
 })
 
@@ -102,6 +108,59 @@ describe('Redirect.vue', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('We could not open this file')
   })
+
+  describe('path-based routing', () => {
+    it('resolves the app from the file extension in the route path', async () => {
+      const { appProviderService } = getWrapper({
+        query: {},
+        idBased: false,
+        path: '/external/eos/user/j/jdoe/report.docx',
+        mimeTypes: [{ ext: 'docx', mime_type: docxMimeType }],
+        resolvedApp: 'Collabora'
+      })
+      await flushPromises()
+      expect(appProviderService.getDefaultAppNameForMimeType).toHaveBeenCalledWith(docxMimeType)
+    })
+
+    it('redirects by path, carrying the file path over and dropping fileId', async () => {
+      getWrapper({
+        query: {},
+        idBased: false,
+        path: '/external/eos/user/j/jdoe/report.docx',
+        mimeTypes: [{ ext: 'docx', mime_type: docxMimeType }],
+        resolvedApp: 'Collabora'
+      })
+      await flushPromises()
+      expect(mockRouterReplace).toHaveBeenCalledWith({
+        path: '/external-collabora/eos/user/j/jdoe/report.docx',
+        query: {}
+      })
+    })
+
+    it('shows an error when no app handles the extension', async () => {
+      const { wrapper } = getWrapper({
+        query: {},
+        idBased: false,
+        path: '/external/eos/user/j/jdoe/report.xyz',
+        mimeTypes: [{ ext: 'docx', mime_type: docxMimeType }]
+      })
+      await flushPromises()
+      expect(mockRouterReplace).not.toHaveBeenCalled()
+      expect(wrapper.text()).toContain('We could not open this file')
+    })
+
+    it('still honours an explicit app query, redirecting by path', async () => {
+      getWrapper({
+        query: { app: 'Collabora' },
+        idBased: false,
+        path: '/external/eos/user/j/jdoe/report.docx'
+      })
+      await flushPromises()
+      expect(mockRouterReplace).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/external-collabora/eos/user/j/jdoe/report.docx' })
+      )
+    })
+  })
 })
 
 function getWrapper({
@@ -109,22 +168,30 @@ function getWrapper({
   mimeType = '',
   resolvedApp = undefined,
   statThrows = false,
-  ready = true
+  ready = true,
+  idBased = true,
+  path = '/',
+  mimeTypes = []
 }: {
   query?: { app?: string; appName?: string; fileId?: string }
   mimeType?: string
   resolvedApp?: string
   statThrows?: boolean
   ready?: boolean
+  idBased?: boolean
+  path?: string
+  mimeTypes?: { ext: string; mime_type: string }[]
 } = {}) {
   vi.mocked(useRouteQuery).mockImplementation(
     (name: string) => ref((query as Record<string, string>)[name] ?? '') as never
   )
   vi.mocked(useRouteMeta).mockReturnValue(ref('Redirecting to external app') as never)
   vi.mocked(queryItemAsString).mockImplementation((value) => (value ?? '').toString())
+  mockCurrentRoutePath.value = path
 
   const appProviderService = mock<AppProviderService>()
   appProviderService.getDefaultAppNameForMimeType.mockReturnValue(resolvedApp)
+  Object.defineProperty(appProviderService, 'mimeTypes', { value: mimeTypes })
 
   const mocks = {
     ...defaultComponentMocks(),
@@ -139,7 +206,11 @@ function getWrapper({
 
   const wrapper = shallowMount(Redirect, {
     global: {
-      plugins: [...defaultPlugins()],
+      plugins: [
+        ...defaultPlugins({
+          piniaOptions: { configState: { options: { routing: { idBased } } } as any }
+        })
+      ],
       provide: mocks,
       mocks
     }

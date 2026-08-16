@@ -255,8 +255,11 @@ onBeforeUnmount(() => {
   border-left: 1px solid var(--oc-color-border);
   position: relative;
   overflow: hidden;
-  min-width: 440px;
-  width: 440px;
+  flex: 0 1 440px;
+  min-width: 0;
+  max-width: 440px;
+  align-self: stretch;
+  min-height: 0;
 
   &:focus,
   &:focus-visible {
@@ -267,6 +270,7 @@ onBeforeUnmount(() => {
 .app-sidebar-full-width {
   min-width: 100% !important;
   width: 100% !important;
+  max-width: 100% !important;
 }
 
 @media only screen and (max-width: $oc-breakpoint-medium-default) {
@@ -353,6 +357,7 @@ onBeforeUnmount(() => {
   }
 
   &__body {
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--oc-space-small);

@@ -141,6 +141,9 @@ export default defineComponent({
       const openWithDefault = unref(openWithDefaultApp) !== 'false' && !unref(details)
 
       targetLocation.params = params
+      // Kept so an anchor on the private link survives the hop to the file's own route, and from
+      // there into whichever app opens it.
+      targetLocation.hash = unref(router.currentRoute).hash
       targetLocation.query = {
         ...query,
         scrollTo: unref(resource).fileId,

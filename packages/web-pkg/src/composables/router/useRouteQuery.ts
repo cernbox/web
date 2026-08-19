@@ -24,7 +24,8 @@ export const useRouteQuery = (name: string, defaultValue?: QueryValue): Ref<Quer
             query: {
               ...unref(router.currentRoute).query,
               [name]: v
-            }
+            },
+            hash: unref(router.currentRoute).hash
           })
         } catch {}
       })

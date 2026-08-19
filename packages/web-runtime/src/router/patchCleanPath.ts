@@ -43,7 +43,11 @@ export const patchRouter = (router: Router) => {
 
       return method({
         path: cleanPath(resolved.fullPath),
-        query: resolved.query
+        query: resolved.query,
+        // `parseURL` keeps only the path part of what it is given, so a fragment sitting inside
+        // `fullPath` would be dropped here - taking the anchor with it on every navigation that
+        // passes through a patched route.
+        hash: resolved.hash
       })
     }
 

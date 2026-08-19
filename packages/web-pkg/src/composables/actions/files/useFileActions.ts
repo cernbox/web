@@ -222,7 +222,11 @@ export const useFileActions = () => {
         ...(resource.fileId && unref(options).routing.idBased && { fileId: resource.fileId }),
         ...(templateId && { templateId }),
         ...routeToContextQuery(unref(router.currentRoute))
-      }
+      },
+      // A link that points into a document - a heading anchor, say - arrives on the file's own
+      // route and is then redirected here. Carrying the fragment over is what lets the editor
+      // still see which part of the file was asked for.
+      hash: unref(router.currentRoute).hash
     }
   }
 

@@ -275,6 +275,7 @@
           </oc-td>
         </oc-tr>
       </account-table>
+      <custom-component-target :extension-point="accountSectionsExtensionPoint" />
     </div>
   </main>
 </template>
@@ -285,6 +286,7 @@ import EditPasswordModal from '../components/EditPasswordModal.vue'
 import { SettingsBundle, LanguageOption, SettingsValue } from '../helpers/settings'
 import { computed, defineComponent, onMounted, onBeforeUnmount, unref, ref } from 'vue'
 import {
+  CustomComponentTarget,
   useAppsStore,
   useAuthStore,
   useCapabilityStore,
@@ -312,6 +314,7 @@ import { call } from '@ownclouders/web-client'
 import QuotaInformation from '../components/Account/QuotaInformation.vue'
 import AccountTable from '../components/Account/AccountTable.vue'
 import { useNotificationsSettings } from '../composables/notificationsSettings'
+import { accountSectionsExtensionPoint } from '../extensionPoints'
 import { captureException } from '@sentry/vue'
 
 const MOBILE_BREAKPOINT = 800
@@ -320,6 +323,7 @@ export default defineComponent({
   components: {
     QuotaInformation,
     AppLoadingSpinner,
+    CustomComponentTarget,
     GdprExport,
     ExtensionPreference,
     ThemeSwitcher,
@@ -746,6 +750,7 @@ export default defineComponent({
     return {
       clientService,
       languageOptions,
+      accountSectionsExtensionPoint,
       extensionPointsWithUserPreferences,
       selectedLanguageValue,
       updateSelectedLanguage,

@@ -12,8 +12,6 @@ export class UrlSign {
   private axiosClient: AxiosInstance
   private baseURI: string
 
-  private signingKey: string
-
   private ALGORITHM = 'sha512'
   private TTL = 1200
   private HASH_LENGTH = 32
@@ -25,13 +23,15 @@ export class UrlSign {
   }
 
   public async signUrl(url: string, username: string) {
+    const now = new Date().toISOString()
     const signedUrl = new URL(url)
     signedUrl.searchParams.set('OC-Credential', username)
-    signedUrl.searchParams.set('OC-Date', new Date().toISOString())
+    signedUrl.searchParams.set('OC-Date', now)
     signedUrl.searchParams.set('OC-Expires', this.TTL.toString())
     signedUrl.searchParams.set('OC-Verb', 'GET')
 
-    const hashedKey = await this.createHashedKey(signedUrl.toString())
+    const signignKey = await this.getSignKey(now)
+    const hashedKey = this.createHashedKey(signedUrl.toString(), signignKey)
 
     signedUrl.searchParams.set('OC-Algo', `PBKDF2/${this.ITERATION_COUNT}-SHA512`)
     signedUrl.searchParams.set('OC-Signature', hashedKey)
@@ -39,25 +39,19 @@ export class UrlSign {
     return signedUrl.toString()
   }
 
-  private async getSignKey() {
-    if (this.signingKey) {
-      return this.signingKey
-    }
-
+  private async getSignKey(date: string) {
     const data = await this.axiosClient.get(
-      urlJoin(this.baseURI, 'ocs/v1.php/cloud/user/signing-key'),
+      urlJoin(this.baseURI, `ocs/v1.php/cloud/user/signing-key?OC-Date=${date}`),
       {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       }
     )
 
     const parsedXML = convert.xml2js(data.data, { compact: true }) as any
-    this.signingKey = parsedXML.ocs.data['signing-key']._text
-    return this.signingKey
+    return parsedXML.ocs.data['signing-key']._text
   }
 
-  private async createHashedKey(url: string) {
-    const signignKey = await this.getSignKey()
+  private createHashedKey(url: string, signignKey: string) {
     const hashedKey = pbkdf2Sync(
       url,
       signignKey,

@@ -16,7 +16,11 @@ import {
   formatFileSize
 } from '@ownclouders/web-pkg'
 import { locationSpacesGeneric, UppyService, UppyResource } from '@ownclouders/web-pkg'
-import { isPersonalSpaceResource, isShareSpaceResource } from '@ownclouders/web-client'
+import {
+  isFallbackSpaceResource,
+  isPersonalSpaceResource,
+  isShareSpaceResource
+} from '@ownclouders/web-client'
 import { ClientService, queryItemAsString } from '@ownclouders/web-pkg'
 
 export interface HandleUploadOptions {
@@ -110,14 +114,15 @@ export class HandleUpload extends BasePlugin {
     if (!this.resourcesStore.currentFolder && unref(this.route)?.params?.token) {
       // public file drop
       const publicLinkToken = queryItemAsString(unref(this.route).params.token)
-      let endpoint = urlJoin(
+      const baseEndpoint = urlJoin(
         this.clientService.webdav.getPublicFileUrl(unref(this.space), publicLinkToken),
         { trailingSlash: true }
       )
 
       for (const file of files) {
+        let endpoint = baseEndpoint
         if (!this.uppy.getPlugin('Tus')) {
-          endpoint = urlJoin(endpoint, encodeURIComponent(file.name))
+          endpoint = urlJoin(baseEndpoint, encodeURIComponent(file.name))
         }
 
         file[this.getUploadPluginName()] = { endpoint }
@@ -212,6 +217,7 @@ export class HandleUpload extends BasePlugin {
       if (
         !targetUploadSpace ||
         isShareSpaceResource(targetUploadSpace) ||
+        isFallbackSpaceResource(targetUploadSpace) ||
         (isPersonalSpaceResource(targetUploadSpace) &&
           !targetUploadSpace.isOwner(this.userStore.user))
       ) {

@@ -1,11 +1,12 @@
 <template>
   <iframe
     v-if="appUrl && method === 'GET'"
+    ref="appIframeRef"
     :src="appUrl"
     class="oc-width-1-1 oc-height-1-1"
     :title="iFrameTitle"
     allowfullscreen
-    allow="camera"
+    allow="camera; clipboard-read *; clipboard-write *"
   />
   <div v-if="appUrl && method === 'POST' && formParameters" class="oc-height-1-1 oc-width-1-1">
     <form :action="appUrl" target="app-iframe" method="post">
@@ -15,11 +16,12 @@
       </div>
     </form>
     <iframe
+      ref="appIframeRef"
       name="app-iframe"
       class="oc-width-1-1 oc-height-1-1"
       :title="iFrameTitle"
       allowfullscreen
-      allow="camera"
+      allow="camera; clipboard-read *; clipboard-write *"
     />
   </div>
 </template>
@@ -33,9 +35,11 @@ import {
   unref,
   nextTick,
   ref,
+  toRef,
   watch,
   VNodeRef,
-  onMounted
+  onMounted,
+  onBeforeUnmount
 } from 'vue'
 import { useTask } from 'vue-concurrency'
 import { useGettext } from 'vue3-gettext'
@@ -43,21 +47,25 @@ import { useGettext } from 'vue3-gettext'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { urlJoin } from '@ownclouders/web-client'
 import {
-  isSameResource,
   useCapabilityStore,
   useConfigStore,
+  useEmbedMode,
   useMessages,
   useRequest,
   useAppProviderService,
   useRoute,
+  useRouter,
   queryItemAsString,
-  useRouteQuery
+  useRouteQuery,
+  useThemeStore,
+  isSameResource
 } from '@ownclouders/web-pkg'
 import {
   isProjectSpaceResource,
   isPublicSpaceResource,
   isShareSpaceResource
 } from '@ownclouders/web-client'
+import { useOfficeAlert, useOfficePostMessageRegistry } from './composables'
 
 export default defineComponent({
   name: 'ExternalApp',
@@ -73,8 +81,11 @@ export default defineComponent({
     const capabilityStore = useCapabilityStore()
     const configStore = useConfigStore()
     const route = useRoute()
+    const router = useRouter()
     const appProviderService = useAppProviderService()
     const { makeRequest } = useRequest()
+    const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
+    const themeStore = useThemeStore()
 
     const viewModeQuery = useRouteQuery('view_mode')
     const viewModeQueryValue = computed(() => {
@@ -96,10 +107,20 @@ export default defineComponent({
       )
     })
 
+    // navigates to the same resource, opened with a different external app
+    const switchToApp = (targetAppName: string) => {
+      router.push({
+        name: `external-${targetAppName.toLowerCase()}-apps`,
+        params: unref(route).params,
+        query: unref(route).query
+      })
+    }
+
     const appUrl = ref()
     const formParameters = ref({})
     const method = ref()
     const subm: VNodeRef = ref()
+    const appIframeRef: VNodeRef = ref()
 
     const iFrameTitle = computed(() => {
       return $gettext('"%{appName}" app content area', {
@@ -115,51 +136,120 @@ export default defineComponent({
       })
     }
 
-    const successfulLoad = ref(false)
-    const isAlertClosed = computed(() => {
-      return localStorage.getItem('officeAlertClosed')
-    })
+    const getAlertsContainer = () => {
+      let alertsContainer = document.getElementById('app-alerts-container')
+      if (!alertsContainer) {
+        alertsContainer = document.createElement('div')
+        alertsContainer.id = 'app-alerts-container'
+        alertsContainer.classList.add('oc-px-xl', 'oc-pt-xxl', 'oc-mt-xs')
+        alertsContainer.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+        `
+        document.body.appendChild(alertsContainer)
+      }
+      return alertsContainer
+    }
 
-    const removeAlertOnSuccessfulLoad = (event: MessageEvent) => {
-      const data = JSON.parse(event.data)
-      if (data.MessageId === 'Wac_AppBootState') {
-        successfulLoad.value = true
-        if (document.getElementById('office-alert')) {
-          document.getElementById('office-alert').style.display = 'none'
-        }
+    // the container itself is position:fixed, full-width, z-index:9999 - even with no
+    // alerts left, its own padding still occupies space and blocks clicks on whatever's
+    // underneath, so it needs to go once the last alert in it is removed
+    const removeAlert = (alert: HTMLElement) => {
+      const container = alert.parentElement
+      alert.remove()
+      if (container?.id === 'app-alerts-container' && !container.hasChildNodes()) {
+        container.remove()
       }
     }
 
-    const showAlert = () => {
-      const officeAlert = document.createElement('div')
-      officeAlert.id = 'office-alert'
-      const officeText = document.createElement('span')
-      officeText.innerHTML = $gettext(
-        'Having issues displaying Office files? As a workaround we recommend using Firefox, or just refreshing this page until it loads properly. More information:&nbsp;'
-      )
-      officeText.innerHTML += `<a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://cern.service-now.com/service-portal?id=outage&n=OTG0154563"
-        >
-          OTG0154563
-        </a>`
-      officeAlert.appendChild(officeText)
-      officeAlert.classList.add('oc-my-xxl', 'oc-mx-xl', 'oc-p-m', 'oc-text-center', 'oc-rounded')
-      officeAlert.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: #f8d7da;
-        color: #721c1c;
+    // remixicon error-warning-fill
+    const alertIcon =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z"></path></svg>'
+
+    const alertStyles = {
+      danger: {
+        background: '#f8d7da',
+        color: '#721c1c'
+      },
+      warning: {
+        background: '#fff3cd',
+        color: '#856404'
+      }
+    }
+
+    const showAlert = (
+      id: string,
+      status: keyof typeof alertStyles,
+      buildContent: (content: HTMLElement) => void,
+      onClose?: () => void,
+      action?: { label: string; onClick: () => void }
+    ) => {
+      const { background, color } = alertStyles[status]
+
+      const alert = document.createElement('div')
+      alert.id = id
+      alert.classList.add('oc-mb-xs', 'oc-p-m', 'oc-text-center', 'oc-rounded')
+      alert.style.cssText = `
+        background-color: ${background};
+        color: ${color};
         text-align: left;
         font-size: 14px;
-        z-index: 9999;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        box-shadow: 0 3px 8px 1px rgb(0 0 0 / 14%);
       `
+
+      const iconWrapper = document.createElement('span')
+      iconWrapper.innerHTML = alertIcon
+      iconWrapper.style.cssText = `
+        display: flex;
+        align-items: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+      `
+      alert.appendChild(iconWrapper)
+
+      const contentWrapper = document.createElement('span')
+      contentWrapper.style.cssText = `
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+      `
+
+      const content = document.createElement('span')
+      buildContent(content)
+      contentWrapper.appendChild(content)
+
+      if (action) {
+        const actionButton = document.createElement('button')
+        actionButton.type = 'button'
+        actionButton.textContent = action.label
+        actionButton.style.cssText = `
+          font: inherit;
+          font-weight: bold;
+          background: none;
+          border: 1px solid currentColor;
+          border-radius: 16px;
+          color: inherit;
+          cursor: pointer;
+          padding: 4px 12px;
+          margin-left: 12px;
+          flex-shrink: 0;
+        `
+        actionButton.onclick = () => {
+          removeAlert(alert)
+          action.onClick()
+        }
+        contentWrapper.appendChild(actionButton)
+      }
+
+      alert.appendChild(contentWrapper)
 
       const closeButton = document.createElement('span')
       closeButton.innerHTML = '&times;'
@@ -167,17 +257,30 @@ export default defineComponent({
         font-size: 20px;
         font-weight: bold;
         cursor: pointer;
+        margin-left: 12px;
+        flex-shrink: 0;
       `
-      officeAlert.appendChild(closeButton)
-
       closeButton.onclick = () => {
-        officeAlert.style.display = 'none'
-        localStorage.setItem('officeAlertClosed', 'true')
+        removeAlert(alert)
+        onClose?.()
       }
-      setTimeout(() => {
-        if (unref(successfulLoad)) return
-        document.body.appendChild(officeAlert)
-      }, 2000)
+      alert.appendChild(closeButton)
+
+      getAlertsContainer().appendChild(alert)
+    }
+
+    const { isOfficeAlertClosed, showOfficeAlert } = useOfficeAlert(showAlert)
+
+    const showWarningAlert = (message: string, action?: { label: string; onClick: () => void }) => {
+      showAlert(
+        'warning-alert',
+        'warning',
+        (content) => {
+          content.innerHTML = message
+        },
+        undefined,
+        action
+      )
     }
 
     const loadAppUrl = useTask(function* (signal, viewMode: string) {
@@ -199,6 +302,7 @@ export default defineComponent({
         const query = stringify({
           file_id: fileId,
           lang: language.current,
+          ui_theme: themeStore.currentTheme.isDark ? 'dark' : 'light',
           ...(unref(appName) && { app_name: encodeURIComponent(unref(appName)) }),
           ...(viewMode && { view_mode: viewMode }),
           ...(unref(templateIdQueryValue) && { template_id: unref(templateIdQueryValue) })
@@ -242,6 +346,30 @@ export default defineComponent({
           yield nextTick()
           unref(subm).click()
         }
+
+        if (response.data.forced_viewmode_reason && response.data.forced_viewmode_reason !== '') {
+          // Check if an alternative app can be used in Web to open in write mode
+          // We will suggest the user changing to that app
+          const lockedByAppName = response.data.app_for_editing as string | undefined
+          const matchedAppName = lockedByAppName
+            ? appProviderService.appNames.find(
+                (name) => name.toLowerCase() === lockedByAppName.toLowerCase()
+              )
+            : undefined
+
+          const canSwitchToApp =
+            matchedAppName && matchedAppName.toLowerCase() !== unref(appName)?.toLowerCase()
+
+          showWarningAlert(
+            response.data.forced_viewmode_reason,
+            canSwitchToApp
+              ? {
+                  label: $gettext('Switch to %{appName}', { appName: matchedAppName }),
+                  onClick: () => switchToApp(matchedAppName)
+                }
+              : undefined
+          )
+        }
       } catch (e) {
         console.error('web-app-external error', e)
         throw e
@@ -255,24 +383,63 @@ export default defineComponent({
       )
     }
 
-    // switch to write mode when edit is clicked
-    const catchClickMicrosoftEdit = (event: MessageEvent) => {
+    // origin of the office app iframe, once known; used to validate incoming postMessages.
+    // fails open (skips the check) until appUrl resolves, mirroring
+    // useEmbedMode().verifyDelegatedAuthenticationOrigin's "if not configured, allow" discipline.
+    const expectedOfficeAppOrigin = computed(() => {
       try {
-        if (JSON.parse(event.data)?.MessageId === 'UI_Edit') {
-          loadAppUrl.perform('write')
-        }
-      } catch {}
+        return unref(appUrl) ? new URL(unref(appUrl)).origin : null
+      } catch {
+        return null
+      }
+    })
+
+    const {
+      register: registerOfficePostMessageHandler,
+      unregister: unregisterOfficePostMessageHandler,
+      handleMessage: handleOfficePostMessage,
+      notifyResourceChanged: notifyOfficePostMessageResourceChanged,
+      isAppLoaded: isOfficeAppLoaded,
+      hasPendingMentions: hasPendingOfficeMentions
+    } = useOfficePostMessageRegistry(appName, {
+      space: toRef(props, 'space'),
+      resource: toRef(props, 'resource'),
+      appIframeRef,
+      switchToWriteMode: () => loadAppUrl.perform('write')
+    })
+
+    const catchOfficePostMessage = (event: MessageEvent) => {
+      if (unref(expectedOfficeAppOrigin) && event.origin !== unref(expectedOfficeAppOrigin)) {
+        return
+      }
+      handleOfficePostMessage(event)
     }
+
+    // warns before leaving the tab if @mentions are queued but not yet flushed to
+    // notifyMentionedUsers - can't block/wait for the flush itself, browsers don't allow that,
+    // this only gives the user a chance to cancel and let it happen naturally
+    const warnAboutPendingMentions = (event: BeforeUnloadEvent) => {
+      if (!unref(hasPendingOfficeMentions)) {
+        return
+      }
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
     onMounted(() => {
-      if (determineOpenAsPreview(unref(appName))) {
-        window.addEventListener('message', catchClickMicrosoftEdit)
-      } else {
-        window.removeEventListener('message', catchClickMicrosoftEdit)
+      if (unref(appName) === 'MS365' && !unref(isOfficeAlertClosed)) {
+        showOfficeAlert(isOfficeAppLoaded)
       }
-      if (unref(appName) === 'MS365' && !unref(isAlertClosed)) {
-        window.addEventListener('message', removeAlertOnSuccessfulLoad)
-        showAlert()
-      }
+
+      window.addEventListener('message', catchOfficePostMessage)
+      window.addEventListener('beforeunload', warnAboutPendingMentions)
+      registerOfficePostMessageHandler()
+    })
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('message', catchOfficePostMessage)
+      window.removeEventListener('beforeunload', warnAboutPendingMentions)
+      unregisterOfficePostMessageHandler()
     })
 
     watch(
@@ -281,13 +448,17 @@ export default defineComponent({
         if (!newProps || !newProps.resource || !newProps.space) {
           return
         }
-        // if (isSameResource(newResource, oldResource)) {
-        //   return
-        // }
+        if (isSameResource(newProps.resource, oldProps?.resource)) {
+          return
+        }
+
+        notifyOfficePostMessageResourceChanged()
 
         let viewMode = 'view'
 
-        if (!props.isReadOnly) {
+        if (unref(isEmbedModeEnabled)) {
+          viewMode = 'embedded'
+        } else if (!props.isReadOnly) {
           viewMode = unref(viewModeQueryValue) || 'write'
 
           if (
@@ -309,7 +480,8 @@ export default defineComponent({
       formParameters,
       iFrameTitle,
       method,
-      subm
+      subm,
+      appIframeRef
     }
   }
 })

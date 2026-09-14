@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CERNBox Embed Demo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 13px;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      header {
+        background: #16213e;
+        border-bottom: 1px solid #0f3460;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      header h1 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #e94560;
+      }
+
+      .main {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        background: #16213e;
+        border-right: 1px solid #0f3460;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .section {
+        border-bottom: 1px solid #0f3460;
+        padding: 12px;
+      }
+
+      .section-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 8px;
+      }
+
+      label {
+        display: block;
+        color: #aaa;
+        margin-bottom: 3px;
+      }
+
+      input[type='text'],
+      select {
+        width: 100%;
+        background: #0f3460;
+        border: 1px solid #1a4a8a;
+        border-radius: 4px;
+        color: #e0e0e0;
+        padding: 5px 8px;
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      input[type='text']:focus,
+      select:focus {
+        outline: none;
+        border-color: #e94560;
+      }
+
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        color: #ccc;
+      }
+
+      input[type='checkbox'] {
+        accent-color: #e94560;
+      }
+
+      button {
+        background: #e94560;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 12px;
+      }
+
+      button:hover {
+        background: #c73652;
+      }
+
+      button.secondary {
+        background: #0f3460;
+        border: 1px solid #1a4a8a;
+      }
+
+      button.secondary:hover {
+        background: #1a4a8a;
+      }
+
+      button.icon-btn {
+        background: none;
+        border: 1px solid #1a4a8a;
+        border-radius: 3px;
+        padding: 3px 7px;
+        font-size: 11px;
+      }
+
+      button.icon-btn:hover {
+        background: #0f3460;
+      }
+
+      .btn-row {
+        display: flex;
+        gap: 6px;
+      }
+
+      /* ── Token section ── */
+      #token-section {
+        display: none;
+      }
+
+      /* ── Files list ── */
+      .files-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+      }
+
+      .empty-state {
+        color: #555;
+        font-style: italic;
+        font-size: 12px;
+      }
+
+      .file-item {
+        background: #0f3460;
+        border: 1px solid #1a4a8a;
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+      }
+
+      .file-name {
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 4px;
+        word-break: break-all;
+      }
+
+      .file-meta {
+        color: #888;
+        font-size: 11px;
+        margin-bottom: 6px;
+        word-break: break-all;
+      }
+
+      .file-actions {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+
+      .link-item {
+        background: #0f3460;
+        border: 1px solid #1a4a8a;
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+      }
+
+      .link-url {
+        font-size: 11px;
+        color: #4fc3f7;
+        word-break: break-all;
+        margin-bottom: 6px;
+      }
+
+      .link-password {
+        font-size: 11px;
+        color: #ffd54f;
+        margin-bottom: 6px;
+      }
+
+      /* ── Log ── */
+      .log-section {
+        border-bottom: none;
+        flex-shrink: 0;
+        max-height: 180px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        border-bottom: 1px solid #0f3460;
+        position: sticky;
+        top: 0;
+        background: #16213e;
+      }
+
+      .log-entry {
+        padding: 4px 12px;
+        font-size: 11px;
+        border-bottom: 1px solid #0a0a1a;
+        font-family: monospace;
+      }
+
+      .log-entry .ts {
+        color: #555;
+        margin-right: 6px;
+      }
+
+      .log-entry.select .ev {
+        color: #81c784;
+      }
+      .log-entry.share-links .ev {
+        color: #4fc3f7;
+      }
+      .log-entry.file-pick .ev {
+        color: #ffb74d;
+      }
+      .log-entry.cancel .ev {
+        color: #e57373;
+      }
+      .log-entry.unknown .ev {
+        color: #888;
+      }
+
+      /* ── Iframe ── */
+      .iframe-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .iframe-toolbar {
+        background: #16213e;
+        border-bottom: 1px solid #0f3460;
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        font-size: 11px;
+        color: #888;
+      }
+
+      .iframe-url {
+        flex: 1;
+        background: #0f3460;
+        border-radius: 3px;
+        padding: 3px 8px;
+        color: #aaa;
+        font-family: monospace;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #embed-iframe {
+        flex: 1;
+        border: none;
+        background: #000;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #555;
+        flex-shrink: 0;
+      }
+
+      .status-dot.connected {
+        background: #81c784;
+      }
+
+      /* ── Scrollbar ── */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0a0a1a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #0f3460;
+        border-radius: 3px;
+      }
+
+      .tag {
+        display: inline-block;
+        background: #0f3460;
+        border: 1px solid #1a4a8a;
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-size: 10px;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>CERNBox Embed Demo</h1>
+      <span class="tag">postMessage tester</span>
+    </header>
+
+    <div class="main">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="section">
+          <div class="section-title">Configuration</div>
+
+          <label>CERNBox URL</label>
+          <input type="text" id="base-url" value="https://host.docker.internal:9200" />
+
+          <label>Embed mode</label>
+          <select id="embed-target" onchange="onTargetChange()">
+            <option value="">Default (multi-select)</option>
+            <option value="file">File picker (single file)</option>
+            <option value="location">Location picker</option>
+            <option value="inline-attach">Inline attach (no buttons)</option>
+          </select>
+
+          <div id="inline-attach-section" style="display:none">
+            <button onclick="requestSelection()" style="width:100%">Get selected files</button>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="hide-nav" />
+            <label style="margin: 0">Hide navigation</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="hide-logo" />
+            <label style="margin: 0">Hide logo</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="hide-app-switcher" />
+            <label style="margin: 0">Hide app switcher</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="hide-account-menu" />
+            <label style="margin: 0">Hide account menu</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="choose-file-name" onchange="toggleChooseFileName()" />
+            <label style="margin: 0">Choose file name (location picker)</label>
+          </div>
+
+          <div id="choose-file-name-section" style="display: none">
+            <label>File name suggestion</label>
+            <input type="text" id="file-name-suggestion" placeholder="document.pdf" />
+          </div>
+
+          <label>Allowed file types <span style="color:#555">(comma-separated, e.g. pdf,image/png)</span></label>
+          <input type="text" id="file-types" placeholder="all" />
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="delegate-auth" onchange="toggleTokenSection()" />
+            <label style="margin: 0">Delegate authentication</label>
+          </div>
+
+          <div id="token-section">
+            <label>Access token (Bearer)</label>
+            <input type="text" id="access-token" placeholder="eyJ..." />
+          </div>
+
+          <div class="btn-row">
+            <button onclick="loadIframe()">Load</button>
+            <button class="secondary" onclick="reloadIframe()">Reload</button>
+          </div>
+        </div>
+
+        <!-- ── Selected files ── -->
+        <div class="section">
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <div class="section-title" style="margin: 0">Selected files</div>
+            <button class="icon-btn" onclick="clearFiles()">Clear</button>
+          </div>
+        </div>
+        <div class="files-list" id="files-list">
+          <p class="empty-state">No files selected yet.</p>
+        </div>
+
+        <!-- ── Share links ── -->
+        <div class="section">
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <div class="section-title" style="margin: 0">Share links</div>
+            <button class="icon-btn" onclick="clearLinks()">Clear</button>
+          </div>
+        </div>
+        <div
+          class="files-list"
+          id="links-list"
+          style="flex: 0; max-height: 120px; overflow-y: auto; padding: 8px 12px"
+        >
+          <p class="empty-state">No share links yet.</p>
+        </div>
+
+        <!-- ── Event log ── -->
+        <div class="log-section">
+          <div class="log-header">
+            <div class="section-title" style="margin: 0">Event log</div>
+            <button class="icon-btn" onclick="clearLog()">Clear</button>
+          </div>
+          <div id="log"></div>
+        </div>
+      </aside>
+
+      <!-- ── Iframe area ── -->
+      <div class="iframe-area">
+        <div class="iframe-toolbar">
+          <div class="status-dot" id="status-dot"></div>
+          <div class="iframe-url" id="iframe-url-display">—</div>
+          <button class="icon-btn" onclick="copyIframeUrl()">Copy URL</button>
+        </div>
+        <iframe
+          id="embed-iframe"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-popups-to-escape-sandbox"
+        ></iframe>
+      </div>
+    </div>
+
+    <script>
+      const iframe = document.getElementById('embed-iframe')
+      const filesList = document.getElementById('files-list')
+      const linksList = document.getElementById('links-list')
+      const log = document.getElementById('log')
+      const statusDot = document.getElementById('status-dot')
+      const iframeUrlDisplay = document.getElementById('iframe-url-display')
+
+      let currentToken = null
+
+      // ── Build iframe URL ──────────────────────────────────────────────
+
+      function buildUrl() {
+        const base = document.getElementById('base-url').value.replace(/\/$/, '')
+        const target = document.getElementById('embed-target').value
+        const hideNav = document.getElementById('hide-nav').checked
+        const hideLogo = document.getElementById('hide-logo').checked
+        const hideAppSwitcher = document.getElementById('hide-app-switcher').checked
+        const hideAccountMenu = document.getElementById('hide-account-menu').checked
+        const chooseFileName = document.getElementById('choose-file-name').checked
+        const fileNameSuggestion = document.getElementById('file-name-suggestion').value.trim()
+        const fileTypes = document.getElementById('file-types').value.trim()
+        const delegateAuth = document.getElementById('delegate-auth').checked
+
+        const params = new URLSearchParams({ embed: 'true' })
+        if (target) params.set('embed-target', target)
+        if (hideNav) params.set('hide-navigation', 'true')
+        if (hideLogo) params.set('hide-logo', 'true')
+        if (hideAppSwitcher) params.set('hide-app-switcher', 'true')
+        if (hideAccountMenu) params.set('hide-account-menu', 'true')
+        if (chooseFileName) {
+          params.set('embed-choose-file-name', 'true')
+          if (fileNameSuggestion) params.set('embed-choose-file-name-suggestion', fileNameSuggestion)
+        }
+        if (fileTypes) params.set('embed-file-types', fileTypes)
+        if (delegateAuth) {
+          params.set('embed-delegate-authentication', 'true')
+          params.set('embed-delegate-authentication-origin', window.location.origin)
+        }
+        params.set('embed-messages-origin', window.location.origin)
+
+        return `${base}?${params}`
+      }
+
+      function loadIframe() {
+        const url = buildUrl()
+        iframe.src = url
+        iframeUrlDisplay.textContent = url
+        statusDot.className = 'status-dot'
+        addLog('—', `iframe loaded`, 'unknown')
+      }
+
+      function reloadIframe() {
+        iframe.src = iframe.src
+        statusDot.className = 'status-dot'
+      }
+
+      function copyIframeUrl() {
+        navigator.clipboard.writeText(iframe.src)
+      }
+
+      function toggleTokenSection() {
+        const show = document.getElementById('delegate-auth').checked
+        document.getElementById('token-section').style.display = show ? 'block' : 'none'
+      }
+
+      function toggleChooseFileName() {
+        const show = document.getElementById('choose-file-name').checked
+        document.getElementById('choose-file-name-section').style.display = show ? 'block' : 'none'
+      }
+
+      function onTargetChange() {
+        const isInlineAttach = document.getElementById('embed-target').value === 'inline-attach'
+        document.getElementById('inline-attach-section').style.display = isInlineAttach ? 'block' : 'none'
+      }
+
+      function requestSelection() {
+        iframe.contentWindow.postMessage(
+          { name: 'owncloud-embed:request-selection' },
+          document.getElementById('base-url').value
+        )
+        addLog('owncloud-embed:request-selection', 'sent', 'unknown')
+      }
+
+      // ── postMessage handler ───────────────────────────────────────────
+
+      window.addEventListener('message', (event) => {
+        const msg = event.data
+        if (!msg || !msg.name) return
+
+        statusDot.className = 'status-dot connected'
+
+        switch (msg.name) {
+          case 'owncloud-embed:request-token':
+            handleRequestToken()
+            break
+          case 'owncloud-embed:select':
+            handleSelect(msg.data)
+            break
+          case 'owncloud-embed:file-pick':
+            handleFilePick(msg.data)
+            break
+          case 'owncloud-embed:share':
+          case 'owncloud-embed:share-links':
+            handleShareLinks(msg.data, msg.name)
+            break
+          case 'owncloud-embed:cancel':
+            addLog(msg.name, 'User cancelled', 'cancel')
+            break
+          default:
+            addLog(msg.name, JSON.stringify(msg.data), 'unknown')
+        }
+      })
+
+      // ── Token delegation ──────────────────────────────────────────────
+
+      function handleRequestToken() {
+        addLog('owncloud-embed:request-token', 'token requested', 'unknown')
+        const token = document.getElementById('access-token').value.trim()
+        if (!token) {
+          addLog('—', 'ERROR: no token provided — fill in the access token field', 'cancel')
+          return
+        }
+        currentToken = token
+        sendToken(token)
+      }
+
+      function sendToken(token) {
+        iframe.contentWindow.postMessage(
+          { name: 'owncloud-embed:update-token', data: { access_token: token } },
+          document.getElementById('base-url').value
+        )
+        addLog('owncloud-embed:update-token', 'token sent', 'select')
+      }
+
+      // ── Select / File pick ────────────────────────────────────────────
+
+      function handleSelect(data) {
+        // data can be Resource[] or { resources, fileName, locationQuery }
+        let resources = Array.isArray(data) ? data : data.resources || []
+        const fileName = !Array.isArray(data) ? data.fileName : null
+
+        addLog(
+          'owncloud-embed:select',
+          `${resources.length} resource(s)${fileName ? `, filename: ${fileName}` : ''}`,
+          'select'
+        )
+        resources.forEach((r) => renderResource(r))
+      }
+
+      function handleFilePick(data) {
+        // data: { resource, locationQuery }
+        const resource = data.resource || data
+        addLog('owncloud-embed:file-pick', resource.name, 'file-pick')
+        renderResource(resource)
+      }
+
+      function renderResource(r) {
+        if (!r) return
+        clearEmpty(filesList)
+
+        const item = document.createElement('div')
+        item.className = 'file-item'
+
+        const webdavUrl = r.downloadURL || r.webDavPath ? r.downloadURL || buildWebDavUrl(r) : null
+
+        item.innerHTML = `
+      <div class="file-name">${escHtml(r.name || r.id || 'Unknown')}</div>
+      <div class="file-meta">
+        ${r.path ? `Path: ${escHtml(r.path)}<br>` : ''}
+        ${r.size !== undefined ? `Size: ${formatSize(r.size)}<br>` : ''}
+        ${r.mimeType ? `Type: ${escHtml(r.mimeType)}<br>` : ''}
+        ${webdavUrl ? `URL: <span style="color:#4fc3f7;font-size:10px">${escHtml(webdavUrl)}</span>` : ''}
+      </div>
+      <div class="file-actions">
+        ${webdavUrl ? `<button class="icon-btn" onclick="downloadResource(${JSON.stringify(webdavUrl).replace(/'/g, "\\'")},'${escHtml(r.name || 'file')}')">Download</button>` : ''}
+        <button class="icon-btn" onclick="copyText(${JSON.stringify(webdavUrl || r.id || '')})">Copy URL</button>
+        <button class="icon-btn" onclick="showJson(this)">JSON</button>
+        <pre style="display:none;font-size:10px;margin-top:6px;white-space:pre-wrap;word-break:break-all;color:#aaa">${escHtml(JSON.stringify(r, null, 2))}</pre>
+      </div>
+    `
+        filesList.prepend(item)
+      }
+
+      function buildWebDavUrl(r) {
+        if (r.downloadURL) return r.downloadURL
+        // Fall back to constructing from base + webDavPath or path
+        const base = document.getElementById('base-url').value.replace(/\/$/, '')
+        const path = r.webDavPath || r.path
+        if (!path) return null
+        return `${base}/remote.php/dav${path}`
+      }
+
+      function downloadResource(url, name) {
+        if (currentToken) {
+          // Fetch with Bearer token and trigger browser download
+          fetch(url, { headers: { Authorization: `Bearer ${currentToken}` } })
+            .then((r) => r.blob())
+            .then((blob) => {
+              const a = document.createElement('a')
+              a.href = URL.createObjectURL(blob)
+              a.download = name
+              a.click()
+              URL.revokeObjectURL(a.href)
+            })
+            .catch((e) => addLog('—', `Download failed: ${e.message}`, 'cancel'))
+        } else {
+          // No token — open URL directly (may require browser session)
+          window.open(url, '_blank')
+        }
+      }
+
+      // ── Share links ───────────────────────────────────────────────────
+
+      function handleShareLinks(data, eventName) {
+        // data: Array<{ url, password? }> (share-links) or string[] (share, legacy)
+        const links = Array.isArray(data)
+          ? data.map((item) => (typeof item === 'string' ? { url: item } : item))
+          : []
+
+        addLog(eventName, `${links.length} link(s)`, 'share-links')
+
+        clearEmpty(linksList)
+        links.forEach((link) => {
+          const item = document.createElement('div')
+          item.className = 'link-item'
+          item.innerHTML = `
+        <div class="link-url"><a href="${escHtml(link.url)}" target="_blank" style="color:inherit">${escHtml(link.url)}</a></div>
+        ${link.password ? `<div class="link-password">Password: ${escHtml(link.password)}</div>` : ''}
+        <div style="display:flex;gap:5px">
+          <button class="icon-btn" onclick="window.open('${escHtml(link.url)}','_blank')">Open</button>
+          <button class="icon-btn" onclick="copyText('${escHtml(link.url)}')">Copy</button>
+        </div>
+      `
+          linksList.prepend(item)
+        })
+      }
+
+      // ── Helpers ───────────────────────────────────────────────────────
+
+      function addLog(name, detail, type) {
+        const entry = document.createElement('div')
+        entry.className = `log-entry ${type}`
+        const ts = new Date().toLocaleTimeString('en-GB', { hour12: false })
+        entry.innerHTML = `<span class="ts">${ts}</span><span class="ev">${escHtml(name)}</span> ${escHtml(detail)}`
+        log.prepend(entry)
+      }
+
+      function clearEmpty(container) {
+        const empty = container.querySelector('.empty-state')
+        if (empty) empty.remove()
+      }
+
+      function clearFiles() {
+        filesList.innerHTML = '<p class="empty-state">No files selected yet.</p>'
+      }
+
+      function clearLinks() {
+        linksList.innerHTML = '<p class="empty-state">No share links yet.</p>'
+      }
+
+      function clearLog() {
+        log.innerHTML = ''
+      }
+
+      function copyText(text) {
+        navigator.clipboard.writeText(text)
+      }
+
+      function showJson(btn) {
+        const pre = btn.parentElement.querySelector('pre')
+        pre.style.display = pre.style.display === 'none' ? 'block' : 'none'
+        btn.textContent = pre.style.display === 'none' ? 'JSON' : 'Hide'
+      }
+
+      function formatSize(bytes) {
+        if (bytes == null) return ''
+        if (bytes < 1024) return `${bytes} B`
+        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / 1048576).toFixed(1)} MB`
+      }
+
+      function escHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+      }
+
+      // Load on page open
+      loadIframe()
+    </script>
+  </body>
+</html>

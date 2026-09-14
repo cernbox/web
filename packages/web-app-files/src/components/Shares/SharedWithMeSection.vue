@@ -194,19 +194,31 @@ export default defineComponent({
       type: Object,
       required: false,
       default: null
+    },
+    paginationPages: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    paginationPage: {
+      type: Number,
+      required: false,
+      default: null
     }
   },
-  setup() {
+  setup(props) {
     const capabilityStore = useCapabilityStore()
     const configStore = useConfigStore()
     const { getMatchingSpace } = useGetMatchingSpace()
     const { loadPreview } = useLoadPreview()
 
-    const { paginationPages, paginationPage } = useResourcesViewDefaults<
-      IncomingShareResource,
-      any,
-      any[]
-    >()
+    const {
+      paginationPages: defaultPaginationPages,
+      paginationPage: defaultPaginationPage
+    } = useResourcesViewDefaults<IncomingShareResource, any, any[]>()
+
+    const paginationPages = computed(() => props.paginationPages ?? unref(defaultPaginationPages))
+    const paginationPage = computed(() => props.paginationPage ?? unref(defaultPaginationPage))
 
     const { triggerDefaultAction } = useFileActions()
     const { actions: hideShareActions } = useFileActionsToggleHideShare()

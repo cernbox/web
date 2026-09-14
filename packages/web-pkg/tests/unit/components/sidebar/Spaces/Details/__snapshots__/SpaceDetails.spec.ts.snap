@@ -8,7 +8,7 @@ exports[`Details SideBar Panel > displays the details side panel 1`] = `
   <div data-v-c7ea2f9c="" class="oc-flex oc-flex-middle oc-space-details-sidebar-members oc-mb-s oc-text-small" style="gap: 15px;">
     <oc-button-stub data-v-c7ea2f9c="" type="button" disabled="false" size="medium" arialabel="Open member list in share panel" submit="button" variation="passive" appearance="raw" justifycontent="center" gapsize="medium" showspinner="false"></oc-button-stub>
     <!--v-if-->
-    <p data-v-c7ea2f9c="">This space has 1 member.</p>
+    <!--<p v-text="shareLabel" />-->
     <oc-button-stub data-v-c7ea2f9c="" type="button" disabled="false" size="small" arialabel="Open share panel" submit="button" variation="passive" appearance="raw" justifycontent="center" gapsize="medium" showspinner="false"></oc-button-stub>
   </div>
   <table data-v-c7ea2f9c="" class="details-table oc-width-1-1" aria-label="Overview of the information about the selected space">
@@ -19,10 +19,12 @@ exports[`Details SideBar Panel > displays the details side panel 1`] = `
       <td data-v-c7ea2f9c="">Invalid DateTime</td>
     </tr>
     <!--v-if-->
-    <tr data-v-c7ea2f9c="">
-      <th data-v-c7ea2f9c="" scope="col" class="oc-pr-s oc-font-semibold">Manager</th>
-      <td data-v-c7ea2f9c=""><span data-v-c7ea2f9c="">alice (me)</span></td>
-    </tr>
+    <!--<tr>
+        <th scope="col" class="oc-pr-s oc-font-semibold" v-text="$gettext('Manager')" />
+        <td>
+          <span v-text="ownerUsernames" />
+        </td>
+      </tr>-->
     <tr data-v-c7ea2f9c="">
       <th data-v-c7ea2f9c="" scope="col" class="oc-pr-s oc-font-semibold">Quota</th>
       <td data-v-c7ea2f9c="">

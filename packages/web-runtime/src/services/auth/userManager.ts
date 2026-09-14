@@ -60,8 +60,15 @@ export class UserManager extends OidcUserManager {
       prefix: storePrefix,
       store: browserStorage
     })
+    // Always use localStorage for stateStore so popup windows (same-origin)
+    // can access the PKCE state even when window.opener is severed by COOP headers.
+    const stateStore = new WebStorageStateStore({
+      prefix: storePrefix,
+      store: localStorage
+    })
     const openIdConfig: UserManagerSettings = {
       userStore,
+      stateStore,
       redirect_uri: buildUrl(router, '/oidc-callback.html'),
       silent_redirect_uri: buildUrl(router, '/oidc-silent-redirect.html'),
 
@@ -187,7 +194,15 @@ export class UserManager extends OidcUserManager {
 
   private async fetchUserInfo() {
     const graphClient = this.clientService.graphAuthenticated
-    const [graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
+    let graphUser: Awaited<ReturnType<typeof graphClient.users.getMe>>, roles: SettingsBundle[]
+    try {
+      ;[graphUser, roles] = await Promise.all([graphClient.users.getMe(), this.fetchRoles()])
+    } catch (e) {
+      if (e?.response?.status === 409) {
+        throw new ErrorResponse({ error: 'low_assurance_level' } as any)
+      }
+      throw e
+    }
     const role = await this.fetchRole({ graphUser, roles })
 
     this.userStore.setUser({
@@ -280,6 +295,15 @@ export class UserManager extends OidcUserManager {
       logger.debug('current user matches user returned from signin')
     }
 
+    // Check if this user should still be forced to use the SSO token
+    if (
+      user.profile.hasOwnProperty('cern_roles') &&
+      (user.profile.cern_roles as Array<string>).includes('force-sso-token')
+    ) {
+      console.log('CERNBox: current user has role to force use of SSO token')
+      return (super._buildUser as any)(signinResponse, verifySub)
+    }
+
     /* CERNBox customization
      * Do a call to the backend, as this will reply with the internal reva token.
      * Use that longer token in all calls to the backend (so, replace the default store token)
@@ -298,6 +322,10 @@ export class UserManager extends OidcUserManager {
       user.access_token = revaToken
       user.expires_at = claims.exp
     } catch (e) {
+      // We do not want to fail/raise exception here, even on 409.
+      // If we get a 409 we still want the user to be persisted, so that
+      // we can terminate the session in the SSO as well (on logout).
+      // The 409 will be catched later.
       console.error('Failed to get reva token, continue with sso one', e)
     }
     // end

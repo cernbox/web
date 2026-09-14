@@ -43,14 +43,14 @@ export default defineComponent({
     }
   },
   setup(props) {
-    // const { openWithDefaultApp } = useOpenWithDefaultApp()
-    // const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
-    // if (unref(openWithDefaultAppQuery) === 'true') {
-    //   openWithDefaultApp({
-    //     space: props.space,
-    //     resource: props.singleResource
-    //   })
-    // }
+    const { openWithDefaultApp } = useOpenWithDefaultApp()
+    const openWithDefaultAppQuery = useRouteQuery('openWithDefaultApp')
+    if (unref(openWithDefaultAppQuery) === 'true') {
+      openWithDefaultApp({
+        space: props.space,
+        resource: props.singleResource
+      })
+    }
   }
 })
 </script>

@@ -3,25 +3,19 @@ import { RuntimeError } from '../../../src/errors'
 import { mock, mockDeep } from 'vitest-mock-extended'
 import { ClientService } from '../../../src/services'
 import { unref, ref, Ref } from 'vue'
-import { AxiosResponse } from 'axios'
 import { ArchiverCapability } from '@ownclouders/web-client/ocs'
 import { createTestingPinia } from '@ownclouders/web-test-helpers'
-import { useAuthStore, useUserStore } from '../../../src/composables/piniaStores'
+import { useUserStore } from '../../../src/composables/piniaStores'
 
 const serverUrl = 'https://demo.owncloud.com'
 const getArchiverServiceInstance = (capabilities: Ref<ArchiverCapability[]>) => {
   createTestingPinia()
   const userStore = useUserStore()
-  const authStore = useAuthStore()
 
   const clientServiceMock = mockDeep<ClientService>()
-  clientServiceMock.httpUnAuthenticated.get.mockResolvedValue({
-    data: new ArrayBuffer(8),
-    headers: { 'content-disposition': 'filename="download.tar"' }
-  } as unknown as AxiosResponse)
   clientServiceMock.ocsUserContext.signUrl.mockImplementation((url) => Promise.resolve(url))
 
-  return new ArchiverService(clientServiceMock, userStore, authStore, serverUrl, capabilities)
+  return new ArchiverService(clientServiceMock, userStore, serverUrl, capabilities)
 }
 
 describe('archiver', () => {
@@ -67,10 +61,8 @@ describe('archiver', () => {
     })
     it('returns a download url for a valid archive download trigger', async () => {
       const archiverService = getArchiverServiceInstance(capabilities)
-      window.URL.createObjectURL = vi.fn(() => '')
       const fileId = 'asdf'
       const url = await archiverService.triggerDownload({ fileIds: [fileId] })
-      expect(window.URL.createObjectURL).toHaveBeenCalled()
       expect(url.startsWith(archiverUrl)).toBeTruthy()
       expect(url.indexOf(`id=${fileId}`)).toBeGreaterThan(-1)
     })
@@ -99,12 +91,10 @@ describe('archiver', () => {
     })
     it('returns a download url for a valid archive download trigger', async () => {
       const archiverService = getArchiverServiceInstance(capabilities)
-      window.URL.createObjectURL = vi.fn(() => '')
       const dir = '/some/path'
       const fileName = 'qwer'
       const url = await archiverService.triggerDownload({ dir, files: [fileName] })
 
-      expect(window.URL.createObjectURL).toHaveBeenCalled()
       expect(url.startsWith(archiverUrl)).toBeTruthy()
       expect(url.indexOf(`files[]=${fileName}`)).toBeGreaterThan(-1)
       expect(url.indexOf(`dir=${encodeURIComponent(dir)}`)).toBeGreaterThan(-1)

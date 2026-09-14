@@ -61,7 +61,6 @@ export default defineComponent({
 
     const connections: Ref<FederatedConnection[]> = ref([])
     const highlightedConnections: Ref<FederatedConnection[]> = ref([])
-    const highlightNewConnectionsInterval = ref(null)
     const loadingConnections = ref(true)
 
     // Modal state for invitation acceptance
@@ -150,13 +149,6 @@ export default defineComponent({
     onMounted(async () => {
       await findAcceptedUsers()
       loadingConnections.value = false
-      highlightNewConnectionsInterval.value = setInterval(() => {
-        highlightNewConnections()
-      }, 10 * 1000)
-    })
-
-    onUnmounted(() => {
-      clearInterval(unref(highlightNewConnectionsInterval))
     })
 
     return {

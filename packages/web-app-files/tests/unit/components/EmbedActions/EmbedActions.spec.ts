@@ -9,6 +9,7 @@ import { FileAction, useEmbedMode, useFileActionsCreateLink } from '@ownclouders
 import { mock } from 'vitest-mock-extended'
 import { ref } from 'vue'
 import { Resource } from '@ownclouders/web-client'
+import { flushPromises } from '@vue/test-utils'
 
 vi.mock('@ownclouders/web-pkg', async (importOriginal) => ({
   ...(await importOriginal<any>()),
@@ -46,8 +47,10 @@ describe('EmbedActions', () => {
       const { wrapper, mocks } = getWrapper({ selectedIds: ['1'] })
 
       await wrapper.find(selectors.btnSelect).trigger('click')
+      await flushPromises()
 
       expect(mocks.postMessageMock).toHaveBeenCalledWith('owncloud-embed:select', [{ id: '1' }])
+      expect(mocks.postMessageMock).toHaveBeenCalledTimes(1)
     })
 
     it('should enable select action when embedTarget is set to location', () => {
@@ -63,8 +66,10 @@ describe('EmbedActions', () => {
       })
 
       await wrapper.find(selectors.btnSelect).trigger('click')
+      await flushPromises()
 
       expect(mocks.postMessageMock).toHaveBeenCalledWith('owncloud-embed:select', [{ id: '1' }])
+      expect(mocks.postMessageMock).toHaveBeenCalledTimes(1)
     })
     it('should display the file name input when chooseFileName is configured', () => {
       const { wrapper } = getWrapper({
@@ -91,6 +96,7 @@ describe('EmbedActions', () => {
       })
 
       await wrapper.find(selectors.btnSelect).trigger('click')
+      await flushPromises()
 
       expect(mocks.postMessageMock).toHaveBeenCalledWith('owncloud-embed:select', {
         fileName: 'file.txt',
@@ -100,6 +106,7 @@ describe('EmbedActions', () => {
           contextRouteQuery: {}
         }
       })
+      expect(mocks.postMessageMock).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -177,6 +184,7 @@ function getWrapper(
     mock<ReturnType<typeof useEmbedMode>>({
       isLocationPicker: ref(isLocationPicker),
       isFilePicker: ref(isFilePicker),
+      isInlineAttach: ref(false),
       chooseFileName: ref(chooseFileName),
       chooseFileNameSuggestion: ref('file.txt'),
       postMessage: postMessageMock

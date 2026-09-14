@@ -21,10 +21,18 @@ export class FolderLoaderSharedWithMe implements FolderLoader {
       resourcesStore.clearResourceList()
       resourcesStore.setAncestorMetaData({})
 
+      // project and mount point spaces are loaded on demand - refresh both here so newly accepted
+      // shares resolve to their real space instead of falling back
+      yield spacesStore.reloadProjectSpaces({
+        graphClient: clientService.graphAuthenticated,
+        signal: signal1
+      })
+
       if (configStore.options.routing.fullShareOwnerPaths) {
         yield spacesStore.loadMountPoints({
           graphClient: clientService.graphAuthenticated,
-          signal: signal1
+          signal: signal1,
+          force: true
         })
       }
 

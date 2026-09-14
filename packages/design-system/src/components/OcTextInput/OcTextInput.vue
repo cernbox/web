@@ -43,6 +43,7 @@
       >
         <oc-icon name="close" size="small" variation="passive" />
       </oc-button>
+      <slot name="suffix" />
     </div>
     <div
       v-if="showMessageLine"

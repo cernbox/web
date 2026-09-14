@@ -8,6 +8,7 @@
         :model-value="selectedCollaborators"
         :options="autocompleteResults"
         :loading="searchInProgress"
+        :disabled="resolvingEmails"
         :multiple="true"
         :filter="filterRecipients"
         :label="selectedCollaboratorsLabel"
@@ -68,6 +69,7 @@
     </div>
     <div class="oc-flex oc-flex-between oc-flex-wrap oc-mb-l oc-mt-s">
       <role-dropdown
+        :key="currentShareRoleType.id"
         mode="create"
         :show-icon="isRunningOnEos"
         class="role-selection-dropdown"
@@ -150,7 +152,11 @@ import {
   CollaboratorShare,
   ShareRole,
   ShareTypes,
-  call
+  call,
+  isSharingHierarchyConflictPendingError,
+  isSharingHierarchyConflictUserAbortError,
+  shareHierarchyForceRequestOptions,
+  type SharingHierarchyConflict
 } from '@ownclouders/web-client'
 import {
   useCapabilityStore,
@@ -159,18 +165,21 @@ import {
   useSpacesStore,
   useConfigStore,
   useSharesStore,
-  useUserStore
+  useUserStore,
+  useSharingHierarchyConflictsConfirm,
+  useSharingHierarchyConflictInform
 } from '@ownclouders/web-pkg'
 
 import { computed, defineComponent, inject, ref, unref, watch, onMounted, nextTick, Ref } from 'vue'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { DateTime } from 'luxon'
-import { OcDrop } from '@ownclouders/design-system/components'
+import { OcDrop, OcSelect } from '@ownclouders/design-system/components'
 import { useTask } from 'vue-concurrency'
 import { useGettext } from 'vue3-gettext'
 import { isProjectSpaceResource } from '@ownclouders/web-client'
 import { Group } from '@ownclouders/web-client/graph/generated'
 import ExpirationDateIndicator from '../../ExpirationDateIndicator.vue'
+import { isEmailListPaste, parseEmailList } from '../../../../../helpers/share'
 
 // just a dummy function to trick gettext tools
 const $gettext = (str: string) => {
@@ -218,9 +227,14 @@ export default defineComponent({
     const { addShare } = sharesStore
     const { collaboratorShares } = storeToRefs(sharesStore)
 
+    const confirmSharingHierarchyConflicts = useSharingHierarchyConflictsConfirm()
+    const informSharingHierarchyConflict = useSharingHierarchyConflictInform()
+
     const searchQuery = ref('')
     const searchInProgress = ref(false)
+    const resolvingEmails = ref(false)
     const autocompleteResults = ref<CollaboratorAutoCompleteItem[]>([])
+    const ocSharingAutocomplete = ref<InstanceType<typeof OcSelect>>()
 
     const saving = ref(false)
     const savingDelayed = ref(false)
@@ -290,6 +304,19 @@ export default defineComponent({
       return configStore.options.concurrentRequests.shares.create
     })
 
+    const isEligibleCollaborator = (collaborator: CollaboratorAutoCompleteItem) => {
+      if (collaborator.id === userStore.user.id) {
+        // filter current user
+        return false
+      }
+
+      const selected = unref(selectedCollaborators).some(({ id }) => collaborator.id === id)
+      const existingShares = unref(collaboratorShares).filter((c) => !c.indirect)
+      const exists = existingShares.some((s) => s.sharedWith.id === collaborator.id)
+
+      return !selected && !exists
+    }
+
     const fetchRecipientsTask = useTask(function* (signal, query: string) {
       let filter: string
       if (unref(isExternalShareRoleType)) {
@@ -334,16 +361,7 @@ export default defineComponent({
 
       autocompleteResults.value = [...users, ...groups].filter(
         (collaborator: CollaboratorAutoCompleteItem) => {
-          if (collaborator.id === userStore.user.id) {
-            // filter current user
-            return false
-          }
-
-          const selected = unref(selectedCollaborators).some(({ id }) => collaborator.id === id)
-          const existingShares = unref(collaboratorShares).filter((c) => !c.indirect)
-          const exists = existingShares.some((s) => s.sharedWith.id === collaborator.id)
-
-          if (selected || exists) {
+          if (!isEligibleCollaborator(collaborator)) {
             return false
           }
 
@@ -357,6 +375,81 @@ export default defineComponent({
 
     const fetchRecipients = async (query: string) => {
       await fetchRecipientsTask.perform(query)
+    }
+
+    const clearSearchBox = () => {
+      searchQuery.value = ''
+      // vue-select owns the visible search text; it isn't cleared automatically since
+      // auto-resolved collaborators are pushed in directly instead of picked from the dropdown
+      const vueSelectInstance = unref(ocSharingAutocomplete)?.select as
+        | { search?: string }
+        | undefined
+      if (vueSelectInstance) {
+        vueSelectInstance.search = ''
+      }
+    }
+
+    /** Resolves a pasted list of email addresses to known users and selects the matching ones. */
+    const resolveEmailList = async (emails: string[]) => {
+      resolvingEmails.value = true
+      searchInProgress.value = true
+      autocompleteResults.value = []
+
+      const client = clientService.graphAuthenticated
+      const shareType = unref(isExternalShareRoleType)
+        ? ShareTypes.remote.value
+        : ShareTypes.user.value
+
+      const matches = await Promise.all(
+        emails.map(async (email) => {
+          try {
+            const users = await client.users.listUsers({ search: `"${email}"` })
+            return (users || []).find((u) => u.mail?.toLowerCase() === email.toLowerCase())
+          } catch (error) {
+            console.error(error)
+            return undefined
+          }
+        })
+      )
+
+      const notFoundCount = matches.filter((match) => !match).length
+      const newlySelected: CollaboratorAutoCompleteItem[] = []
+
+      matches.forEach((match) => {
+        if (!match) {
+          return
+        }
+
+        const collaborator = { ...match, shareType } as CollaboratorAutoCompleteItem
+        const alreadyQueued = newlySelected.some(({ id }) => id === collaborator.id)
+
+        if (alreadyQueued || !isEligibleCollaborator(collaborator)) {
+          return
+        }
+
+        newlySelected.push(collaborator)
+      })
+
+      if (newlySelected.length) {
+        selectedCollaborators.value = [...unref(selectedCollaborators), ...newlySelected]
+      }
+
+      clearSearchBox()
+      autocompleteResults.value = []
+      searchInProgress.value = false
+      resolvingEmails.value = false
+
+      if (notFoundCount) {
+        showErrorMessage({
+          title: $gettext(
+            'Could not find a matching user for %{count} of the pasted email addresses',
+            { count: `${notFoundCount}` }
+          )
+        })
+      }
+
+      await nextTick()
+      focusShareInput()
     }
 
     const getRecipientType = (shareType: number): string => {
@@ -376,46 +469,97 @@ export default defineComponent({
       const savePromises: Promise<void>[] = []
       const errors: { displayName: string; error: Error }[] = []
       const addedShares: CollaboratorShare[] = []
+      const pendingForceShares: {
+        displayName: string
+        conflict: SharingHierarchyConflict
+        addShareParams: Parameters<typeof addShare>[0]
+      }[] = []
+
+      const finishAddedShare = (share: CollaboratorShare) => {
+        addedShares.push(share)
+
+        if (unref(notifyEnabled)) {
+          clientService.httpAuthenticated.post(
+            `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
+          ) as any
+        }
+      }
 
       unref(selectedCollaborators).forEach(({ id, shareType, displayName }) => {
         const type = getRecipientType(shareType)
+        const addShareParams = {
+          clientService,
+          space: unref(space),
+          resource: unref(resource),
+          options: {
+            roles: [unref(selectedRole).id],
+            expirationDateTime: unref(expirationDate),
+            recipients: [
+              {
+                objectId: id,
+                '@libre.graph.recipient.type': type
+              }
+            ]
+          }
+        }
 
         savePromises.push(
           saveQueue.add(async () => {
             try {
               const share = await addShare({
-                clientService,
-                space: unref(space),
-                resource: unref(resource),
-                options: {
-                  roles: [unref(selectedRole).id],
-                  expirationDateTime: unref(expirationDate),
-                  recipients: [
-                    {
-                      objectId: id,
-                      '@libre.graph.recipient.type': type
-                    }
-                  ]
-                }
+                ...addShareParams,
+                informSharingHierarchyConflict,
+                deferSharingHierarchyConflictConfirm: true
               })
 
-              addedShares.push(share)
-
-              if (unref(notifyEnabled)) {
-                clientService.httpAuthenticated.get(
-                  `/ocs/v1.php/apps/files_sharing/api/v1/shares/${share.id}/notify`
-                ) as any
-              }
+              finishAddedShare(share)
             } catch (error) {
+              if (isSharingHierarchyConflictPendingError(error)) {
+                pendingForceShares.push({
+                  displayName,
+                  conflict: error.conflict,
+                  addShareParams
+                })
+                return
+              }
+              if (isSharingHierarchyConflictUserAbortError(error)) {
+                return
+              }
               console.error(error)
-              errors.push({ displayName, error })
+              errors.push({ displayName, error: error as Error })
               throw error
             }
           })
         )
       })
 
-      const results = await Promise.allSettled(savePromises)
+      await Promise.allSettled(savePromises)
+
+      if (pendingForceShares.length > 0) {
+        const proceed = await confirmSharingHierarchyConflicts(
+          pendingForceShares.map(({ conflict }) => conflict)
+        )
+
+        if (proceed) {
+          for (const { displayName, addShareParams } of pendingForceShares) {
+            try {
+              const share = await addShare({
+                ...addShareParams,
+                informSharingHierarchyConflict,
+                graphRequestOptions: shareHierarchyForceRequestOptions()
+              })
+
+              finishAddedShare(share)
+            } catch (error) {
+              if (isSharingHierarchyConflictUserAbortError(error)) {
+                continue
+              }
+              console.error(error)
+              errors.push({ displayName, error: error as Error })
+            }
+          }
+        }
+      }
 
       if (isProjectSpaceResource(unref(resource))) {
         const updatedSpace = await clientService.graphAuthenticated.drives.getDrive(
@@ -426,7 +570,7 @@ export default defineComponent({
         upsertSpace(updatedSpace)
       }
 
-      if (results.length !== errors.length) {
+      if (addedShares.length > 0) {
         showMessage({ title: $gettext('Share was added successfully') })
       }
 
@@ -541,6 +685,8 @@ export default defineComponent({
       savingDelayed,
       ...useMessages(),
       searchInProgress,
+      resolvingEmails,
+      ocSharingAutocomplete,
       searchQuery,
       autocompleteResults,
       onOpen,
@@ -550,6 +696,7 @@ export default defineComponent({
       announcement,
       selectedCollaborators,
       fetchRecipients,
+      resolveEmailList,
       share,
       shareRoleTypes,
       currentShareRoleType,
@@ -588,6 +735,12 @@ export default defineComponent({
     onSearch(query: string) {
       this.autocompleteResults = []
       this.searchQuery = query
+
+      const emails = parseEmailList(query)
+      if (isEmailListPaste(query, emails)) {
+        this.resolveEmailList(emails)
+        return
+      }
 
       if (query.length < this.minSearchLength) {
         this.searchInProgress = false

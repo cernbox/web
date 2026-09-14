@@ -28,6 +28,10 @@ export class ResourceTransfer extends ConflictDialog {
     if (this.sourceSpace.id !== this.targetSpace.id) {
       return false
     }
+    // Direct case: target folder is one of the resources being moved
+    if (this.resourcesToMove.some((resource: Resource) => resource.id === this.targetFolder.id)) {
+      return true
+    }
     return this.resourcesToMove.some((resource: Resource) =>
       Object.values(resourceStore.ancestorMetaData).some((ancestor) => ancestor.id === resource.id)
     )

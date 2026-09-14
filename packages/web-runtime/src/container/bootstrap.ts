@@ -121,8 +121,14 @@ const getEmbedConfigFromQuery = (
 
   const delegateAuthenticationOrigin = getQueryParam('embed-delegate-authentication-origin')
 
-  if (delegateAuthentication) {
+  if (delegateAuthenticationOrigin) {
     config.delegateAuthenticationOrigin = delegateAuthenticationOrigin
+  }
+
+  const messagesOrigin = getQueryParam('embed-messages-origin')
+
+  if (messagesOrigin) {
+    config.messagesOrigin = messagesOrigin
   }
 
   return config
@@ -446,19 +452,16 @@ export const announceArchiverService = ({
   app,
   configStore,
   userStore,
-  authStore,
   capabilityStore
 }: {
   app: App
   configStore: ConfigStore
   userStore: UserStore
-  authStore: AuthStore
   capabilityStore: CapabilityStore
 }): void => {
   app.config.globalProperties.$archiverService = new ArchiverService(
     app.config.globalProperties.$clientService,
     userStore,
-    authStore,
     configStore.serverUrl,
     computed(
       () =>

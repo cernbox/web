@@ -51,7 +51,7 @@
               class="oc-width-1-1"
               justify-content="left"
               :class="['new-file-btn-' + fileAction.ext]"
-              @click="fileAction.handler"
+              @click="onCreateFileClick(fileAction)"
             >
               <resource-icon :resource="getIconResource(fileAction)" size="medium" />
               <span class="create-list-file-item-text">{{ fileAction.label() }}</span>
@@ -184,6 +184,7 @@
 <script lang="ts">
 import {
   FileAction,
+  FileActionOptions,
   isLocationPublicActive,
   isLocationSpacesActive,
   useClipboardStore,
@@ -312,6 +313,10 @@ export default defineComponent({
 
     const { actions: createNewFileActions } = useFileActionsCreateNewFile({ space })
 
+    const onCreateFileClick = (fileAction: FileAction) => {
+      fileAction.handler({} as FileActionOptions)
+    }
+
     const createFileActionsGroups = computed(() => {
       const result = []
       const externalFileActions = unref(createNewFileActions).filter(({ isExternal }) => isExternal)
@@ -405,15 +410,23 @@ export default defineComponent({
     })
 
     const isPastingIntoSameFolder = computed(() => {
-      if (!unref(clipboardResources) || unref(clipboardResources).length < 1) {
+      const resources = unref(clipboardResources)
+      if (!resources || resources.length < 1) {
         return false
       }
 
+      // Prevent pasting when all resources are already in the current folder
+      const currentFolderId = unref(currentFolder)?.id
+      if (currentFolderId && resources.every((r) => r.parentFolderId === currentFolderId)) {
+        return true
+      }
+
+      // Prevent recursive paste (pasting a folder into its own descendant)
       const ancestors = Object.values(resourcesStore.ancestorMetaData).filter(
         (ancestor) => ancestor.id
       )
 
-      return ancestors.some((ancestor) => ancestor.id === unref(clipboardResources)[0].id)
+      return ancestors.some((ancestor) => ancestor.id === resources[0].id)
     })
 
     const isPasteHereButtonDisabled = computed(() => {
@@ -472,6 +485,7 @@ export default defineComponent({
       createFileActionsAvailable,
       createNewFolderAction,
       createNewShortcutAction,
+      onCreateFileClick,
       extensionActions,
       pasteFileAction,
       isActionDisabled,

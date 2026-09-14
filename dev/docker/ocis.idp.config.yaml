@@ -8,15 +8,19 @@ clients:
       - https://host.docker.internal:9200/
       - https://host.docker.internal:9200/oidc-callback.html
       - https://host.docker.internal:9200/oidc-silent-redirect.html
+      - https://host.docker.internal:9200/web-oidc-popup-callback
       - https://host.docker.internal:9201/
       - https://host.docker.internal:9201/oidc-callback.html
       - https://host.docker.internal:9201/oidc-silent-redirect.html
+      - https://host.docker.internal:9201/web-oidc-popup-callback
       - https://ocis.owncloud.test:10200/
       - https://ocis.owncloud.test:10200/oidc-callback.html
       - https://ocis.owncloud.test:10200/oidc-silent-redirect.html
+      - https://ocis.owncloud.test:10200/web-oidc-popup-callback
       - https://ocis.owncloud.test:10201/
       - https://ocis.owncloud.test:10201/oidc-callback.html
       - https://ocis.owncloud.test:10201/oidc-silent-redirect.html
+      - https://ocis.owncloud.test:10201/web-oidc-popup-callback
     origins:
       - https://host.docker.internal:9200
       - https://host.docker.internal:9201

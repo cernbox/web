@@ -17,7 +17,7 @@
             :is-path-displayed="isPathDisplayed"
           />
         </div>
-        <div class="oc-flex main-actions">
+        <div class="oc-flex main-actions"  v-if="!isEmbedModeEnabled">
           <template v-if="dropDownMenuSections.length">
             <oc-button
               id="oc-openfile-contextmenu-trigger"
@@ -96,7 +96,8 @@ import {
   useConfigStore,
   useFolderLink,
   useGetMatchingSpace,
-  useResourcesStore
+  useResourcesStore,
+  useEmbedMode
 } from '../composables'
 import ResourceListItem from './FilesList/ResourceListItem.vue'
 import { isPublicSpaceResource, Resource } from '@ownclouders/web-client'
@@ -143,6 +144,7 @@ export default defineComponent({
     const resourcesStore = useResourcesStore()
     const configStore = useConfigStore()
     const { getMatchingSpace } = useGetMatchingSpace()
+    const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
 
     const areFileExtensionsShown = computed(() => resourcesStore.areFileExtensionsShown)
     const contextMenuLabel = computed(() => $gettext('Show context menu'))
@@ -161,7 +163,7 @@ export default defineComponent({
     const space = computed(() => getMatchingSpace(props.resource))
 
     const isPathDisplayed = computed(() => {
-      return !isPublicSpaceResource(unref(space))
+      return !unref(isEmbedModeEnabled) && !isPublicSpaceResource(unref(space))
     })
 
     return {
@@ -171,6 +173,7 @@ export default defineComponent({
       hasAutosave,
       autoSaveTooltipText,
       isPathDisplayed,
+      isEmbedModeEnabled,
       ...useFolderLink()
     }
   }

@@ -114,7 +114,36 @@ describe('CreateLinkModal', () => {
       const { addLink } = useSharesStore()
       vi.mocked(addLink).mockResolvedValue(link)
       await wrapper.vm.onConfirm()
+      expect(mocks.postMessageMock).toHaveBeenCalledTimes(2)
       expect(mocks.postMessageMock).toHaveBeenCalledWith('owncloud-embed:share', [link.webUrl])
+      expect(mocks.postMessageMock).toHaveBeenCalledWith('owncloud-embed:share-links', [
+        { url: link.webUrl }
+      ])
+    })
+    it('does not emit embed share events when not in embed mode', async () => {
+      const resources = [mock<Resource>({ isFolder: false })]
+      const { wrapper, mocks } = getWrapper({ resources, embedModeEnabled: false })
+      const link = mock<LinkShare>({ webUrl: 'someurl' })
+
+      const { addLink } = useSharesStore()
+      vi.mocked(addLink).mockResolvedValue(link)
+      await wrapper.vm.onConfirm()
+
+      expect(mocks.postMessageMock).not.toHaveBeenCalled()
+    })
+    it('includes password in share-links event when copyPassword is enabled', async () => {
+      const resources = [mock<Resource>({ isFolder: false })]
+      const { wrapper, mocks } = getWrapper({ resources, embedModeEnabled: true })
+      const link = mock<LinkShare>({ webUrl: 'someurl' })
+
+      const { addLink } = useSharesStore()
+      vi.mocked(addLink).mockResolvedValue(link)
+      wrapper.vm.password.value = 'secret'
+      await wrapper.vm.onConfirm({ copyPassword: true })
+
+      expect(mocks.postMessageMock).toHaveBeenCalledWith('owncloud-embed:share-links', [
+        { url: link.webUrl, password: 'secret' }
+      ])
     })
     it('shows error messages for links that failed to be created', async () => {
       const consoleMock = vi.fn(() => undefined)

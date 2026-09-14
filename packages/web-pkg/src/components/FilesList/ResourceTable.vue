@@ -63,7 +63,7 @@
         :label="getResourceCheckboxLabel(item)"
         :label-hidden="true"
         size="large"
-        :disabled="isResourceDisabled(item)"
+        :disabled="isResourceDisabled(item) || (isInlineAttach && item.isFolder)"
         :model-value="isResourceSelected(item)"
         :outline="isLatestSelectedItem(item)"
         @click.stop="toggleSelection(item.id)"
@@ -222,7 +222,10 @@
       </oc-button>
     </template>
     <template #actions="{ item }">
-      <div v-if="!isResourceDisabled(item)" class="resource-table-actions">
+      <div
+        v-if="!isResourceDisabled(item) && !(isEmbedModeEnabled && isFilePicker)"
+        class="resource-table-actions"
+      >
         <!-- @slot Add quick actions before the `context-menu / three dot` button in the actions column -->
         <slot name="quickActions" :resource="item" />
         <context-menu-quick-action
@@ -260,6 +263,7 @@ import {
 } from 'vue'
 import { useWindowSize } from '@vueuse/core'
 import {
+  encodePath,
   IncomingShareResource,
   isPasswordProtectedFolderFileResource,
   isProjectSpaceResource,
@@ -275,6 +279,7 @@ import {
   useGetMatchingSpace,
   useFolderLink,
   useEmbedMode,
+  useEmbedModeDownloadUrl,
   useAuthStore,
   useCapabilityStore,
   useConfigStore,
@@ -546,10 +551,12 @@ export default defineComponent({
     const {
       isLocationPicker,
       isFilePicker,
+      isInlineAttach,
       postMessage,
       isEnabled: isEmbedModeEnabled,
       fileTypes: embedModeFileTypes
     } = useEmbedMode()
+    const { withDownloadUrl } = useEmbedModeDownloadUrl()
     const { getDefaultAction } = useFileActions()
     const configStore = useConfigStore()
     const { options: configOptions } = storeToRefs(configStore)
@@ -646,7 +653,7 @@ export default defineComponent({
         return
       }
 
-      return action.route({ space, resources: [resource] })
+      return action.route({ space, resources: [{ ...resource, path: encodePath(resource.path) }] })
     }
 
     const isResourceInDeleteQueue = (id: string): boolean => {
@@ -681,7 +688,9 @@ export default defineComponent({
       ),
       ...folderLinkUtils,
       postMessage,
+      withDownloadUrl,
       isFilePicker,
+      isInlineAttach,
       isLocationPicker,
       isEmbedModeEnabled,
       emitSelect,
@@ -867,6 +876,13 @@ export default defineComponent({
               return false
             }
 
+            // clicking the shared-with avatars would also trigger the row's own @highlight
+            // handler (the file-pick postMessage), same reason context menu/rename are
+            // hidden in this mode - see isEmbedModeEnabled/isFilePicker usages below
+            if (field.name === 'sharedWith' && this.isEmbedModeEnabled && this.isFilePicker) {
+              return false
+            }
+
             let hasField: boolean
             if (field.prop) {
               hasField = get(firstResource, field.prop) !== undefined
@@ -959,6 +975,9 @@ export default defineComponent({
       return item.id === this.latestSelectedId
     },
     hasRenameAction(item: Resource) {
+      if (this.isEmbedModeEnabled && this.isFilePicker) {
+        return false
+      }
       if (isProjectSpaceResource(item)) {
         return this.renameActionsSpace.filter((menuItem) =>
           menuItem.isVisible({ resources: [item] })
@@ -1088,7 +1107,7 @@ export default defineComponent({
        */
       this.$emit('rowMounted', resource, component, this.constants.ImageDimension.Thumbnail)
     },
-    fileClicked(data: [Resource, MouseEvent, boolean]) {
+    async fileClicked(data: [Resource, MouseEvent, boolean]) {
       /**
        * Triggered when the file row is clicked
        * @property {object} resource The resource for which the event is triggered
@@ -1100,8 +1119,10 @@ export default defineComponent({
       }
 
       if (this.isEmbedModeEnabled && this.isFilePicker && !resource.isFolder) {
+        const clonedResource = JSON.parse(JSON.stringify(resource))
+        const resourceWithUrl = await this.withDownloadUrl(this.space, clonedResource)
         return this.postMessage<embedModeFilePickMessageData>('owncloud-embed:file-pick', {
-          resource: JSON.parse(JSON.stringify(resource)),
+          resource: resourceWithUrl,
           locationQuery: JSON.parse(
             JSON.stringify(routeToContextQuery(unref(this.router.currentRoute)))
           )
@@ -1141,11 +1162,22 @@ export default defineComponent({
       }
       this.emitSelect(
         this.resources
-          .filter((resource) => !this.disabledResources.includes(resource.id))
+          .filter(
+            (resource) =>
+              !this.disabledResources.includes(resource.id) &&
+              !(this.isInlineAttach && resource.isFolder)
+          )
           .map((resource) => resource.id)
       )
     },
     emitFileClick(resource: Resource) {
+      // in single-file embed mode, the row's own @highlight handler (fileClicked) already
+      // handles the click (file-pick postMessage) - the default-action dispatch this
+      // triggers (e.g. falling back to download-file) is unwanted and would run alongside it
+      if (this.isEmbedModeEnabled && this.isFilePicker) {
+        return
+      }
+
       const space = this.getMatchingSpace(resource)
 
       /**

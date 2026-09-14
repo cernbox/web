@@ -5,6 +5,7 @@ import {
   queryItemAsString,
   useFileActionsDelete,
   useExtensionRegistry,
+  useRouteQuery,
   FolderViewExtension
 } from '@ownclouders/web-pkg'
 
@@ -27,6 +28,7 @@ vi.mock('@ownclouders/web-pkg', async (importOriginal) => ({
   ...(await importOriginal<any>()),
   displayPositionedDropdown: vi.fn(),
   queryItemAsString: vi.fn(),
+  useRouteQuery: vi.fn(),
   appDefaults: vi.fn(),
   useRouteQueryPersisted: vi.fn().mockImplementation(() => ref('resource-table')),
   useFileActions: vi.fn(),
@@ -115,8 +117,14 @@ describe('Projects view', () => {
     })
   })
   it('should display the "Create Space"-button when permission given', () => {
+    const personalSpace = {
+      id: 'personal',
+      driveType: 'personal',
+      isOwner: () => true
+    } as unknown as SpaceResource
     const { wrapper } = getMountedWrapper({
       abilities: [{ action: 'create-all', subject: 'Drive' }],
+      spaces: [personalSpace],
       stubAppBar: false
     })
     expect(wrapper.find('create-space-stub').exists()).toBeTruthy()
@@ -156,7 +164,11 @@ function getMountedWrapper({
 } = {}) {
   const plugins = defaultPlugins({ abilities, piniaOptions: { spacesState: { spaces }, ...store } })
 
-  vi.mocked(queryItemAsString).mockImplementation(() => includeDisabled.toString())
+  // Return includeDisabled value for q_includeDisabled, undefined for all others (e.g. q_storageType)
+  vi.mocked(useRouteQuery).mockImplementation((name: string) =>
+    ref(name === 'q_includeDisabled' ? includeDisabled.toString() : undefined)
+  )
+  vi.mocked(queryItemAsString).mockImplementation((val) => val as string)
 
   const extensions = [
     {

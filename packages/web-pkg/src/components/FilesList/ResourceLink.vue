@@ -3,8 +3,8 @@
     :is="componentType"
     v-bind="componentProps"
     v-if="isResourceClickable"
-    :target="linkTarget"
     :draggable="false"
+    target="_self"
     class="oc-resource-link"
     @dragstart.prevent.stop
     @click="emitClick"
@@ -17,9 +17,7 @@
 </template>
 
 <script lang="ts">
-import { useConfigStore } from '../../composables'
-import { storeToRefs } from 'pinia'
-import { computed, PropType, unref } from 'vue'
+import { PropType } from 'vue'
 import { RouteLocationRaw } from 'vue-router'
 
 /**
@@ -53,20 +51,6 @@ export default {
     }
   },
   emits: ['click'],
-  setup: (props) => {
-    const configStore = useConfigStore()
-    const { options } = storeToRefs(configStore)
-
-    const linkTarget = computed(() => {
-      return unref(options).cernFeatures && props.link && !props.resource.isFolder
-        ? '_blank'
-        : '_self'
-    })
-
-    return {
-      linkTarget
-    }
-  },
   computed: {
     isNavigatable() {
       return (this.resource.isFolder || this.link) && !this.resource.disabled

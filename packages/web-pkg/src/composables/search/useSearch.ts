@@ -21,6 +21,12 @@ export const useSearch = () => {
   }
 
   const searchTask = useTask(function* (signal, term: string, searchLimit: number = null) {
+    // project spaces are loaded on demand and are needed to label results
+    yield spacesStore.loadSpacesByType('project', {
+      graphClient: clientService.graphAuthenticated,
+      signal
+    })
+
     if (configStore.options.routing.fullShareOwnerPaths) {
       yield spacesStore.loadMountPoints({ graphClient: clientService.graphAuthenticated, signal })
     }

@@ -4,7 +4,15 @@ import {
   Share,
   ShareRole,
   ShareTypes,
-  isProjectSpaceResource
+  isProjectSpaceResource,
+  parseSharingHierarchyConflict,
+  shareHierarchyForceRequestOptions,
+  SharingHierarchyConflictBlockedError,
+  SharingHierarchyConflictCancelledError,
+  SharingHierarchyConflictPendingError,
+  type ConfirmSharingHierarchyConflict,
+  type GraphRequestOptions,
+  type InformSharingHierarchyConflict
 } from '@ownclouders/web-client'
 import { defineStore } from 'pinia'
 import { Ref, ref, unref } from 'vue'
@@ -19,6 +27,53 @@ import {
 import { useResourcesStore } from '../resources'
 import { useThemeStore } from '../theme'
 import { Permission, UnifiedRoleDefinition } from '@ownclouders/web-client/graph/generated'
+
+function mergeGraphRequestOptions(
+  base?: GraphRequestOptions,
+  extra?: GraphRequestOptions
+): GraphRequestOptions {
+  return {
+    ...base,
+    ...extra,
+    headers: { ...base?.headers, ...extra?.headers }
+  }
+}
+
+async function withShareHierarchyForceRetry<T>(
+  graphRequestOptions: GraphRequestOptions | undefined,
+  confirmSharingHierarchyConflict: ConfirmSharingHierarchyConflict | undefined,
+  informSharingHierarchyConflict: InformSharingHierarchyConflict | undefined,
+  deferSharingHierarchyConflictConfirm: boolean | undefined,
+  request: (opts?: GraphRequestOptions) => Promise<T>
+): Promise<T> {
+  try {
+    return await request(graphRequestOptions)
+  } catch (e) {
+    const conflict = parseSharingHierarchyConflict(e)
+    if (!conflict) {
+      throw e
+    }
+    if (!conflict.canForce) {
+      if (informSharingHierarchyConflict) {
+        await informSharingHierarchyConflict(conflict)
+      }
+      throw new SharingHierarchyConflictBlockedError()
+    }
+    if (deferSharingHierarchyConflictConfirm) {
+      throw new SharingHierarchyConflictPendingError(conflict)
+    }
+    if (!confirmSharingHierarchyConflict) {
+      throw new SharingHierarchyConflictBlockedError()
+    }
+    const proceed = await confirmSharingHierarchyConflict(conflict)
+    if (!proceed) {
+      throw new SharingHierarchyConflictCancelledError()
+    }
+    return await request(
+      mergeGraphRequestOptions(graphRequestOptions, shareHierarchyForceRequestOptions())
+    )
+  }
+}
 
 export const useSharesStore = defineStore('shares', () => {
   const resourcesStore = useResourcesStore()
@@ -146,9 +201,24 @@ export const useSharesStore = defineStore('shares', () => {
     }
   }
 
-  const addShare = async ({ clientService, space, resource, options }: AddShareOptions) => {
+  const addShare = async ({
+    clientService,
+    space,
+    resource,
+    options,
+    graphRequestOptions,
+    confirmSharingHierarchyConflict,
+    informSharingHierarchyConflict,
+    deferSharingHierarchyConflictConfirm
+  }: AddShareOptions) => {
     const client = clientService.graphAuthenticated.permissions
-    const share = await client.createInvite(space.id, resource.id, options, unref(graphRoles))
+    const share = await withShareHierarchyForceRetry(
+      graphRequestOptions,
+      confirmSharingHierarchyConflict,
+      informSharingHierarchyConflict,
+      deferSharingHierarchyConflictConfirm,
+      (opts) => client.createInvite(space.id, resource.id, options, unref(graphRoles), opts)
+    )
 
     addCollaboratorShares([share])
     updateFileShareTypes(resource.id)
@@ -161,7 +231,10 @@ export const useSharesStore = defineStore('shares', () => {
     space,
     resource,
     collaboratorShare,
-    options
+    options,
+    graphRequestOptions,
+    confirmSharingHierarchyConflict,
+    informSharingHierarchyConflict
   }: UpdateShareOptions) => {
     const client = clientService.graphAuthenticated.permissions
 
@@ -170,12 +243,20 @@ export const useSharesStore = defineStore('shares', () => {
       expirationDateTime: options.expirationDateTime
     } satisfies Permission
 
-    const share = await client.updatePermission<CollaboratorShare>(
-      space.id,
-      resource.id,
-      collaboratorShare.id,
-      payload,
-      unref(graphRoles)
+    const share = await withShareHierarchyForceRetry(
+      graphRequestOptions,
+      confirmSharingHierarchyConflict,
+      informSharingHierarchyConflict,
+      undefined,
+      (opts) =>
+        client.updatePermission<CollaboratorShare>(
+          space.id,
+          resource.id,
+          collaboratorShare.id,
+          payload,
+          unref(graphRoles),
+          opts
+        )
     )
 
     upsertCollaboratorShare(share)
@@ -187,11 +268,20 @@ export const useSharesStore = defineStore('shares', () => {
     space,
     resource,
     collaboratorShare,
-    loadIndicators = false
+    loadIndicators = false,
+    graphRequestOptions,
+    confirmSharingHierarchyConflict,
+    informSharingHierarchyConflict
   }: DeleteShareOptions) => {
     const client = clientService.graphAuthenticated.permissions
 
-    await client.deletePermission(space.id, resource.id, collaboratorShare.id)
+    await withShareHierarchyForceRetry(
+      graphRequestOptions,
+      confirmSharingHierarchyConflict,
+      informSharingHierarchyConflict,
+      undefined,
+      (opts) => client.deletePermission(space.id, resource.id, collaboratorShare.id, opts)
+    )
 
     removeCollaboratorShare(collaboratorShare)
     updateFileShareTypes(resource.id)
@@ -270,7 +360,7 @@ export const useSharesStore = defineStore('shares', () => {
               grantedToIdentities: [
                 {
                   group: {
-                    displayName: "",
+                    displayName: '',
                     id: linkShare.notifyUploadsExtraRecipients
                   }
                 }

@@ -24,6 +24,7 @@ import { AppNavigationItem } from '@ownclouders/web-pkg'
 // dirty: importing view from other extension within project
 import SearchResults from '../../web-app-search/src/views/List.vue'
 import {
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isShareSpaceResource,
   isProjectSpaceResource
@@ -76,7 +77,9 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
           : []
       },
       isVisible() {
-        if (!spacesStores.spacesInitialized) {
+        // personal spaces are fetched on demand, so "not loaded yet" must not read as "the user
+        // has none" - that would hide the item for the rest of the session
+        if (!spacesStores.initializedTypes.personal) {
           return true
         }
 
@@ -145,10 +148,24 @@ export const navItems = (context: ComponentCustomProperties): AppNavigationItem[
       route: {
         path: `/${appInfo.id}/spaces/projects`
       },
+      isActive: () => {
+        // `currentSpace` is briefly null while navigating (the outgoing route's resolver clears it),
+        // and it is permanently null on the projects overview itself - so "no space" has to stay
+        // active, and the href match in activeFor is what narrows it down.
+        const currentSpace = spacesStores.currentSpace
+        return (
+          !currentSpace ||
+          isProjectSpaceResource(currentSpace) ||
+          isFallbackSpaceResource(currentSpace)
+        )
+      },
       activeFor: () => {
         const projects = [{ path: `/${appInfo.id}/spaces/project` }]
         spacesStores.spaces.forEach((drive) => {
-          if (isProjectSpaceResource(drive) || drive.driveType === 'explorer') {
+          // deliberately excludes the catch-all fallback space: its driveAlias ('eos') is a
+          // url-prefix of every real eos-backed driveAlias, so listing it here would match any
+          // eos route - including shares - and light this item up alongside the right one
+          if (isProjectSpaceResource(drive)) {
             projects.push({
               path: `/${appInfo.id}/spaces/${drive.driveAlias}`
             })

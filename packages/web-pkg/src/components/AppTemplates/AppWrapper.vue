@@ -11,7 +11,7 @@
       :resource="resource"
       @close="closeApp"
     />
-    <loading-screen v-if="loading" />
+    <loading-screen v-if="isLoading" />
     <error-screen v-else-if="loadingError" :message="loadingError.message" />
     <div
       v-else
@@ -217,6 +217,12 @@ export default defineComponent({
       applicationId: props.applicationId
     })
 
+    // components that load their own resource keep `loading` false from the start, so without this
+    // the slot would render before the drive resolver has produced a file context. Resolving a
+    // space is asynchronous (drive types are fetched on demand), and everything below - `slotAttrs`
+    // included - assumes a context is there.
+    const isLoading = computed(() => unref(loading) || !unref(currentFileContext))
+
     const { applicationMeta } = useAppMeta({ applicationId: props.applicationId, appsStore })
 
     const fileSizeLimit = computed(() => {
@@ -327,13 +333,15 @@ export default defineComponent({
     }).restartable()
 
     const loadFileTask = useTask(function* (signal) {
+      // Bail out before the `finally` below: nothing has been loaded yet, so clearing `loading`
+      // here would render the slot without a resource. The wrapped app receives it as a prop and
+      // typically only reacts to the very first value it sees, so handing it `undefined` means it
+      // never opens the file. The watcher runs this again once the context and resource exist.
+      if (!unref(currentFileContext) || !unref(resource)) {
+        return null
+      }
+
       try {
-        if (!unref(currentFileContext)) {
-          return null
-        }
-        if (!unref(resource)) {
-          return null
-        }
         const newExtension = props.importResourceWithExtension(unref(resource))
         if (newExtension) {
           const timestamp = DateTime.local().toFormat('yyyyMMddHHmmss')
@@ -669,7 +677,7 @@ export default defineComponent({
 
     const slotAttrs = computed(() => ({
       url: unref(url),
-      space: unref(unref(currentFileContext).space),
+      space: unref(unref(currentFileContext)?.space),
       resource: unref(resource),
       activeFiles: unref(activeFiles),
       isDirty: unref(isDirty),
@@ -681,7 +689,7 @@ export default defineComponent({
 
       'onUpdate:resource': (value: Resource) => {
         resource.value = value
-        space.value = unref(unref(currentFileContext).space)
+        space.value = unref(unref(currentFileContext)?.space)
         selectedResources.value = [value]
       },
       'onUpdate:currentContent': (value: unknown) => {
@@ -704,6 +712,7 @@ export default defineComponent({
       closeApp,
       fileActions,
       loading,
+      isLoading,
       loadingError,
       pageTitle,
       resource,

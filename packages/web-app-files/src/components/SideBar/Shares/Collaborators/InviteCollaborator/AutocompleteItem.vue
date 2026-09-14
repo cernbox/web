@@ -59,7 +59,9 @@ export default {
   setup(props) {
     const additionalInfo = computed(() => {
       if (props.item.onPremisesSamAccountName) {
-        return `${props.item.onPremisesSamAccountName} - ${props.item.mail}`
+        return props.item.mail
+          ? `${props.item.onPremisesSamAccountName} - ${props.item.mail}`
+          : props.item.onPremisesSamAccountName
       }
       return (
         props.item.mail ||

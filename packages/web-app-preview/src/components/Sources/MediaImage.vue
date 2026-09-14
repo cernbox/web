@@ -41,25 +41,24 @@ export default defineComponent({
   emits: ['panZoomChange'],
   setup(props, { emit }) {
     const img = ref<HTMLElement | null>()
-    const panzoom = ref<PanzoomObject>()
+    const panzoom = ref<PanzoomObject | undefined>()
 
     const onPanZoomChange = (event: Event) => {
       emit('panZoomChange', event)
     }
 
-    const initPanzoom = async () => {
-      if (unref(panzoom)) {
-        await nextTick()
-        ;(unref(img) as unknown as HTMLElement).removeEventListener(
-          'panzoomchange',
-          onPanZoomChange
-        )
-        unref(panzoom)?.destroy()
+    const destroyPanzoom = () => {
+      const el = unref(img) as unknown as HTMLElement
+      el?.removeEventListener('panzoomchange', onPanZoomChange)
+      unref(panzoom)?.destroy()
+      panzoom.value = undefined
+      if (el) {
+        el.style.transform = `rotate(${props.currentImageRotation}deg)`
       }
+    }
 
-      // wait for next tick until image is rendered
+    const createPanzoom = async () => {
       await nextTick()
-
       panzoom.value = Panzoom(unref(img), {
         animate: false,
         duration: 300,
@@ -99,15 +98,30 @@ export default defineComponent({
       ;(unref(img) as unknown as HTMLElement).addEventListener('panzoomchange', onPanZoomChange)
     }
 
+    const initPanzoom = async () => {
+      destroyPanzoom()
+      if (props.currentImageZoom > 1) {
+        await createPanzoom()
+        unref(panzoom).zoom(props.currentImageZoom)
+      }
+    }
+
     watch(img, initPanzoom)
     onMounted(initPanzoom)
 
-    watch([() => props.currentImageZoom, () => props.currentImageRotation], () => {
-      unref(panzoom).zoom(props.currentImageZoom)
+    watch([() => props.currentImageZoom, () => props.currentImageRotation], async () => {
+      if (props.currentImageZoom === 1) {
+        destroyPanzoom()
+      } else {
+        if (!unref(panzoom)) {
+          await createPanzoom()
+        }
+        unref(panzoom).zoom(props.currentImageZoom)
+      }
     })
 
     watch([() => props.currentImagePositionX, () => props.currentImagePositionY], () => {
-      unref(panzoom).pan(props.currentImagePositionX, props.currentImagePositionY)
+      unref(panzoom)?.pan(props.currentImagePositionX, props.currentImagePositionY)
     })
 
     return {
@@ -121,6 +135,5 @@ img {
   object-fit: contain;
   max-width: 80%;
   max-height: 80%;
-  cursor: move;
 }
 </style>

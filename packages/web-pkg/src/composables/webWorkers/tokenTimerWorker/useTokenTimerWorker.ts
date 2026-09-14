@@ -24,10 +24,10 @@ export const useTokenTimerWorker = ({ authService }: { authService: AuthServiceI
 
         console.error('token renewal error:', error)
 
-        // log out user if they don't have a refresh token
+        // show session expired modal if there's no refresh token to renew silently
         const refreshToken = await authService.getRefreshToken()
         if (!refreshToken) {
-          return authService.logoutUser()
+          return authService.showSessionExpiredModal()
         }
       })
     }

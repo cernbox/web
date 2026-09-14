@@ -7,7 +7,7 @@
         :has-bulk-actions="true"
         :has-hidden-files="false"
         :has-file-extensions="false"
-        :has-pagination="false"
+        :has-pagination="true"
         :is-side-bar-open="isSideBarOpen"
         :view-modes="viewModes"
         :view-mode-default="FolderViewModeConstants.name.tiles"
@@ -49,7 +49,6 @@
                 class="project-visibility-filter"
                 filter-name="projectVisibility"
                 :filter-options="visibilityOptions"
-                @toggle-filter="setVisibilityOption"
               />
               <!--<item-filter
                 :allow-multiple="true"
@@ -224,6 +223,7 @@ import {
 import SpaceContextActions from '../../components/Spaces/SpaceContextActions.vue'
 import {
   getSpaceManagers,
+  isFallbackSpaceResource,
   isPersonalSpaceResource,
   isProjectSpaceResource,
   ProjectSpaceResource,
@@ -245,7 +245,7 @@ import {
 import { orderBy } from 'lodash-es'
 import { useResourcesViewDefaults } from '../../composables'
 import { folderViewsProjectSpacesExtensionPoint } from '../../extensionPoints'
-import { ItemFilterInline, InlineFilterOption, ItemFilter } from '@ownclouders/web-pkg'
+import { ItemFilterInline, ItemFilter } from '@ownclouders/web-pkg'
 
 export default defineComponent({
   components: {
@@ -280,10 +280,17 @@ export default defineComponent({
     const { setSelection, initResourceList, clearResourceList, setAncestorMetaData } =
       useResourcesStore()
 
-    const userHasPersonalSpace = !!spacesStore.spaces.find(
-      (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+    // must be reactive: personal spaces are loaded on demand, so evaluating this once during
+    // setup would pin it to `false` on a cold start
+    const userHasPersonalSpace = computed(() =>
+      spacesStore.spaces.some(
+        (drive) => isPersonalSpaceResource(drive) && drive.isOwner(userStore.user)
+      )
     )
-    const visibilityOption = ref('all')
+    const visibilityOption = useRouteQueryPersisted({
+      name: 'q_projectVisibility',
+      defaultValue: 'all'
+    })
     const storageTypeQuery = useRouteQuery('q_storageType')
 
     const visibilityOptions = computed(() => [
@@ -305,18 +312,19 @@ export default defineComponent({
       }
     ])
 
-    const setVisibilityOption = async (value: InlineFilterOption) => {
-      if (visibilityOption.value !== value.name) {
-        visibilityOption.value = value.name
-      }
-    }
-
     const loadResourcesTask = useTask(function* (signal) {
       clearResourceList()
       setAncestorMetaData({})
+      // project and mount point spaces are loaded on demand - refresh both here so newly created
+      // projects and newly accepted shares show up without a page reload
       yield spacesStore.reloadProjectSpaces({
         graphClient: clientService.graphAuthenticated,
         signal
+      })
+      yield spacesStore.loadMountPoints({
+        graphClient: clientService.graphAuthenticated,
+        signal,
+        force: true
       })
       initResourceList({ currentFolder: null, resources: unref(spaces) })
     })
@@ -335,7 +343,7 @@ export default defineComponent({
     const runtimeSpaces = computed(() => {
       return (
         spacesStore.spaces.filter(
-          (space) => isProjectSpaceResource(space) || space?.driveType === 'explorer'
+          (space) => isProjectSpaceResource(space) || isFallbackSpaceResource(space)
         ) || []
       )
     })
@@ -384,8 +392,9 @@ export default defineComponent({
           selectedStorageTypes.some((type) => space.mimeType?.includes(type))
         )
       }
-      if (unref(visibilityOption) !== 'all') {
-        spaces = spaces.filter((space) => space.driveType === unref(visibilityOption))
+      const visibility = queryItemAsString(unref(visibilityOption))
+      if (visibility !== 'all') {
+        spaces = spaces.filter((space) => space.driveType === visibility)
       }
 
       if (!(filterTerm || '').trim()) {
@@ -434,7 +443,7 @@ export default defineComponent({
 
     const hasCreatePermission = computed(
       // if user has a personal space, it's not a lightweight account
-      () => can('create-all', 'Drive') && userHasPersonalSpace
+      () => can('create-all', 'Drive') && unref(userHasPersonalSpace)
     )
 
     const extensionRegistry = useExtensionRegistry()
@@ -474,20 +483,20 @@ export default defineComponent({
     }
 
     const getTotalQuota = (space: SpaceResource) => {
-      if (space.spaceQuota.total === 0) {
+      if (space.spaceQuota?.total === 0) {
         return $gettext('Unrestricted')
       }
 
-      return formatFileSize(space.spaceQuota.total, language.current)
+      return formatFileSize(space.spaceQuota?.total, language.current)
     }
     const getUsedQuota = (space: SpaceResource) => {
-      if (space.spaceQuota.used === undefined) {
+      if (space.spaceQuota?.used === undefined) {
         return '-'
       }
       return formatFileSize(space.spaceQuota.used, language.current)
     }
     const getRemainingQuota = (space: SpaceResource) => {
-      if (space.spaceQuota.remaining === undefined) {
+      if (space.spaceQuota?.remaining === undefined) {
         return '-'
       }
       return formatFileSize(space.spaceQuota.remaining, language.current)
@@ -598,7 +607,6 @@ export default defineComponent({
       spacesHelpList,
       visibilityOptions,
       storageTypes,
-      setVisibilityOption,
       isProjectSpaceResource
     }
   },

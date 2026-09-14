@@ -67,6 +67,37 @@ describe('useFileActionsCreateNewFile', () => {
         }
       })
     })
+
+    it('shows the combined dropdown modal when several apps can open the extension', () => {
+      const space = mock<SpaceResource>({ id: '1' })
+      const action = mock<ApplicationFileExtension>({
+        app: 'app-a',
+        extension: '.txt',
+        newFileMenu: { menuTitle: vi.fn() },
+        customHandler: null
+      })
+      const otherAppFileExtension = mock<ApplicationFileExtension>({
+        app: 'app-b',
+        extension: '.txt',
+        newFileMenu: { menuTitle: vi.fn() },
+        customHandler: null
+      })
+
+      getWrapper({
+        space,
+        action,
+        extraActions: [otherAppFileExtension],
+        setup: ({ actions }) => {
+          const { dispatchModal } = useModals()
+          const fileActionOptions: FileActionOptions = { space, resources: [] } as FileActionOptions
+          unref(actions)[0].handler(fileActionOptions)
+
+          expect(dispatchModal).toHaveBeenCalledWith(
+            expect.objectContaining({ hideActions: true, customComponent: expect.anything() })
+          )
+        }
+      })
+    })
   })
 
   describe('customHandler', () => {
@@ -82,6 +113,41 @@ describe('useFileActionsCreateNewFile', () => {
       })
     })
   })
+
+  describe('appNewFileMenuExtensions', () => {
+    it('exposes the raw, non-deduplicated list of app file extensions', () => {
+      const action = mock<ApplicationFileExtension>({
+        app: 'text-editor',
+        extension: '.txt',
+        newFileMenu: { menuTitle: vi.fn() }
+      })
+
+      getWrapper({
+        action,
+        setup: ({ appNewFileMenuExtensions }) => {
+          expect(unref(appNewFileMenuExtensions)).toEqual([action])
+        }
+      })
+    })
+  })
+
+  describe('createFile', () => {
+    it('creates the file for the given app file extension, bypassing deduplication', () => {
+      const action = mock<ApplicationFileExtension>({ app: 'text-editor', customHandler: null })
+      const otherAppFileExtension = mock<ApplicationFileExtension>({
+        app: 'other-app',
+        customHandler: vi.fn()
+      })
+
+      getWrapper({
+        action,
+        setup: ({ createFile }) => {
+          createFile({} as FileActionOptions, otherAppFileExtension)
+          expect(otherAppFileExtension.customHandler).toHaveBeenCalled()
+        }
+      })
+    })
+  })
 })
 
 function getWrapper({
@@ -93,12 +159,14 @@ function getWrapper({
     extension: '.txt',
     newFileMenu: { menuTitle: vi.fn() },
     customHandler: null
-  })
+  }),
+  extraActions = []
 }: {
   resolveCreateFile?: boolean
   space?: SpaceResource
   setup: (instance: ReturnType<typeof useFileActionsCreateNewFile>) => void
   action?: ApplicationFileExtension
+  extraActions?: ApplicationFileExtension[]
 }) {
   const mocks = {
     ...defaultComponentMocks({
@@ -132,7 +200,7 @@ function getWrapper({
         pluginOptions: {
           piniaOptions: {
             appsState: {
-              fileExtensions: [action]
+              fileExtensions: [action, ...extraActions]
             },
             resourcesStore: { currentFolder }
           }

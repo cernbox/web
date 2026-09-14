@@ -28,7 +28,8 @@
     "not ExplorerMobile > 0",
     "not BlackBerry > 0",
     "not OperaMini all",
-    "not OperaMobile > 0"
+    "not OperaMobile > 0",
+    "Firefox ESR"
   ],
   "devDependencies": {
     "@babel/core": "7.25.8",

@@ -106,8 +106,13 @@ function deriveResourcePath(filename: string, webDavBasePath?: string): string {
 }
 
 export function buildResource(resource: WebDavResponseResource, webDavBasePath?: string): Resource {
-  const name =
-    resource.basename || resource.props[DavProperty.Name]?.toString() || basename(resource.filename)
+  const restoreParsedName = (name: any, basename: string): string =>
+    Number(basename) == name ? basename : name
+
+  const name = restoreParsedName(
+    resource.props[DavProperty.Name]?.toString() || basename(resource.filename),
+    resource.basename
+  )
   const id = resource.props[DavProperty.FileId]
 
   const isFolder = resource.type === 'directory'

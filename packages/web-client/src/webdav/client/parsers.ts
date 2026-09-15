@@ -1,4 +1,4 @@
-import { parseXML, prepareFileFromProps } from 'webdav'
+import { parseXML, prepareFileFromProps, WebDAVTagParser } from 'webdav'
 import { XMLParser } from 'fast-xml-parser'
 import { WebDavResponseResource, WebDavResponseTusSupport } from '../../helpers'
 import { urlJoin } from '../../utils'
@@ -26,6 +26,13 @@ export const parseTusHeaders = (headers: Headers) => {
   return result
 }
 
+const nameTagParser: WebDAVTagParser = (jPath, value) => {
+  return jPath.endsWith('propstat.prop.name') ||
+    jPath.endsWith('propstat.prop.trashbin-original-filename')
+    ? undefined
+    : value
+}
+
 export const parseMultiStatus = async (xmlBody: string, remoteBasePath: string) => {
   const parseFileName = (name: string) => {
     const decoded = decodeURIComponent(name)
@@ -41,7 +48,11 @@ export const parseMultiStatus = async (xmlBody: string, remoteBasePath: string) 
     return decoded
   }
 
-  const parsedXML = await parseXML(xmlBody)
+  const parsedXML = await parseXML(xmlBody, {
+    attributeNamePrefix: '@',
+    attributeParsers: [],
+    tagParsers: [nameTagParser]
+  })
 
   return parsedXML.multistatus.response.map(({ href, propstat }) => {
     const data = {

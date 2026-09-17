@@ -43,17 +43,14 @@
 
 <script lang="ts">
 import { computed, defineComponent, ref, unref } from 'vue'
-import { useClientService, useRoute, useRouter, useMessages } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
+import { useInvitationAcceptance } from '../composables/useInvitationAcceptance'
 
 export default defineComponent({
   emits: ['highlightNewConnections'],
   setup(props, { emit }) {
-    const { showErrorMessage } = useMessages()
-    const router = useRouter()
-    const route = useRoute()
-    const clientService = useClientService()
     const { $gettext } = useGettext()
+    const { acceptInvitation, isAccepting } = useInvitationAcceptance()
 
     const token = ref<string>(undefined)
     const decodedToken = ref<string>(undefined)
@@ -70,47 +67,35 @@ export default defineComponent({
     })
 
     const acceptInvitationButtonDisabled = computed(() => {
-      return !unref(decodedToken) || !unref(provider)
+      return !unref(decodedToken) || !unref(provider) || unref(isAccepting)
     })
 
-    const errorPopup = (error: Error) => {
-      console.error(error)
-      showErrorMessage({
-        title: $gettext('Error'),
-        desc: $gettext('An error occurred'),
-        errors: [error]
-      })
-    }
     const acceptInvite = async () => {
-      try {
-        await clientService.httpAuthenticated.post('/sciencemesh/accept-invite', {
-          token: unref(decodedToken),
-          providerDomain: unref(provider)
-        })
+      const success = await acceptInvitation(unref(decodedToken), unref(provider))
+      if (success) {
         token.value = undefined
         provider.value = undefined
-
-        const { token: currentToken, providerDomain, ...query } = unref(route).query
-        router.replace({
-          name: 'open-cloud-mesh-invitations',
-          query
-        })
-
+        decodedToken.value = undefined
         emit('highlightNewConnections')
-      } catch (error) {
-        errorPopup(error)
       }
     }
 
     const decodeInviteToken = (value: string) => {
       try {
-        const decoded = atob(value)
+        // Support both plain token@provider format and base64 encoded
+        let decoded = value.trim()
+        if (!decoded.includes('@')) {
+          // Try base64 decode
+          decoded = atob(decoded)
+        }
+
         if (!decoded.includes('@')) {
           throw new Error()
         }
-        const [token, serverUrl] = decoded.split('@')
+
+        const [tokenPart, serverUrl] = decoded.split('@')
         provider.value = serverUrl
-        decodedToken.value = token
+        decodedToken.value = tokenPart
         providerError.value = false
       } catch (e) {
         provider.value = ''

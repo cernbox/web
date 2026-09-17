@@ -43,6 +43,7 @@ export const useFileActionsDelete = () => {
       name: 'delete',
       icon: 'delete-bin-5',
       label: () => $gettext('Delete'),
+      shortcut: $gettext('Del'),
       handler: ({ space, resources }) => handler({ space, resources, deletePermanent: false }),
       isVisible: ({ space, resources }) => {
         if (

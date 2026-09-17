@@ -1,5 +1,5 @@
 import { computed, ref, unref } from 'vue'
-import { call, GraphSharePermission, urlJoin } from '@ownclouders/web-client'
+import { call, GraphSharePermission, isShareSpaceResource, urlJoin } from '@ownclouders/web-client'
 import type { User } from '@ownclouders/web-client/graph/generated'
 import {
   useClientService,
@@ -8,6 +8,7 @@ import {
   useMessages,
   useRequest,
   useSharesStore,
+  useSpacesStore,
   useUserStore
 } from '@ownclouders/web-pkg'
 import { storeToRefs } from 'pinia'
@@ -23,6 +24,28 @@ export interface MentionCandidate {
 }
 
 /**
+ * The same search results in the shape EuroOffice wants for
+ * setUsers. They key mentions on the email address rather than on an opaque id - the editor
+ * literally writes "+<email>" into the comment text and parses the addresses back out of it
+ * (see Comments.js' pickEMail in Euro-Office/web-apps) - so a user without a mail address
+ * can't be mentioned there at all, unlike in Collabora.
+ */
+export interface MentionUser {
+  id: string
+  name: string
+  email: string
+  // users who can already open the file are listed above a separator in the editor's dropdown
+  hasAccess: boolean
+}
+
+export interface MentionNotificationDetails {
+  // the comment the mention was written in, when the editor exposes it
+  commentText?: string
+  // deep link to the mention, when the editor can produce one; defaults to resource.privateLink
+  documentUrl?: string
+}
+
+/**
  * Shared, app-agnostic "notify a mentioned user" behavior - implemented once here,
  * translated to/from each app's own postMessage protocol by its dedicated composable.
  */
@@ -34,6 +57,7 @@ export function useMentionNotifications(ctx: OfficePostMessageContext) {
   const capabilityStore = useCapabilityStore()
   const userStore = useUserStore()
   const sharesStore = useSharesStore()
+  const spacesStore = useSpacesStore()
   const { collaboratorShares } = storeToRefs(sharesStore)
   const { makeRequest } = useRequest({ clientService })
   const { showMessage } = useMessages()
@@ -45,19 +69,42 @@ export function useMentionNotifications(ctx: OfficePostMessageContext) {
   // candidate id) when a mention is selected, not the full candidate, so this is
   // needed to recover the display name for error messages when granting access below.
   const lastSearchResults = ref(new Map<string, MentionCandidate>())
+  // Every user seen in a search this session, keyed by lowercased email: EuroOffice reports
+  // its mentions as email addresses, and only once the comment is submitted, so unlike
+  // lastSearchResults this has to survive the searches that happened in between.
+  const userIdsByEmail = ref(new Map<string, string>())
 
   const defaultShareRoleId = ref<string>()
   const defaultShareRoleFetched = ref(false)
+
+  /**
+   * The drive that actually owns the permissions. For a resource shared with us the space is
+   * a share-jail entry whose id is not a real drive id, so listPermissions has to be pointed
+   * at the mount point's remote root instead - the same resolution FileSideBar.vue does
+   * before its own listPermissions call. Without it, mentioning someone in a document that
+   * was shared with you finds no roles and silently grants nothing.
+   */
+  const resolveDriveId = async (): Promise<string> => {
+    const currentSpace = unref(space)
+    if (!isShareSpaceResource(currentSpace)) {
+      return currentSpace.id
+    }
+
+    const mountPoint = await spacesStore.getMountPointForSpace({
+      graphClient: graphAuthenticated,
+      space: currentSpace
+    })
+    return mountPoint?.root?.remoteItem?.rootId || currentSpace.id
+  }
 
   const loadDefaultShareRoleId = async (): Promise<string | undefined> => {
     if (unref(defaultShareRoleFetched)) {
       return unref(defaultShareRoleId)
     }
 
-    const currentSpace = unref(space)
     const currentResource = unref(resource)
     const { allowedRoles } = await graphAuthenticated.permissions.listPermissions(
-      currentSpace.id,
+      await resolveDriveId(),
       currentResource.fileId,
       sharesStore.graphRoles,
       {},
@@ -94,57 +141,140 @@ export function useMentionNotifications(ctx: OfficePostMessageContext) {
   }
 
   /**
-   * Searches all users, the same call the "invite people" dialog makes
-   * (InviteCollaboratorForm.vue's fetchRecipientsTask) - not just existing collaborators,
-   * so a mention can invite someone new. Deliberately scoped to individual users only
-   * (no groups): a @mention notifies one specific person, unlike a group share.
+   * Searches every user, not just existing collaborators, so a mention can invite someone
+   * new. Deliberately scoped to individual users only (no groups): a @mention notifies one
+   * specific person, unlike a group share.
    *
-   * CERN: the default search only covers primary (personal) accounts - service and
-   * secondary accounts aren't included unless explicitly filtered for, same as
-   * InviteCollaboratorForm.vue's per-role-type filters. The graph API's $filter doesn't
-   * support "or", so those two account types need separate calls; only issued when the
-   * default search comes up empty, to avoid the extra round-trips on the common case.
+   * CERN: `userType eq 'all'` covers primary, secondary and service accounts in one call.
+   * The invite dialog instead issues one call per type, because the graph $filter has no
+   * "or" - unnecessary here. Note this needs a reva new enough to know the 'all' user type;
+   * older ones reject the request with `unknown usertype: all`.
    */
+  const findUsers = (searchText: string, signal?: AbortSignal): Promise<User[]> =>
+    graphAuthenticated.users.listUsers(
+      { orderBy: ['displayName'], search: `"${searchText}"`, filter: `userType eq 'all'` },
+      { signal }
+    )
+
   // restartable: Collabora fires a fresh autocomplete search on every keystroke, so an
   // in-flight request from an earlier (now-stale) keystroke must be cancelled rather than
   // left to race a newer one and potentially overwrite it - same signal-cancellation pattern
   // as InviteCollaboratorForm.vue's fetchRecipientsTask.
-  const resolveMentionCandidatesTask = useTask(function* (signal, searchText: string) {
-    const currentResource = unref(resource)
-    const users = yield* call(
-      graphAuthenticated.users.listUsers(
-        { orderBy: ['displayName'], search: `"${searchText}"`, filter: `userType eq 'all'` },
-        { signal }
-      )
-    )
-
-    const candidates = (users || [])
-      .filter((user) => user.id !== userStore.user.id)
-      .map((user) => ({
-        username: user.id,
-        // office apps expect a profile URL; we don't have a dedicated one, so link to the document
-        profile: currentResource.privateLink,
-        label: buildMentionLabel(user)
-      }))
-
-    lastSearchResults.value = new Map(
-      candidates.map((candidate) => [candidate.username, candidate])
-    )
-    return candidates
+  const searchUsersTask = useTask(function* (signal, searchText: string) {
+    const users = yield* call(findUsers(searchText, signal))
+    return (users || []).filter((user) => user.id !== userStore.user.id)
   }).restartable()
 
-  const resolveMentionCandidates = async (searchText: string): Promise<MentionCandidate[]> => {
+  /**
+   * Returns null - not an empty list - when no search actually ran, so callers can tell
+   * "nobody matched" from "we never asked" and leave their remembered results alone.
+   */
+  const searchUsers = async (searchText: string): Promise<User[] | null> => {
     if (searchText.length < capabilityStore.sharingSearchMinLength) {
-      return []
+      return null
     }
 
     try {
-      return (await resolveMentionCandidatesTask.perform(searchText)) || []
+      return (await searchUsersTask.perform(searchText)) || []
     } catch {
       // a newer keystroke restarted the task and cancelled this one - its result is stale,
       // the newer perform() call (already in flight) will produce the real answer
+      return null
+    }
+  }
+
+  const toMentionCandidate = (user: User): MentionCandidate => ({
+    username: user.id,
+    // office apps expect a profile URL; we don't have a dedicated one, so link to the document
+    profile: unref(resource).privateLink,
+    label: buildMentionLabel(user)
+  })
+
+  const rememberSearchResults = (users: User[]): void => {
+    lastSearchResults.value = new Map(users.map((user) => [user.id, toMentionCandidate(user)]))
+    // accumulated across searches, unlike lastSearchResults: EuroOffice only reports which
+    // users were mentioned once the comment is submitted, by which point the search that
+    // produced them can be many keystrokes old
+    users.forEach((user) => {
+      if (user.mail) {
+        unref(userIdsByEmail).set(user.mail.toLowerCase(), user.id)
+      }
+    })
+  }
+
+  /** Mention candidates in the shape Collabora's Action_Mention wants. */
+  const resolveMentionCandidates = async (searchText: string): Promise<MentionCandidate[]> => {
+    const users = await searchUsers(searchText)
+    if (!users) {
       return []
     }
+
+    rememberSearchResults(users)
+    return users.map(toMentionCandidate)
+  }
+
+  /**
+   * Whether the user can already open the document. Broader than the check in
+   * grantAccessIfNeeded, which deliberately ignores indirect shares because it decides
+   * whether to create a *direct* one; here it only drives where the editor draws the
+   * separator in its mention dropdown, and inherited access counts just as well.
+   */
+  const hasAccessToResource = (userId: string): boolean =>
+    unref(collaboratorShares).some((share) => share.sharedWith?.id === userId)
+
+  /**
+   * Same search as resolveMentionCandidates, in the shape EuroOffice's setUsers wants.
+   * Users without a mail address are dropped: the editor writes "+<email>" into the comment
+   * and parses the addresses back out, so it has no way to refer to them.
+   */
+  const resolveMentionUsers = async (searchText: string): Promise<MentionUser[]> => {
+    const users = await searchUsers(searchText)
+    if (!users) {
+      return []
+    }
+
+    rememberSearchResults(users)
+    return users
+      .filter((user): user is User & { mail: string } => !!user.mail)
+      .map((user) => ({
+        id: user.id,
+        name: buildMentionLabel(user),
+        email: user.mail,
+        hasAccess: hasAccessToResource(user.id)
+      }))
+  }
+
+  /**
+   * Maps the email addresses EuroOffice reports back to user ids for notifyMentionedUsers.
+   * Addresses picked from the autocomplete are already known; one typed by hand never went
+   * through a search, hence the lookup fallback.
+   */
+  const resolveUserIdsForEmails = async (emails: string[]): Promise<string[]> => {
+    const userIds: string[] = []
+
+    for (const email of emails) {
+      const normalizedEmail = email.toLowerCase()
+      const knownUserId = unref(userIdsByEmail).get(normalizedEmail)
+      if (knownUserId) {
+        userIds.push(knownUserId)
+        continue
+      }
+
+      try {
+        // deliberately not searchUsersTask: it is restartable, so this lookup and an
+        // autocomplete search running at the same time would cancel each other
+        const users = await findUsers(email)
+        const match = (users || []).find((user) => user.mail?.toLowerCase() === normalizedEmail)
+        if (match) {
+          unref(userIdsByEmail).set(normalizedEmail, match.id)
+          userIds.push(match.id)
+        }
+      } catch (e) {
+        console.error(`Error resolving mentioned user "${email}"`, e)
+      }
+    }
+
+    return userIds
   }
 
   /**
@@ -216,15 +346,17 @@ export function useMentionNotifications(ctx: OfficePostMessageContext) {
    *                                                           // Collabora @mention always
    *                                                           // targets one specific person
    *     "event_id": string,                                  // unique id for this flush
-   *     "comment_text": string,                               // not exposed by Collabora's
-   *     "anchor_text": string,                                // UI_Mention postMessage today
-   *     "document_url": string,                              // resource.privateLink
+   *     "comment_text": string,                              // details.commentText - not
+   *                                                          // exposed by Collabora's
+   *     "anchor_text": string,                               // UI_Mention postMessage today
+   *     "document_url": string,                              // details.documentUrl, else
+   *                                                          // resource.privateLink
    *     "app_name": "office"
    *   }
    *
    * Response: 202 Accepted, { accepted: [...], rejected: [...] } per-mention results.
    */
-  const notifyMentionedUsers = async (): Promise<void> => {
+  const notifyMentionedUsers = async (details: MentionNotificationDetails = {}): Promise<void> => {
     if (!unref(userIdsToMention).length) {
       return
     }
@@ -239,9 +371,9 @@ export function useMentionNotifications(ctx: OfficePostMessageContext) {
           file_id: currentResource.fileId,
           mentions: userIDs.map((username) => ({ type: 'user' as const, username })),
           event_id: uuidV4(),
-          comment_text: '',
+          comment_text: details.commentText || '',
           anchor_text: '',
-          document_url: currentResource.privateLink || '',
+          document_url: details.documentUrl || currentResource.privateLink || '',
           app_name: 'office'
         }
       })
@@ -256,12 +388,15 @@ export function useMentionNotifications(ctx: OfficePostMessageContext) {
 
   const resetMentionState = (): void => {
     lastSearchResults.value = new Map()
+    userIdsByEmail.value = new Map()
     defaultShareRoleId.value = undefined
     defaultShareRoleFetched.value = false
   }
 
   return {
     resolveMentionCandidates,
+    resolveMentionUsers,
+    resolveUserIdsForEmails,
     queueMention,
     notifyMentionedUsers,
     resetMentionState,

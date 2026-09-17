@@ -19,11 +19,14 @@ describe('useMentionNotifications', () => {
     appIframeRef: ref(null)
   })
 
+  // mock<User>() auto-stubs any property left unset, and a stub is truthy - so every field
+  // that gets read as "is this set?" has to be spelled out here
   const createUser = (overrides: Partial<User> = {}) =>
     mock<User>({
       id: 'alice-id',
       displayName: 'Alice',
       onPremisesSamAccountName: undefined,
+      mail: undefined,
       ...overrides
     })
 
@@ -140,34 +143,9 @@ describe('useMentionNotifications', () => {
       expect(candidates).toEqual([expect.objectContaining({ label: 'Alice Smith (asmith)' })])
     })
 
-    it('falls back to separate secondary/service account searches when the default search is empty', async () => {
-      const { getInstance, mocks } = getWrapper()
-      mocks.$clientService.graphAuthenticated.users.listUsers
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-          createUser({ id: 'secondary-id', displayName: 'Secondary Account' })
-        ])
-        .mockResolvedValueOnce([createUser({ id: 'svc-id', displayName: 'Service Account' })])
-
-      const candidates = await getInstance().resolveMentionCandidates('svc')
-
-      expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining({ search: '"svc"', filter: "userType eq 'Secondary'" }),
-        expect.objectContaining({ signal: expect.anything() })
-      )
-      expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenNthCalledWith(
-        3,
-        expect.objectContaining({ search: '"svc"', filter: "userType eq 'Service'" }),
-        expect.objectContaining({ signal: expect.anything() })
-      )
-      expect(candidates).toEqual([
-        expect.objectContaining({ username: 'secondary-id' }),
-        expect.objectContaining({ username: 'svc-id' })
-      ])
-    })
-
-    it('does not search service/secondary accounts when the default search already found someone', async () => {
+    // one call covering primary, secondary and service accounts - the invite dialog needs
+    // one per type only because it filters by share role
+    it("covers every account type in a single call via userType eq 'all'", async () => {
       const { getInstance, mocks } = getWrapper({
         users: [createUser({ id: 'alice-id', displayName: 'Alice' })]
       })
@@ -175,6 +153,122 @@ describe('useMentionNotifications', () => {
       await getInstance().resolveMentionCandidates('ali')
 
       expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalledTimes(1)
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalledWith(
+        expect.objectContaining({ filter: "userType eq 'all'" }),
+        expect.objectContaining({ signal: expect.anything() })
+      )
+    })
+  })
+
+  describe('resolveMentionUsers', () => {
+    it('returns the search results in the shape EuroOffice setUsers wants', async () => {
+      const { getInstance } = getWrapper({
+        users: [
+          createUser({
+            id: 'alice-id',
+            displayName: 'Alice Smith',
+            onPremisesSamAccountName: 'asmith',
+            mail: 'alice@example.test'
+          })
+        ]
+      })
+
+      const users = await getInstance().resolveMentionUsers('ali')
+
+      expect(users).toEqual([
+        {
+          id: 'alice-id',
+          name: 'Alice Smith (asmith)',
+          email: 'alice@example.test',
+          hasAccess: false
+        }
+      ])
+    })
+
+    // the editor writes "+<email>" into the comment and parses the addresses back out, so a
+    // user it has no address for cannot be mentioned at all
+    it('drops users without an email address', async () => {
+      const { getInstance } = getWrapper({
+        users: [
+          createUser({ id: 'alice-id', displayName: 'Alice', mail: undefined }),
+          createUser({ id: 'bob-id', displayName: 'Bob', mail: 'bob@example.test' })
+        ]
+      })
+
+      const users = await getInstance().resolveMentionUsers('b')
+
+      expect(users).toEqual([expect.objectContaining({ id: 'bob-id' })])
+    })
+
+    it('flags users who can already open the document', async () => {
+      const { getInstance } = getWrapper({
+        users: [createUser({ id: 'alice-id', displayName: 'Alice', mail: 'alice@example.test' })],
+        collaboratorShares: [
+          createCollaboratorShare({ sharedWith: { id: 'alice-id', displayName: 'Alice' } })
+        ]
+      })
+
+      const users = await getInstance().resolveMentionUsers('ali')
+
+      expect(users).toEqual([expect.objectContaining({ hasAccess: true })])
+    })
+
+    it('does not search below the sharing search minimum length', async () => {
+      const { getInstance, mocks } = getWrapper({ users: [createUser()], searchMinLength: 3 })
+
+      const users = await getInstance().resolveMentionUsers('al')
+
+      expect(users).toEqual([])
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('resolveUserIdsForEmails', () => {
+    it('maps addresses picked from the autocomplete without searching again', async () => {
+      const { getInstance, mocks } = getWrapper({
+        users: [createUser({ id: 'alice-id', displayName: 'Alice', mail: 'Alice@Example.test' })]
+      })
+      const instance = getInstance()
+
+      await instance.resolveMentionUsers('ali')
+      vi.mocked(mocks.$clientService.graphAuthenticated.users.listUsers).mockClear()
+
+      // the editor lowercases the address it writes into the comment
+      const userIds = await instance.resolveUserIdsForEmails(['alice@example.test'])
+
+      expect(userIds).toEqual(['alice-id'])
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).not.toHaveBeenCalled()
+    })
+
+    it('looks up an address that was typed by hand', async () => {
+      const { getInstance, mocks } = getWrapper({
+        users: [createUser({ id: 'bob-id', displayName: 'Bob', mail: 'bob@example.test' })]
+      })
+
+      const userIds = await getInstance().resolveUserIdsForEmails(['bob@example.test'])
+
+      expect(userIds).toEqual(['bob-id'])
+      expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalled()
+    })
+
+    it('skips an address that matches nobody', async () => {
+      const { getInstance } = getWrapper({
+        users: [createUser({ id: 'bob-id', displayName: 'Bob', mail: 'bob@example.test' })]
+      })
+
+      const userIds = await getInstance().resolveUserIdsForEmails(['nobody@example.test'])
+
+      expect(userIds).toEqual([])
+    })
+
+    it('swallows lookup errors', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const { getInstance, mocks } = getWrapper()
+      mocks.$clientService.graphAuthenticated.users.listUsers.mockRejectedValue(
+        new Error('network error')
+      )
+
+      await expect(getInstance().resolveUserIdsForEmails(['bob@example.test'])).resolves.toEqual([])
     })
   })
 

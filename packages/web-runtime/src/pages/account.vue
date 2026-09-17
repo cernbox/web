@@ -255,6 +255,28 @@
           </oc-td>
         </oc-tr>
       </account-table>
+
+      <account-table
+        v-if="showTakeout"
+        :title="$gettext('Takeout')"
+        :fields="[
+          $gettext('Takeout action name'),
+          $gettext('Takeout action description'),
+          $gettext('Takeout actions')
+        ]"
+        class="account-page-takeout"
+      >
+        <oc-tr class="account-page-takeout">
+          <oc-td>{{ $gettext('Export') }}</oc-td>
+          <oc-td>
+            <span v-text="$gettext('Export all your files from CERNBox')" />
+          </oc-td>
+          <oc-td data-testid="takeout">
+            <takeout />
+          </oc-td>
+        </oc-tr>
+      </account-table>
+
       <account-table
         v-if="showGdprExport"
         :title="$gettext('GDPR')"
@@ -316,6 +338,7 @@ import AccountTable from '../components/Account/AccountTable.vue'
 import { useNotificationsSettings } from '../composables/notificationsSettings'
 import { accountSectionsExtensionPoint } from '../extensionPoints'
 import { captureException } from '@sentry/vue'
+import Takeout from '../components/Account/Takeout.vue'
 
 const MOBILE_BREAKPOINT = 800
 export default defineComponent({
@@ -327,7 +350,8 @@ export default defineComponent({
     GdprExport,
     ExtensionPreference,
     ThemeSwitcher,
-    AccountTable
+    AccountTable,
+    Takeout
   },
   setup() {
     const { showMessage, showErrorMessage } = useMessages()
@@ -376,6 +400,9 @@ export default defineComponent({
         capabilityStore.personalDataExport &&
         spacesStore.personalSpace
       )
+    })
+    const showTakeout = computed(() => {
+      return authStore.userContextReady
     })
     const showChangePassword = computed(() => {
       return authStore.userContextReady && !capabilityStore.graphUsersChangeSelfPasswordDisabled
@@ -759,6 +786,7 @@ export default defineComponent({
       accountEditLink: computed(() => configStore.options.accountEditLink),
       showLogout,
       showGdprExport,
+      showTakeout,
       showNotifications,
       showAccountSection,
       showChangePassword,

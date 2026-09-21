@@ -34,7 +34,7 @@
       {{ navigateToLoginText }}
     </oc-button>
     <div class="snackbars">
-      <portal-target name="app.runtime.accessDenied" />
+      <portal-target name="app.runtime.errorPages" />
       <message-bar />
     </div>
   </div>

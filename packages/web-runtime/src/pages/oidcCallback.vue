@@ -22,16 +22,25 @@
       <p>{{ footerSlogan }}</p>
     </div>
   </div>
+  <!-- v-if, not v-show: the target must not exist while logging in, or the OTG mounts on every login -->
+  <div v-if="!isPopupCallback && error" class="snackbars">
+    <portal-target name="app.runtime.errorPages" />
+    <message-bar />
+  </div>
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useEmbedMode, useRoute, useThemeStore } from '@ownclouders/web-pkg'
 import { authService } from '../services/auth'
+import MessageBar from '../components/MessageBar.vue'
 import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'OidcCallbackPage',
+  components: {
+    MessageBar
+  },
   setup() {
     const themeStore = useThemeStore()
     const { currentTheme } = storeToRefs(themeStore)
@@ -133,5 +142,20 @@ export default defineComponent({
   background: var(--oc-color-background-default);
   color: var(--oc-color-text-default);
   font-size: var(--oc-font-size-medium);
+}
+
+.snackbars {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: calc(var(--oc-z-index-modal) + 1);
+
+  @media (max-width: 640px) {
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 500px;
+  }
 }
 </style>

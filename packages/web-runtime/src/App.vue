@@ -1,6 +1,5 @@
 <template>
   <portal-target name="app.app-banner" multiple />
-  <portal-target name="app.runtime.allPages" multiple />
   <div id="web">
     <oc-hidden-announcer :announcement="announcement" level="polite" />
     <skip-to target="web-content-main">

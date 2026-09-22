@@ -56,6 +56,7 @@
         <p>{{ footerSlogan }}</p>
       </div>
     </div>
+    <error-page-snackbars v-if="errorMessage && isPlainLayout" />
   </div>
 </template>
 
@@ -87,6 +88,7 @@ import { urlJoin } from '@ownclouders/web-client'
 import { RouteLocationNamedRaw } from 'vue-router'
 import { dirname } from 'path'
 import { storeToRefs } from 'pinia'
+import ErrorPageSnackbars from '../components/ErrorPageSnackbars.vue'
 
 const configStore = useConfigStore()
 const clientService = useClientService()
@@ -117,6 +119,8 @@ const publicLinkSpace = computed(() =>
     ...(unref(password) && { publicLinkPassword: unref(password) })
   })
 )
+
+const isPlainLayout = computed(() => unref(route).name === 'resolvePublicLink')
 
 const item = computed(() => queryItemAsString(unref(route)?.params?.driveAliasAndItem))
 

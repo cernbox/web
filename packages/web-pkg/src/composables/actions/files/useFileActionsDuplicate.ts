@@ -21,12 +21,12 @@ export const useFileActionsDuplicate = () => {
   const resourcesStore = useResourcesStore()
   const { currentFolder } = storeToRefs(resourcesStore)
 
-  const copyHandler = ({ space, resources }: FileActionOptions) => {
+  const copyHandler = ({ resources }: FileActionOptions) => {
     if (isLocationCommonActive(router, 'files-common-search')) {
       resources = resources.filter((r) => !isProjectSpaceResource(r))
     }
 
-    clipboardStore.duplicateResources(resources, space)
+    clipboardStore.duplicateResources(resources)
   }
   const { handler: pasteHandler } = useFileActionsPaste()
 

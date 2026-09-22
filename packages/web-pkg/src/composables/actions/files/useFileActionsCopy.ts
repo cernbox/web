@@ -33,12 +33,12 @@ export const useFileActionsCopy = () => {
     return $gettext('Ctrl + C')
   })
 
-  const handler = ({ space, resources }: FileActionOptions) => {
+  const handler = ({ resources }: FileActionOptions) => {
     if (isLocationCommonActive(router, 'files-common-search')) {
       resources = resources.filter((r) => !isProjectSpaceResource(r))
     }
 
-    copyResources(resources, space)
+    copyResources(resources)
   }
 
   const actions = computed((): FileAction[] => {

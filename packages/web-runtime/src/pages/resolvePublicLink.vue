@@ -55,14 +55,17 @@
         <p>{{ footerSlogan }}</p>
       </div>
     </div>
-    <error-page-snackbars v-if="errorMessage && isPlainLayout" />
+    <div v-if="errorMessage && isPlainLayout" class="snackbars">
+      <portal-target name="app.runtime.errorPages" />
+      <message-bar />
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { DavHttpError, SharePermissionBit } from '@ownclouders/web-client'
 import { authService } from '../services/auth'
-import ErrorPageSnackbars from '../components/ErrorPageSnackbars.vue'
+import MessageBar from '../components/MessageBar.vue'
 
 import {
   queryItemAsString,
@@ -92,7 +95,7 @@ import { storeToRefs } from 'pinia'
 export default defineComponent({
   name: 'ResolvePublicLink',
   components: {
-    ErrorPageSnackbars
+    MessageBar
   },
   setup() {
     const configStore = useConfigStore()
@@ -341,6 +344,23 @@ export default defineComponent({
   .oc-card-header h2,
   .oc-card-footer p {
     margin: 0;
+  }
+}
+</style>
+
+<style lang="scss" scoped>
+.snackbars {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: calc(var(--oc-z-index-modal) + 1);
+
+  @media (max-width: 640px) {
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 500px;
   }
 }
 </style>

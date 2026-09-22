@@ -18,14 +18,8 @@ export const topBarCenterExtensionPoint: ExtensionPoint<CustomComponentExtension
   multiple: true
 }
 
-export const accountSectionsExtensionPoint: ExtensionPoint<CustomComponentExtension> = {
-  id: 'app.runtime.account.sections',
-  extensionType: 'customComponent',
-  multiple: true
-}
-
 export const extensionPoints = () => {
   return computed<ExtensionPoint<Extension>[]>(() => {
-    return [appMenuExtensionPoint, topBarCenterExtensionPoint, accountSectionsExtensionPoint]
+    return [appMenuExtensionPoint, topBarCenterExtensionPoint]
   })
 }

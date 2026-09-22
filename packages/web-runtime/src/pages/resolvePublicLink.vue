@@ -55,12 +55,14 @@
         <p>{{ footerSlogan }}</p>
       </div>
     </div>
+    <error-page-snackbars v-if="errorMessage && isPlainLayout" />
   </div>
 </template>
 
 <script lang="ts">
 import { DavHttpError, SharePermissionBit } from '@ownclouders/web-client'
 import { authService } from '../services/auth'
+import ErrorPageSnackbars from '../components/ErrorPageSnackbars.vue'
 
 import {
   queryItemAsString,
@@ -89,6 +91,9 @@ import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'ResolvePublicLink',
+  components: {
+    ErrorPageSnackbars
+  },
   setup() {
     const configStore = useConfigStore()
     const clientService = useClientService()
@@ -108,6 +113,8 @@ export default defineComponent({
       const split = unref(route).path.split('/')?.[1]
       return split === 'o'
     })
+
+    const isPlainLayout = computed(() => unref(route).name === 'resolvePublicLink')
 
     const publicLinkType = computed(() => {
       return unref(isOcmLink) ? 'ocm' : 'public-link'
@@ -311,6 +318,7 @@ export default defineComponent({
       passwordFieldLabel,
       wrongPasswordMessage,
       errorMessage,
+      isPlainLayout,
       footerSlogan,
       resolvePublicLinkTask,
       loadPublicSpaceTask

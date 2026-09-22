@@ -33,6 +33,7 @@
     >
       {{ navigateToLoginText }}
     </oc-button>
+    <error-page-snackbars />
   </div>
 </template>
 
@@ -48,9 +49,13 @@ import {
   useThemeStore,
   useAuthService
 } from '@ownclouders/web-pkg'
+import ErrorPageSnackbars from '../components/ErrorPageSnackbars.vue'
 
 export default defineComponent({
   name: 'AccessDeniedPage',
+  components: {
+    ErrorPageSnackbars
+  },
   setup() {
     const themeStore = useThemeStore()
     const { currentTheme } = storeToRefs(themeStore)

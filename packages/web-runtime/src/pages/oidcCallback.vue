@@ -22,16 +22,22 @@
       <p>{{ footerSlogan }}</p>
     </div>
   </div>
+  <!-- v-if, not v-show: the target must not exist while logging in, or the OTG mounts on every login -->
+  <error-page-snackbars v-if="!isPopupCallback && error" />
 </template>
 
 <script lang="ts">
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useEmbedMode, useRoute, useThemeStore } from '@ownclouders/web-pkg'
 import { authService } from '../services/auth'
+import ErrorPageSnackbars from '../components/ErrorPageSnackbars.vue'
 import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'OidcCallbackPage',
+  components: {
+    ErrorPageSnackbars
+  },
   setup() {
     const themeStore = useThemeStore()
     const { currentTheme } = storeToRefs(themeStore)

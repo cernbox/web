@@ -55,17 +55,12 @@
         <p>{{ footerSlogan }}</p>
       </div>
     </div>
-    <div v-if="errorMessage && isPlainLayout" class="snackbars">
-      <portal-target name="app.runtime.errorPages" />
-      <message-bar />
-    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { DavHttpError, SharePermissionBit } from '@ownclouders/web-client'
 import { authService } from '../services/auth'
-import MessageBar from '../components/MessageBar.vue'
 
 import {
   queryItemAsString,
@@ -94,9 +89,6 @@ import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'ResolvePublicLink',
-  components: {
-    MessageBar
-  },
   setup() {
     const configStore = useConfigStore()
     const clientService = useClientService()
@@ -116,8 +108,6 @@ export default defineComponent({
       const split = unref(route).path.split('/')?.[1]
       return split === 'o'
     })
-
-    const isPlainLayout = computed(() => unref(route).name === 'resolvePublicLink')
 
     const publicLinkType = computed(() => {
       return unref(isOcmLink) ? 'ocm' : 'public-link'
@@ -321,7 +311,6 @@ export default defineComponent({
       passwordFieldLabel,
       wrongPasswordMessage,
       errorMessage,
-      isPlainLayout,
       footerSlogan,
       resolvePublicLinkTask,
       loadPublicSpaceTask
@@ -344,23 +333,6 @@ export default defineComponent({
   .oc-card-header h2,
   .oc-card-footer p {
     margin: 0;
-  }
-}
-</style>
-
-<style lang="scss" scoped>
-.snackbars {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
-  z-index: calc(var(--oc-z-index-modal) + 1);
-
-  @media (max-width: 640px) {
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    width: 100%;
-    max-width: 500px;
   }
 }
 </style>

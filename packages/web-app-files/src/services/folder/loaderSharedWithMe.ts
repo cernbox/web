@@ -1,7 +1,7 @@
 import { FolderLoader, FolderLoaderTask, TaskContext } from '../folder'
 import { Router } from 'vue-router'
 import { useTask } from 'vue-concurrency'
-import { buildIncomingShareResource, call, getFavoritesFileIds } from '@ownclouders/web-client'
+import { buildIncomingShareResource, call } from '@ownclouders/web-client'
 import { isLocationSharesActive } from '@ownclouders/web-pkg'
 import { markFavorites } from '../favorites'
 

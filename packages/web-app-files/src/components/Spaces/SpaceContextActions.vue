@@ -34,7 +34,7 @@ import { isLocationSpacesActive } from '@ownclouders/web-pkg'
 import { computed, defineComponent, PropType, Ref, ref, toRef, unref, VNodeRef } from 'vue'
 import { useRouter, usePreviewService } from '@ownclouders/web-pkg'
 import { FileActionOptions, SpaceActionOptions } from '@ownclouders/web-pkg'
-import { useFileActionsDownloadArchive } from '@ownclouders/web-pkg'
+import { useFileActionsDownloadArchive, useFileActionsFavorite } from '@ownclouders/web-pkg'
 
 export default defineComponent({
   name: 'SpaceContextActions',
@@ -68,6 +68,7 @@ export default defineComponent({
     const { actions: showMembersActions } = useSpaceActionsShowMembers()
     const { actions: downloadArchiveActions } = useFileActionsDownloadArchive()
     const { actions: navigateToTrashActions } = useSpaceActionsNavigateToTrash()
+    const { actions: favoriteActions } = useFileActionsFavorite()
 
     const spaceImageInput: VNodeRef = ref(null)
     const { actions: uploadImageActions, uploadImageSpace } = useSpaceActionsUploadImage({
@@ -108,7 +109,7 @@ export default defineComponent({
     })
 
     const menuItemsSidebar = computed(() => {
-      const fileHandlers = [...unref(showDetailsActions)]
+      const fileHandlers = [...unref(favoriteActions), ...unref(showDetailsActions)]
       return [...fileHandlers].filter((item) =>
         // HACK: showDetails provides FileAction[] but we have SpaceActionOptions, so we need to cast them to FileActionOptions
         item.isVisible(unref(actionOptions) as unknown as FileActionOptions)

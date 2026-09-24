@@ -76,7 +76,9 @@ export const useFileActionsFavorite = () => {
           !isLocationSpacesActive(router, 'files-spaces-generic') &&
           !isLocationCommonActive(router, 'files-common-office') &&
           !isLocationCommonActive(router, 'files-common-favorites') &&
-          !isLocationSharesActive(router, 'files-shares-with-me')
+          !isLocationSharesActive(router, 'files-shares-with-me') &&
+          !isLocationSharesActive(router, 'files-shares-with-others') &&
+          !isLocationSharesActive(router, 'files-shares-via-link')
         ) {
           return false
         }

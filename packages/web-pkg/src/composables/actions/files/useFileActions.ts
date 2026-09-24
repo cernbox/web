@@ -109,6 +109,33 @@ export const useFileActions = () => {
     }).map((e) => e.action)
   })
 
+  /**
+   * How specifically an app's file extension entry matches a resource: 0 for no match, then
+   * mimetype group (`text`), exact mimetype, file extension.
+   */
+  const matchRank = (fileExtension: ApplicationFileExtension, resource: Resource): number => {
+    if (!resource.canDownload() && !fileExtension.secureView) {
+      return 0
+    }
+
+    if (resource.extension && fileExtension.extension) {
+      return resource.extension.toLowerCase() === fileExtension.extension.toLowerCase() ? 3 : 0
+    }
+
+    if (resource.mimeType && fileExtension.mimeType) {
+      const mimeType = resource.mimeType.toLowerCase()
+      const wanted = fileExtension.mimeType.toLowerCase()
+      if (mimeType === wanted) {
+        return 2
+      }
+      if (mimeType.split('/')[0] === wanted) {
+        return 1
+      }
+    }
+
+    return 0
+  }
+
   const editorActions = computed(() => {
     if (unref(isEmbedModeEnabled)) {
       return []
@@ -151,27 +178,26 @@ export const useFileActions = () => {
               return false
             }
 
-            if (!resources[0].canDownload() && !fileExtension.secureView) {
-              return false
-            }
-
             if (!unref(isSearchActive) && isLocationTrashActive(router, 'files-trash-generic')) {
               return false
             }
 
-            if (resources[0].extension && fileExtension.extension) {
-              return resources[0].extension.toLowerCase() === fileExtension.extension.toLowerCase()
+            // An app can register several entries matching the same file, e.g. `txt` and the
+            // `text` mimetype, or `text/plain` and `text`. Only its best match is offered, so
+            // each app appears once.
+            let best: ApplicationFileExtension
+            let bestRank = 0
+            for (const other of appsStore.fileExtensions) {
+              if (other.app !== fileExtension.app) {
+                continue
+              }
+              const rank = matchRank(other, resources[0])
+              if (rank > bestRank) {
+                best = other
+                bestRank = rank
+              }
             }
-
-            if (resources[0].mimeType && fileExtension.mimeType) {
-              return (
-                resources[0].mimeType.toLowerCase() === fileExtension.mimeType.toLowerCase() ||
-                resources[0].mimeType.split('/')[0].toLowerCase() ===
-                  fileExtension.mimeType.toLowerCase()
-              )
-            }
-
-            return false
+            return best === fileExtension
           },
           hasPriority: fileExtension.hasPriority,
           class: `oc-files-actions-${kebabCase(appInfo.name).toLowerCase()}-trigger`

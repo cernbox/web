@@ -45,8 +45,9 @@ describe('TrashOverview', () => {
     await wrapper.vm.loadResourcesTask.last
     expect(wrapper.find('no-content-message-stub').exists()).toBeTruthy()
   })
-  it('should navigate to single space trash if only one space exists', () => {
-    const { mocks } = getWrapper({ spaces: [spaceMocks[0]] })
+  it('should navigate to single space trash if only one space exists', async () => {
+    const { wrapper, mocks } = getWrapper({ spaces: [spaceMocks[0]] })
+    await wrapper.vm.loadResourcesTask.last
     expect(mocks.$router.push).toHaveBeenCalledWith({
       name: 'files-trash-generic',
       params: { driveAliasAndItem: spaceMocks[0].getDriveAliasAndItem(undefined) },

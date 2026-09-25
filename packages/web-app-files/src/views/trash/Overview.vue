@@ -225,11 +225,12 @@ export default defineComponent({
     }
 
     onMounted(async () => {
+      await loadResourcesTask.perform()
+
       if (unref(spaces).length === 1 && !isProjectSpaceResource(unref(spaces)[0])) {
         return router.push(getTrashLink(unref(spaces).pop()))
       }
 
-      await loadResourcesTask.perform()
       await nextTick()
       markInstance.value = new Mark(unref(tableRef)?.$el)
     })

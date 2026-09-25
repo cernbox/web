@@ -321,6 +321,17 @@ export default defineComponent({
         graphClient: clientService.graphAuthenticated,
         signal
       })
+
+      try {
+        const favorites = yield clientService.webdav.listFavoriteFiles({
+          spaceID: spacesStore.personalSpace?.id,
+          signal
+        })
+        spacesStore.setFavoriteSpaces(favorites?.results || [])
+      } catch (e) {
+        console.error('failed to load favorite spaces', e)
+      }
+
       yield spacesStore.loadMountPoints({
         graphClient: clientService.graphAuthenticated,
         signal,

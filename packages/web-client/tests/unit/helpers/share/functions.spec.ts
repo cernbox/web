@@ -26,6 +26,10 @@ import {
   User
 } from '../../../../src/graph/generated'
 import { urlJoin } from '../../../../src'
+import emptyNameSharedWithMe from './fixtures/received-webapp/empty-name.sharedWithMe.json'
+import positiveSharedWithMe from './fixtures/received-webapp/positive.sharedWithMe.json'
+import resourceExpectations from './fixtures/received-webapp/resource-expectations.json'
+import webdavOnlySharedWithMe from './fixtures/received-webapp/webdav-only.sharedWithMe.json'
 
 describe('share helper functions', () => {
   describe('isShareResource', () => {
@@ -165,6 +169,169 @@ describe('share helper functions', () => {
       item.remoteItem.permissions = driveItem.remoteItem.permissions
       const result = buildIncomingShareResource({ driveItem: item, graphRoles, serverUrl })
       expect(result.privateLink).toEqual(urlJoin(serverUrl, 'f', item.remoteItem.id))
+    })
+
+    describe('received webapp metadata', () => {
+      const positiveExpectation = expectationFor('positive.sharedWithMe.json')
+      const webdavExpectation = expectationFor('webdav-only.sharedWithMe.json')
+      const emptyNameExpectation = expectationFor('empty-name.sharedWithMe.json')
+
+      it('locks the recorded synthetic names', () => {
+        expect(resourceExpectations.additionalNames.map((entry) => entry.appName)).toEqual([
+          'Etherpad',
+          ' CodiMD ',
+          '   '
+        ])
+      })
+
+      it.each(resourceExpectations.cases)(
+        'projects the locked $response fixture',
+        (fixtureCase) => {
+          const driveItem = driveItemFromResponse(responseFor(fixtureCase.response))
+          const result = mapIncoming(driveItem)
+
+          expect(projectResource(result)).toEqual(fixtureCase.mappedResource)
+          expectSoleGrant(driveItem, result, fixtureCase.mappedResource)
+          expect(result.ocmWebApp).not.toBeNull()
+        }
+      )
+
+      it('stores CodiMD from the positive fixture and omits a WebDAV-only share', () => {
+        const positive = driveItemFromResponse(positiveSharedWithMe)
+        const webdavOnly = driveItemFromResponse(webdavOnlySharedWithMe)
+        const key = siblingDescriptorKey(positive, webdavOnly)
+        const descriptor = requireRecord(
+          requireRecord(positive.remoteItem, 'remoteItem')[key],
+          'descriptor'
+        )
+
+        expect(descriptor.appName).toBe('CodiMD')
+        expect(mapIncoming(positive).ocmWebApp).toEqual({ appName: 'CodiMD' })
+        expect(mapIncoming(webdavOnly)).not.toHaveProperty('ocmWebApp')
+        expect(projectResource(mapIncoming(webdavOnly))).toEqual(webdavExpectation.mappedResource)
+      })
+
+      it('keeps an explicit empty appName', () => {
+        const result = mapIncoming(driveItemFromResponse(emptyNameSharedWithMe))
+
+        expect(result.ocmWebApp).toEqual({ appName: '' })
+        expect(Object.hasOwn(result, 'ocmWebApp')).toBe(true)
+        expect(projectResource(result)).toEqual(emptyNameExpectation.mappedResource)
+        expectSoleGrant(
+          driveItemFromResponse(emptyNameSharedWithMe),
+          result,
+          emptyNameExpectation.mappedResource
+        )
+      })
+
+      it.each(resourceExpectations.additionalNames)('stores appName $appName exactly', (entry) => {
+        const driveItem = driveItemFromResponse(positiveSharedWithMe)
+        const key = siblingDescriptorKey(driveItem, driveItemFromResponse(webdavOnlySharedWithMe))
+        const descriptor = requireRecord(
+          requireRecord(driveItem.remoteItem, 'remoteItem')[key],
+          'descriptor'
+        )
+        descriptor.appName = entry.appName
+        descriptor.ignored = 'not-copied'
+        const result = mapIncoming(driveItem)
+
+        expect(result.ocmWebApp).toEqual({ appName: entry.appName })
+        expect(Object.keys(result.ocmWebApp ?? {})).toEqual(['appName'])
+        if (entry.appName === 'Etherpad') {
+          expect(result.ocmWebApp?.appName).toBe('Etherpad')
+        }
+        expect(projectResource(result)).toEqual({
+          ...requireRecord(positiveExpectation.mappedResource, 'mapped resource'),
+          ocmWebApp: { appName: entry.appName }
+        })
+        expectSoleGrant(driveItem, result, positiveExpectation.mappedResource)
+      })
+
+      it.each([
+        ['null descriptor', null],
+        ['array descriptor', [{ appName: 'CodiMD' }]],
+        ['missing appName', {}],
+        ['non-string appName', { appName: 4 }],
+        ['null appName', { appName: null }],
+        ['malformed descriptor', 'CodiMD']
+      ] as const)('omits a %s', (label, value) => {
+        const driveItem = driveItemWithSibling(value)
+        const result = mapIncoming(driveItem)
+
+        expect(label).not.toHaveLength(0)
+        expect(result).not.toHaveProperty('ocmWebApp')
+        expect(result.ocmWebApp).not.toBeNull()
+        expect(projectResource(result)).toEqual(webdavExpectation.mappedResource)
+        expectSoleGrant(driveItem, result, webdavExpectation.mappedResource)
+      })
+
+      it('omits metadata when the sibling field is missing', () => {
+        const driveItem = driveItemFromResponse(positiveSharedWithMe)
+        const key = siblingDescriptorKey(driveItem, driveItemFromResponse(webdavOnlySharedWithMe))
+        delete requireRecord(driveItem.remoteItem, 'remoteItem')[key]
+        const result = mapIncoming(driveItem)
+
+        expect(result).not.toHaveProperty('ocmWebApp')
+        expect(projectResource(result)).toEqual(webdavExpectation.mappedResource)
+        expectSoleGrant(driveItem, result, webdavExpectation.mappedResource)
+      })
+
+      it('ignores an obsolete permission-only annotation', () => {
+        const positive = driveItemFromResponse(positiveSharedWithMe)
+        const driveItem = driveItemFromResponse(webdavOnlySharedWithMe)
+        const key = siblingDescriptorKey(positive, driveItem)
+        soleGrant(driveItem)[key] = structuredClone(
+          requireRecord(positive.remoteItem, 'remoteItem')[key]
+        )
+        const result = mapIncoming(driveItem)
+
+        expect(requireRecord(driveItem.remoteItem, 'remoteItem')[key]).toBeUndefined()
+        expect(result).not.toHaveProperty('ocmWebApp')
+        expect(projectResource(result)).toEqual(webdavExpectation.mappedResource)
+        expectSoleGrant(driveItem, result, webdavExpectation.mappedResource)
+      })
+
+      it('uses the sibling descriptor when a permission annotation is also present', () => {
+        const driveItem = driveItemFromResponse(positiveSharedWithMe)
+        const key = siblingDescriptorKey(driveItem, driveItemFromResponse(webdavOnlySharedWithMe))
+        const etherpad = resourceExpectations.additionalNames.find(
+          (entry) => entry.appName === 'Etherpad'
+        )
+        if (!etherpad) {
+          throw new Error('fixture is missing Etherpad')
+        }
+        soleGrant(driveItem)[key] = { appName: etherpad.appName }
+        const result = mapIncoming(driveItem)
+
+        expect(soleGrant(driveItem)[key]).toEqual({ appName: 'Etherpad' })
+        expect(result.ocmWebApp).toEqual({ appName: 'CodiMD' })
+        expect(projectResource(result)).toEqual(positiveExpectation.mappedResource)
+        expectSoleGrant(driveItem, result, positiveExpectation.mappedResource)
+      })
+
+      it('does not fall back to a permission annotation when the sibling is malformed', () => {
+        const positive = driveItemFromResponse(positiveSharedWithMe)
+        const driveItem = driveItemWithSibling(null)
+        const key = siblingDescriptorKey(positive, driveItemFromResponse(webdavOnlySharedWithMe))
+        soleGrant(driveItem)[key] = structuredClone(
+          requireRecord(positive.remoteItem, 'remoteItem')[key]
+        )
+        const result = mapIncoming(driveItem)
+
+        expect(result).not.toHaveProperty('ocmWebApp')
+        expectSoleGrant(driveItem, result, webdavExpectation.mappedResource)
+      })
+
+      it('does not treat permission actions as a webapp name', () => {
+        const driveItem = driveItemFromResponse(positiveSharedWithMe)
+        soleGrant(driveItem)['@libre.graph.permissions.actions'] = ['NotAWebApp']
+        const result = mapIncoming(driveItem)
+
+        expect(result.ocmWebApp).toEqual({ appName: 'CodiMD' })
+        expect(result.sharePermissions).toEqual(['libre.graph/driveItem/content/read'])
+        expect(result.sharePermissions).not.toContain('NotAWebApp')
+        expectSoleGrant(driveItem, result, positiveExpectation.mappedResource)
+      })
     })
   })
 
@@ -338,3 +505,164 @@ describe('share helper functions', () => {
     })
   })
 })
+
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!isJsonRecord(value)) {
+    throw new Error(`${label} is not an object`)
+  }
+  return value
+}
+
+function isDriveItem(value: unknown): value is DriveItem {
+  if (!isJsonRecord(value) || !isJsonRecord(value.remoteItem)) {
+    return false
+  }
+  return Array.isArray(value.remoteItem.permissions)
+}
+
+function responseFor(name: string): { value: readonly unknown[] } {
+  if (name === 'positive.sharedWithMe.json') {
+    return positiveSharedWithMe
+  }
+  if (name === 'webdav-only.sharedWithMe.json') {
+    return webdavOnlySharedWithMe
+  }
+  if (name === 'empty-name.sharedWithMe.json') {
+    return emptyNameSharedWithMe
+  }
+  throw new Error(`unexpected fixture response ${name}`)
+}
+
+function driveItemFromResponse(response: { value: readonly unknown[] }): DriveItem {
+  const driveItem = response.value[0]
+  if (!isDriveItem(driveItem)) {
+    throw new Error('fixture response has no drive item')
+  }
+  return structuredClone(driveItem)
+}
+
+function expectationFor(responseName: string) {
+  const fixtureCase = resourceExpectations.cases.find((item) => item.response === responseName)
+  if (!fixtureCase) {
+    throw new Error(`missing expectation for ${responseName}`)
+  }
+  return fixtureCase
+}
+
+function graphRolesFromFixture(): Record<string, ShareRole> {
+  const roles: Record<string, ShareRole> = {}
+  for (const [roleId, role] of Object.entries(resourceExpectations.inputs.graphRoles)) {
+    roles[roleId] = {
+      id: role.id,
+      displayName: role.displayName,
+      rolePermissions: role.rolePermissions.map((permission) => ({
+        allowedResourceActions: [...permission.allowedResourceActions]
+      }))
+    }
+  }
+  return roles
+}
+
+function mapIncoming(driveItem: DriveItem): IncomingShareResource {
+  return buildIncomingShareResource({
+    driveItem,
+    graphRoles: graphRolesFromFixture(),
+    serverUrl: resourceExpectations.inputs.serverUrl
+  })
+}
+
+function projectResource(resource: IncomingShareResource): Record<string, unknown> {
+  const values: Record<string, unknown> = {
+    id: resource.id,
+    remoteItemId: resource.remoteItemId,
+    fileId: resource.fileId,
+    storageId: resource.storageId,
+    driveId: resource.driveId,
+    parentFolderId: resource.parentFolderId,
+    name: resource.name,
+    path: resource.path,
+    isFolder: resource.isFolder,
+    type: resource.type,
+    mimeType: resource.mimeType,
+    size: resource.size,
+    sharedBy: resource.sharedBy,
+    sharedWith: resource.sharedWith,
+    shareTypes: resource.shareTypes,
+    shareRoles: resource.shareRoles,
+    sharePermissions: resource.sharePermissions,
+    syncEnabled: resource.syncEnabled,
+    hidden: resource.hidden,
+    outgoing: resource.outgoing,
+    ocmWebApp: resource.ocmWebApp
+  }
+  const projected: Record<string, unknown> = {}
+  for (const field of resourceExpectations.projectionFields) {
+    if (!Object.hasOwn(values, field)) {
+      throw new Error(`unexpected projection field ${field}`)
+    }
+    if (values[field] !== undefined) {
+      projected[field] = values[field]
+    }
+  }
+  return projected
+}
+
+function soleGrant(driveItem: DriveItem): Record<string, unknown> {
+  const remoteItem = requireRecord(driveItem.remoteItem, 'remoteItem')
+  if (!Array.isArray(remoteItem.permissions) || !isJsonRecord(remoteItem.permissions[0])) {
+    throw new Error('fixture grant missing')
+  }
+  return remoteItem.permissions[0]
+}
+
+function siblingDescriptorKey(positive: DriveItem, webdavOnly: DriveItem): string {
+  const positiveRemote = requireRecord(positive.remoteItem, 'positive remoteItem')
+  const webdavRemote = requireRecord(webdavOnly.remoteItem, 'webdav remoteItem')
+  const baseline = new Set(Object.keys(webdavRemote))
+  const extra = Object.keys(positiveRemote).filter((key) => !baseline.has(key))
+  if (extra.length !== 1) {
+    throw new Error(`expected one received webapp field, found ${extra.join(', ')}`)
+  }
+  return extra[0]
+}
+
+function driveItemWithSibling(value: unknown): DriveItem {
+  const driveItem = driveItemFromResponse(positiveSharedWithMe)
+  const key = siblingDescriptorKey(driveItem, driveItemFromResponse(webdavOnlySharedWithMe))
+  requireRecord(driveItem.remoteItem, 'remoteItem')[key] = value
+  return driveItem
+}
+
+function expectSoleGrant(
+  driveItem: DriveItem,
+  result: IncomingShareResource,
+  mapped: {
+    id: string
+    remoteItemId: string
+    fileId: string
+    sharedBy: unknown
+    sharedWith: unknown
+    shareRoles: unknown
+    sharePermissions: unknown
+  }
+) {
+  const remoteItem = requireRecord(driveItem.remoteItem, 'remoteItem')
+  if (!Array.isArray(remoteItem.permissions)) {
+    throw new Error('fixture grant is not an array')
+  }
+  expect(remoteItem.permissions).toHaveLength(1)
+  expect(result.sharedWith).toHaveLength(1)
+  expect(result.sharedBy).toHaveLength(1)
+  expect(result.shareRoles).toHaveLength(1)
+  expect(result.id).toEqual(mapped.id)
+  expect(result.remoteItemId).toEqual(mapped.remoteItemId)
+  expect(result.fileId).toEqual(mapped.fileId)
+  expect(result.sharedBy).toEqual(mapped.sharedBy)
+  expect(result.sharedWith).toEqual(mapped.sharedWith)
+  expect(result.shareRoles).toEqual(mapped.shareRoles)
+  expect(result.sharePermissions).toEqual(mapped.sharePermissions)
+}

@@ -76,6 +76,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { useTask } from 'vue-concurrency'
 import { ListPermissionsSpaceRootSelectEnum } from '@ownclouders/web-client/graph/generated'
+import { dirname } from 'path'
 
 export default defineComponent({
   name: 'FileSideBar',
@@ -282,7 +283,10 @@ export default defineComponent({
         })
       }
 
-      if (isLocationCommonActive(router, 'files-common-search')) {
+      if (
+        isLocationCommonActive(router, 'files-common-search') ||
+        !resourcesStore.ancestorMetaData[dirname(resource.path)]
+      ) {
         yield resourcesStore.loadAncestorMetaData({
           folder: unref(resource),
           space: unref(props.space),

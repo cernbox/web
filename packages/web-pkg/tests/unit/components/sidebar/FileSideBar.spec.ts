@@ -85,7 +85,7 @@ describe('FileSideBar', () => {
   })
   describe('loadSharesTask', () => {
     it('sets the loading state correctly', async () => {
-      const resource = mock<Resource>()
+      const resource = mock<Resource>({ path: '/folder/file.txt' })
       const { wrapper } = createWrapper()
 
       const { setLoading } = useSharesStore()
@@ -94,8 +94,7 @@ describe('FileSideBar', () => {
       expect(setLoading).toHaveBeenCalledTimes(2)
     })
     it('sets direct collaborator and link shares', async () => {
-      const resource = mock<Resource>()
-
+      const resource = mock<Resource>({ path: '/folder/file.txt' })
       const collaboratorShare = { id: '1', role: {} } as unknown as CollaboratorShare
       const linkShare = { id: '2' } as unknown as LinkShare
 
@@ -114,8 +113,7 @@ describe('FileSideBar', () => {
       expect(setLinkShares).toHaveBeenCalledWith([expect.anything()])
     })
     it('sets indirect shares', async () => {
-      const resource = mock<Resource>()
-
+      const resource = mock<Resource>({ path: '/folder/file.txt' })
       const collaboratorShare = { id: '1', role: {} } as unknown as CollaboratorShare
       const mockedResponse = {
         shares: [collaboratorShare],
@@ -134,7 +132,7 @@ describe('FileSideBar', () => {
       ).toHaveBeenCalledTimes(2)
     })
     it('loads available external share roles if the ocm app is enabled', async () => {
-      const resource = mock<Resource>()
+      const resource = mock<Resource>({ path: '/folder/file.txt' })
       const { wrapper, mocks } = createWrapper()
 
       const { isAppEnabled } = useAppsStore()
@@ -147,7 +145,7 @@ describe('FileSideBar', () => {
     })
 
     it('should load ancestor meta data to get indirect shares when on search page', async () => {
-      const resource = mock<Resource>()
+      const resource = mock<Resource>({ path: '/folder/file.txt' })
       const { wrapper, mocks } = createWrapper({ currentRouteName: 'files-common-search' })
       const { loadAncestorMetaData } = useResourcesStore()
 
@@ -157,7 +155,7 @@ describe('FileSideBar', () => {
 
     describe('cache', () => {
       it('is being used in non-flat file lists', async () => {
-        const resource = mock<Resource>()
+        const resource = mock<Resource>({ path: '/folder/file.txt' })
         const { wrapper, mocks } = createWrapper()
 
         const sharesStore = useSharesStore()
@@ -168,7 +166,7 @@ describe('FileSideBar', () => {
         expect(sharesStore.setCollaboratorShares).toHaveBeenCalledWith([expect.anything()])
       })
       it('is not being used in flat file lists', async () => {
-        const resource = mock<Resource>()
+        const resource = mock<Resource>({ path: '/folder/file.txt' })
         const { wrapper, mocks } = createWrapper({ currentRouteName: 'files-shares-with-me' })
 
         const sharesStore = useSharesStore()
@@ -179,7 +177,7 @@ describe('FileSideBar', () => {
         expect(sharesStore.setCollaboratorShares).toHaveBeenCalledWith([])
       })
       it('is not being used on projects overview', async () => {
-        const resource = mock<Resource>()
+        const resource = mock<Resource>({ path: '/folder/file.txt' })
         const { wrapper, mocks } = createWrapper({ currentRouteName: 'files-spaces-projects' })
 
         const sharesStore = useSharesStore()
@@ -216,6 +214,44 @@ describe('FileSideBar', () => {
         })
 
         expect(mocks.$clientService.webdav.listFileVersions).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('ancestorMetaData', () => {
+      it('loads ancestor metadata when the parent folder is missing', async () => {
+        const resource = mock<Resource>({ path: '/folder/file.txt' })
+        const { wrapper, mocks } = createWrapper()
+
+        mocks.$clientService.graphAuthenticated.permissions.listPermissions.mockResolvedValue({
+          shares: [],
+          allowedActions: [],
+          allowedRoles: []
+        })
+
+        const resourcesStore = useResourcesStore()
+        resourcesStore.ancestorMetaData = {}
+
+        await wrapper.vm.loadSharesTask.perform(resource)
+        expect(resourcesStore.loadAncestorMetaData).toHaveBeenCalled()
+      })
+
+      it('does not load anecstor metadata when the parent is already loaded', async () => {
+        const resource = mock<Resource>({ path: '/folder/file.txt' })
+        const { wrapper, mocks } = createWrapper()
+
+        mocks.$clientService.graphAuthenticated.permissions.listPermissions.mockResolvedValue({
+          shares: [],
+          allowedActions: [],
+          allowedRoles: []
+        })
+
+        const resourcesStore = useResourcesStore()
+        resourcesStore.ancestorMetaData = {
+          '/folder': mock<AncestorMetaDataValue>({ id: 'folder' })
+        }
+
+        await wrapper.vm.loadSharesTask.perform(resource)
+        expect(resourcesStore.loadAncestorMetaData).not.toHaveBeenCalled()
       })
     })
   })

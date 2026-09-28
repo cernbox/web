@@ -76,6 +76,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { useTask } from 'vue-concurrency'
 import { ListPermissionsSpaceRootSelectEnum } from '@ownclouders/web-client/graph/generated'
+import { dirname } from 'path'
 
 interface Props {
   isOpen: boolean
@@ -265,7 +266,10 @@ const loadSharesTask = useTask(function* (signal, resource: Resource) {
       })
     }
 
-    if (isLocationCommonActive(router, 'files-common-search')) {
+    if (
+      isLocationCommonActive(router, 'files-common-search') ||
+      !resourcesStore.ancestorMetaData[dirname(resource.path)]
+    ) {
       yield resourcesStore.loadAncestorMetaData({
         folder: unref(resource),
         space: unref(space),

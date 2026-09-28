@@ -5,7 +5,9 @@ import {
   buildShareSpaceResource,
   isFallbackSpaceResource,
   isMountPointSpaceResource,
-  SpaceResource
+  SpaceResource,
+  getFavoriteSpaceIds,
+  WebDavResponseResource
 } from '@ownclouders/web-client'
 import { Graph } from '@ownclouders/web-client/graph'
 import {
@@ -333,6 +335,13 @@ export const useSpacesStore = defineStore('spaces', () => {
     setTypeInitialized('project', true)
   }
 
+  const setFavoriteSpaces = (favorites: WebDavResponseResource[]) => {
+    const favoriteSpaceIds = getFavoriteSpaceIds(favorites)
+    unref(spaces).forEach((space) => {
+      space.starred = favoriteSpaceIds.has(space.id)
+    })
+  }
+
   return {
     spaces,
     spacesInitialized,
@@ -364,7 +373,8 @@ export const useSpacesStore = defineStore('spaces', () => {
     loadSpaces,
     loadSpacesByType,
     loadMountPoints,
-    reloadProjectSpaces
+    reloadProjectSpaces,
+    setFavoriteSpaces
   }
 })
 

@@ -81,6 +81,7 @@ export interface Resource {
 
   // necessary for incoming share resources and resources inside shares
   remoteItemId?: string
+  ocmWebApp?: { appName: string }
   remoteItemPath?: string
 
   canCreate?(): boolean

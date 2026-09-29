@@ -170,9 +170,9 @@ export class FolderLoaderSpace implements FolderLoader {
         resourcesStore.initResourceList({ currentFolder, resources })
       } catch (error) {
         resourcesStore.setCurrentFolder(null)
-        console.error(error)
+        console.error('Failed to load folder')
 
-        if (error.statusCode === 401) {
+        if (isAuthError(error)) {
           return authService.handleAuthError(unref(router.currentRoute))
         }
       }
@@ -275,13 +275,20 @@ async function loadReceivedOcmWebApp({
     if (signal?.aborted || isCancelledLoad(error) || isAuthError(error)) {
       throw error
     }
-    console.error(error)
+    console.error('Failed to load received OCM web app metadata')
     return undefined
   }
 }
 
 function isAuthError(error: unknown): boolean {
-  return isRecord(error) && error.statusCode === 401
+  if (!isRecord(error)) {
+    return false
+  }
+  if (error.statusCode === 401) {
+    return true
+  }
+  const response = error.response
+  return isRecord(response) && response.status === 401
 }
 
 function isCancelledLoad(error: unknown): boolean {

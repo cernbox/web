@@ -1,3 +1,4 @@
+import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { mock, mockDeep } from 'vitest-mock-extended'
 import {
   buildIncomingShareResource,
@@ -7,6 +8,7 @@ import {
   ShareRole,
   SpaceResource
 } from '@ownclouders/web-client'
+import { graph } from '@ownclouders/web-client/graph'
 import { DriveItem } from '@ownclouders/web-client/graph/generated'
 import { FolderLoaderSpace } from '../../../../src/services/folder/loaderSpace'
 import { TaskContext } from '../../../../src/services/folder'
@@ -29,6 +31,7 @@ vi.mock('@ownclouders/web-pkg', async () => {
 const serverUrl = resourceExpectations.inputs.serverUrl
 const folderSpec = resourceExpectations.inputs.currentFolder
 const childSpec = resourceExpectations.inputs.children[0]
+const syntheticSessionToken = 'SYNTHETIC-REVIEW-SESSION-TOKEN'
 
 describe('FolderLoaderSpace received webapp metadata', () => {
   beforeEach(() => {
@@ -303,6 +306,73 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(harness.context.resourcesStore.initResourceList).not.toHaveBeenCalled()
     expect(harness.context.resourcesStore.setCurrentFolder).toHaveBeenCalledWith(null)
     expect(harness.context.authService.handleAuthError).toHaveBeenCalled()
+  })
+
+  it('routes a native Axios 401 through authentication handling without logging the session token', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    harness.remember(space)
+    harness.useListing(webdavListing())
+    const captured = useAuthenticatedGraphFailure(harness, 'unauthorized')
+
+    await harness.run(space)
+
+    const error = expectAxiosError(captured.error)
+    expect(error.code).toBe('ERR_BAD_REQUEST')
+    expect(error.response?.status).toBe(401)
+    expect(JSON.stringify(error)).toContain(syntheticSessionToken)
+    expect(harness.context.authService.handleAuthError).toHaveBeenCalledTimes(1)
+    expect(harness.context.resourcesStore.setCurrentFolder).toHaveBeenCalledWith(null)
+    expect(harness.context.resourcesStore.initResourceList).not.toHaveBeenCalled()
+    expectFixedConsoleError('Failed to load folder')
+  })
+
+  it('continues browsing without logging the session token when sharedWithMe returns 500', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    const captured = useAuthenticatedGraphFailure(harness, 'server')
+
+    await harness.run(space)
+
+    const error = expectAxiosError(captured.error)
+    expect(error.code).toBe('ERR_BAD_RESPONSE')
+    expect(error.response?.status).toBe(500)
+    expect(JSON.stringify(error.config?.headers)).toContain(syntheticSessionToken)
+    expect(JSON.stringify(error.response?.data)).toContain(syntheticSessionToken)
+    expect(JSON.stringify(error.response?.headers)).toContain(syntheticSessionToken)
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
+    expect(space.ocmWebApp).toBeUndefined()
+    expect(stored.ocmWebApp).toBeUndefined()
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+    expect(harness.published().resources[0].id).toBe(childSpec.id)
+    expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
+  })
+
+  it('continues browsing without logging the session token when sharedWithMe fails on the network', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    const captured = useAuthenticatedGraphFailure(harness, 'network')
+
+    await harness.run(space)
+
+    const error = expectAxiosError(captured.error)
+    expect(error.code).toBe('ERR_NETWORK')
+    expect(error.message).toBe('Network Error')
+    expect(error.response).toBeUndefined()
+    expect(JSON.stringify(error.config?.headers)).toContain(syntheticSessionToken)
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
+    expect(space.ocmWebApp).toBeUndefined()
+    expect(stored.ocmWebApp).toBeUndefined()
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+    expect(harness.published().resources[0].id).toBe(childSpec.id)
+    expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
   })
 
   it('does not request sharedWithMe for a non-share load', async () => {
@@ -718,4 +788,68 @@ function isDriveItem(value: unknown): value is DriveItem {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+type AuthenticatedGraphFailure = 'unauthorized' | 'server' | 'network'
+
+function useAuthenticatedGraphFailure(
+  harness: ReturnType<typeof createHarness>,
+  kind: AuthenticatedGraphFailure
+) {
+  const captured: { error?: unknown } = {}
+  const authorization = `Bearer ${syntheticSessionToken}`
+  const transport = axios.create({
+    headers: { Authorization: authorization },
+    adapter: (config) => Promise.reject(authenticatedGraphError(kind, config, authorization))
+  })
+  const graphClient = graph('https://review.invalid', transport)
+  harness.listSharedWithMe.mockImplementation(async (options) => {
+    try {
+      return await graphClient.driveItems.listSharedWithMe(options)
+    } catch (error) {
+      captured.error = error
+      throw error
+    }
+  })
+  return captured
+}
+
+function authenticatedGraphError(
+  kind: AuthenticatedGraphFailure,
+  config: InternalAxiosRequestConfig,
+  authorization: string
+): AxiosError {
+  if (kind === 'network') {
+    return new AxiosError('Network Error', 'ERR_NETWORK', config)
+  }
+
+  const status = kind === 'unauthorized' ? 401 : 500
+  const response: AxiosResponse = {
+    data: { authorization },
+    status,
+    statusText: 'Review response',
+    headers: { Authorization: authorization },
+    config
+  }
+  return new AxiosError(
+    `Request failed with status code ${status}`,
+    status === 401 ? 'ERR_BAD_REQUEST' : 'ERR_BAD_RESPONSE',
+    config,
+    undefined,
+    response
+  )
+}
+
+function expectAxiosError(error: unknown): AxiosError {
+  expect(error).toBeInstanceOf(AxiosError)
+  if (!(error instanceof AxiosError)) {
+    throw new Error('metadata request did not reject with an AxiosError')
+  }
+  return error
+}
+
+function expectFixedConsoleError(message: string) {
+  expect(console.error).toHaveBeenCalledTimes(1)
+  expect(console.error).toHaveBeenCalledWith(message)
+  expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(syntheticSessionToken)
 }

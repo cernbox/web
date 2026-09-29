@@ -16,9 +16,11 @@ import {
   isPersonalSpaceResource,
   isPublicSpaceResource,
   isShareSpaceResource,
+  Resource,
   SpaceMember,
   SpaceResource
 } from '@ownclouders/web-client'
+import type { Graph } from '@ownclouders/web-client/graph'
 import { unref } from 'vue'
 import { FolderLoaderOptions } from './types'
 import { useFileRouteReplace } from '@ownclouders/web-pkg'
@@ -67,6 +69,9 @@ export class FolderLoaderSpace implements FolderLoader {
     ) {
       try {
         resourcesStore.clearResourceList()
+        if (isShareSpaceResource(space)) {
+          clearSpaceOcmWebApp(space, spacesStore)
+        }
 
         // eslint-disable-next-line prefer-const
         let { resource: currentFolder, children: resources } = yield* call(
@@ -117,8 +122,16 @@ export class FolderLoaderSpace implements FolderLoader {
         }
 
         if (isShareSpaceResource(space)) {
-          // TODO: remove when server returns share id for federated shares in propfind response
-          resources.forEach((r) => (r.remoteItemId = space.id))
+          // One shared-with-me lookup is authoritative for received webapp metadata.
+          const ocmWebApp = yield* call(
+            loadReceivedOcmWebApp({
+              graphClient,
+              graphRoles: sharesStore.graphRoles,
+              serverUrl: configStore.serverUrl,
+              spaceId: space.id,
+              signal: signal1
+            })
+          )
 
           // add current user as space member if not already loaded
           if (isEmpty(space.members)) {
@@ -135,14 +148,31 @@ export class FolderLoaderSpace implements FolderLoader {
               sharedDriveItem
             })
           }
+
+          space.ocmWebApp = ocmWebApp
+          spacesStore.updateSpaceField({
+            id: space.id,
+            field: 'ocmWebApp',
+            value: ocmWebApp
+          })
+
+          // TODO: remove when server returns share id for federated shares in propfind response
+          resources.forEach((resource) => {
+            resource.remoteItemId = space.id
+            resource.ocmWebApp = ocmWebApp
+          })
+          currentFolder.remoteItemId = space.id
+          currentFolder.ocmWebApp = ocmWebApp
+        } else {
+          clearInheritedOcmWebApp(currentFolder, resources)
         }
 
         resourcesStore.initResourceList({ currentFolder, resources })
       } catch (error) {
         resourcesStore.setCurrentFolder(null)
-        console.error(error)
+        console.error('Failed to load folder')
 
-        if (error.statusCode === 401) {
+        if (isAuthError(error)) {
           return authService.handleAuthError(unref(router.currentRoute))
         }
       }
@@ -197,4 +227,82 @@ export class FolderLoaderSpace implements FolderLoader {
       value: { [userStore.user.id]: spaceMember }
     })
   }
+}
+
+function clearSpaceOcmWebApp(space: SpaceResource, spacesStore: SpacesStore) {
+  space.ocmWebApp = undefined
+  spacesStore.updateSpaceField({
+    id: space.id,
+    field: 'ocmWebApp',
+    value: undefined
+  })
+}
+
+function clearInheritedOcmWebApp(currentFolder: Resource, resources: Resource[]) {
+  currentFolder.ocmWebApp = undefined
+  resources.forEach((resource) => {
+    resource.ocmWebApp = undefined
+  })
+}
+
+async function loadReceivedOcmWebApp({
+  graphClient,
+  graphRoles,
+  serverUrl,
+  spaceId,
+  signal
+}: {
+  graphClient: Graph
+  graphRoles: Parameters<typeof buildIncomingShareResource>[0]['graphRoles']
+  serverUrl: string
+  spaceId: string
+  signal?: AbortSignal
+}): Promise<Resource['ocmWebApp']> {
+  try {
+    const driveItems = await graphClient.driveItems.listSharedWithMe({ signal })
+    const matches = driveItems.filter((driveItem) => driveItem.remoteItem?.id === spaceId)
+    const match = matches[0]
+    if (matches.length !== 1 || !match) {
+      return undefined
+    }
+
+    return buildIncomingShareResource({
+      driveItem: match,
+      graphRoles,
+      serverUrl
+    }).ocmWebApp
+  } catch (error) {
+    if (signal?.aborted || isCancelledLoad(error) || isAuthError(error)) {
+      throw error
+    }
+    console.error('Failed to load received OCM web app metadata')
+    return undefined
+  }
+}
+
+function isAuthError(error: unknown): boolean {
+  if (!isRecord(error)) {
+    return false
+  }
+  if (error.statusCode === 401) {
+    return true
+  }
+  const response = error.response
+  return isRecord(response) && response.status === 401
+}
+
+function isCancelledLoad(error: unknown): boolean {
+  if (error === 'cancel') {
+    return true
+  }
+  if (!isRecord(error)) {
+    return false
+  }
+  return (
+    error.name === 'AbortError' || error.name === 'CanceledError' || error.code === 'ERR_CANCELED'
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }

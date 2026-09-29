@@ -28,7 +28,8 @@ export const buildRoutes = (components: RouteComponents): RouteRecordRaw[] => [
         component: components.Spaces.Projects,
         meta: {
           authContext: 'user',
-          title: $gettext('Spaces')
+          title: $gettext('Spaces'),
+          clearCurrentSpace: true
         }
       },
       {

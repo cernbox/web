@@ -35,7 +35,8 @@ export const buildRoutes = (components: RouteComponents): RouteRecordRaw[] => [
         component: components.Shares.SharedWithMe,
         meta: {
           authContext: 'user',
-          title: $gettext('Files shared with me')
+          title: $gettext('Files shared with me'),
+          clearCurrentSpace: true
         }
       },
       {
@@ -44,7 +45,8 @@ export const buildRoutes = (components: RouteComponents): RouteRecordRaw[] => [
         component: components.Shares.SharedWithOthers,
         meta: {
           authContext: 'user',
-          title: $gettext('Files shared with others')
+          title: $gettext('Files shared with others'),
+          clearCurrentSpace: true
         }
       },
       {
@@ -53,7 +55,8 @@ export const buildRoutes = (components: RouteComponents): RouteRecordRaw[] => [
         component: components.Shares.SharedViaLink,
         meta: {
           authContext: 'user',
-          title: $gettext('Files shared via link')
+          title: $gettext('Files shared via link'),
+          clearCurrentSpace: true
         }
       }
     ]

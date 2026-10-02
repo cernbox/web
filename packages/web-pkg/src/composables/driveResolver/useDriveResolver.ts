@@ -1,8 +1,6 @@
-import { computed, Ref, ref, unref, watch } from 'vue'
+import { computed, Ref, ref, unref, watch, onBeforeUnmount } from 'vue'
 import {
   isFallbackSpaceResource,
-  isPersonalSpaceResource,
-  isProjectSpaceResource,
   isSegmentPrefix,
   SHARE_JAIL_ID,
   SpaceResource
@@ -13,7 +11,6 @@ import { queryItemAsString } from '../appDefaults'
 import { urlJoin } from '@ownclouders/web-client'
 import { useClientService } from '../clientService'
 import { useSpacesStore, useConfigStore, LOADABLE_DRIVE_TYPES } from '../piniaStores'
-import { onUnmounted } from 'vue'
 
 interface DriveResolverOptions {
   driveAliasAndItem?: Ref<string>
@@ -66,18 +63,8 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
   }
 
   // clean up global state as the watchers aren't triggered anymore when navigating away.
-  // keep it set for personal/project spaces so leaving to e.g. an editor app and back
-  // doesn't transiently drop currentSpace (driveAlias may not be 'personal/'/'project/'
-  // prefixed, e.g. eos-backed spaces use 'eos/user/...' / 'eos/project/...')
-  onUnmounted(() => {
-    const currentSpace = unref(space)
-    if (
-      !isPersonalSpaceResource(currentSpace) &&
-      !isProjectSpaceResource(currentSpace) &&
-      !isFallbackSpaceResource(currentSpace)
-    ) {
-      spacesStore.setCurrentSpace(null)
-    }
+  onBeforeUnmount(() => {
+    spacesStore.setCurrentSpace(null)
   })
 
   const resolve = async (driveAliasAndItem: string) => {

@@ -5,29 +5,17 @@
   </main>
 </template>
 <script lang="ts">
-import { defineComponent, onBeforeUnmount, watch, ref, unref } from 'vue'
-import { useRoute, eventBus, useResourcesStore, useSpacesStore } from '@ownclouders/web-pkg'
+import { defineComponent, onBeforeUnmount, watch, ref } from 'vue'
+import { useRoute, eventBus, useResourcesStore } from '@ownclouders/web-pkg'
 
 export default defineComponent({
   setup() {
     const dragareaEnabled = ref(false)
     const { resetSelection } = useResourcesStore()
-    const route = useRoute()
-    const spacesStore = useSpacesStore()
 
     watch(useRoute(), () => {
       resetSelection()
     })
-
-    watch(
-      () => unref(route).meta?.clearCurrentSpace,
-      (clear) => {
-        if (clear) {
-          spacesStore.setCurrentSpace(null)
-        }
-      },
-      { immediate: true }
-    )
 
     const hideDropzone = () => {
       dragareaEnabled.value = false

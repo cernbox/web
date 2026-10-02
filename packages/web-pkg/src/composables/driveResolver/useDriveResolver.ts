@@ -63,9 +63,6 @@ export const useDriveResolver = (options: DriveResolverOptions = {}): DriveResol
   }
 
   // clean up global state as the watchers aren't triggered anymore when navigating away.
-  // keep it set for personal/project spaces so leaving to e.g. an editor app and back
-  // doesn't transiently drop currentSpace (driveAlias may not be 'personal/'/'project/'
-  // prefixed, e.g. eos-backed spaces use 'eos/user/...' / 'eos/project/...')
   onBeforeUnmount(() => {
     spacesStore.setCurrentSpace(null)
   })

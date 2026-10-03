@@ -193,6 +193,47 @@ describe('buildResource', () => {
     })
   })
 
+  describe('linkTarget', () => {
+    const buildLink = (linkTarget?: string) =>
+      buildResource(
+        mockDeep<WebDavResponseResource>({
+          filename: '/spaces/abc/a/l',
+          basename: 'l',
+          props: {
+            [DavProperty.Permissions]: '',
+            [DavProperty.LinkType]: 'symlink',
+            ...(linkTarget && { [DavProperty.LinkTarget]: linkTarget })
+          }
+        }),
+        '/spaces/abc'
+      )
+
+    it('is the path of a target in the same space', () => {
+      const resource = buildLink('/spaces/abc/b/file.txt')
+      expect(resource.linkTarget).toBe('/b/file.txt')
+      expect(resource.linkTargetSpaceId).toBeUndefined()
+    })
+
+    it('is the path and space of a target in another space', () => {
+      const resource = buildLink('/spaces/eosproject$def/docs/')
+      expect(resource.linkTarget).toBe('/docs')
+      expect(resource.linkTargetSpaceId).toBe('eosproject$def')
+    })
+
+    it('is the root of another space', () => {
+      const resource = buildLink('/spaces/eosproject$def')
+      expect(resource.linkTarget).toBe('/')
+      expect(resource.linkTargetSpaceId).toBe('eosproject$def')
+    })
+
+    it('is not set for opaque links', () => {
+      const resource = buildLink()
+      expect(resource.linkType).toBe('symlink')
+      expect(resource.linkTarget).toBeUndefined()
+      expect(resource.canDownload()).toBe(false)
+    })
+  })
+
   describe('isShareRoot', () => {
     it('is false when the ShareRoot prop is absent', () => {
       const webDavResponse = mockDeep<WebDavResponseResource>({

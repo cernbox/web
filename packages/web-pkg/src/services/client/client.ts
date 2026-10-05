@@ -11,6 +11,14 @@ import { FetchEventSourceInit } from '@microsoft/fetch-event-source'
 import { sse } from '@ownclouders/web-client/sse'
 import { AuthStore, ConfigStore } from '../../composables'
 
+const toOrigin = (value?: string): string => {
+  try {
+    return value ? new URL(value).origin : ''
+  } catch {
+    return ''
+  }
+}
+
 const createFetchOptions = (authParams: AuthParameters, language: string): FetchEventSourceInit => {
   return {
     headers: {
@@ -160,7 +168,18 @@ export class ClientService {
     return {
       'Accept-Language': this.currentLanguage,
       'X-Request-ID': uuidV4(),
+      ...this.getClientHeader(),
       ...(useAuth && { Authorization: 'Bearer ' + this.authStore.accessToken })
     }
+  }
+
+  private getClientHeader(): Record<string, string> {
+    const embed = this.configStore.options.embed
+    if (!embed?.enabled) {
+      return { 'X-Cernbox-Client': 'web-ui' }
+    }
+
+    const origin = toOrigin(embed.messagesOrigin) || toOrigin(document.referrer)
+    return { 'X-Cernbox-Client': `embed; origin=${origin || 'unknown'}` }
   }
 }

@@ -79,6 +79,13 @@ export interface Resource {
   owner?: Identity
   extension?: string
 
+  // symbolic links and Windows shortcuts ('symlink' or 'lnk')
+  linkType?: string
+  // path of the link target, only set if the link can be navigated
+  linkTarget?: string
+  // id of the space of the link target, only set if it differs from the one of the link
+  linkTargetSpaceId?: string
+
   // necessary for incoming share resources and resources inside shares
   remoteItemId?: string
   remoteItemPath?: string

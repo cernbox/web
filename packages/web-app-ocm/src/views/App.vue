@@ -17,35 +17,85 @@
         />
       </div>
     </div>
+    <invitation-acceptance-modal
+      v-if="showAcceptanceModal"
+      :token="invitationToken"
+      :provider-domain="invitationProviderDomain"
+      @cancel="closeAcceptanceModal"
+      @accepted="handleInvitationAccepted"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, unref, Ref } from 'vue'
+import { onMounted, ref, unref, Ref, watch } from 'vue'
 import ConnectionsPanel from './ConnectionsPanel.vue'
 import IncomingInvitations from './IncomingInvitations.vue'
 import OutgoingInvitations from './OutgoingInvitations.vue'
+import InvitationAcceptanceModal from './InvitationAcceptanceModal.vue'
 import {
   useClientService,
   useScrollTo,
   FederatedConnection,
-  useMessages
+  useMessages,
+  useRoute,
+  useRouter
 } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
 import { buildConnection } from '../functions'
 
 const { showMessage } = useMessages()
 const { scrollToResource } = useScrollTo()
-const clientSerivce = useClientService()
+const clientService = useClientService()
+const route = useRoute()
+const router = useRouter()
 const { $gettext } = useGettext()
 
 const connections: Ref<FederatedConnection[]> = ref([])
 const highlightedConnections: Ref<FederatedConnection[]> = ref([])
 const loadingConnections = ref(true)
 
+// Modal state for invitation acceptance
+const showAcceptanceModal = ref(false)
+const invitationToken = ref('')
+const invitationProviderDomain = ref('')
+
+// Watch for /accept-invite route with token and providerDomain query params
+watch(
+  () => unref(route).name,
+  (newRouteName) => {
+    if (newRouteName === 'open-cloud-mesh-accept-invite') {
+      const currentRoute = unref(route)
+      const token = currentRoute.query.token as string
+      const providerDomain = currentRoute.query.providerDomain as string
+
+      if (token && providerDomain) {
+        invitationToken.value = token
+        invitationProviderDomain.value = providerDomain
+        showAcceptanceModal.value = true
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const closeAcceptanceModal = () => {
+  showAcceptanceModal.value = false
+  invitationToken.value = ''
+  invitationProviderDomain.value = ''
+  router.push({ name: 'open-cloud-mesh-invitations' })
+}
+
+const handleInvitationAccepted = async () => {
+  showAcceptanceModal.value = false
+  invitationToken.value = ''
+  invitationProviderDomain.value = ''
+  await highlightNewConnections()
+}
+
 const findAcceptedUsers = async () => {
   try {
-    const { data: acceptedUsers } = await clientSerivce.httpAuthenticated.get<
+    const { data: acceptedUsers } = await clientService.httpAuthenticated.get<
       FederatedConnection[]
     >('/sciencemesh/find-accepted-users')
     loadingConnections.value = false
@@ -99,9 +149,11 @@ onMounted(async () => {
   background-color: var(--oc-color-background-hover);
   overflow: auto;
 }
+
 .sciencemesh-wrapper {
   height: 100%;
 }
+
 .sciencemesh-top {
   max-height: 360px;
   @media (max-width: $oc-breakpoint-large-default) {
@@ -110,11 +162,13 @@ onMounted(async () => {
     max-height: unset;
   }
 }
+
 #sciencemesh-invite,
 #sciencemesh-accept-invites {
   margin: var(--oc-space-small);
   overflow: auto;
 }
+
 #sciencemesh-invite,
 #sciencemesh-accept-invites,
 #sciencemesh-connections {
@@ -126,9 +180,11 @@ onMounted(async () => {
     width: auto;
   }
 }
+
 #sciencemesh-connections {
   flex: 1;
 }
+
 #sciencemesh-invite {
   overflow: auto;
   @media (max-width: $oc-breakpoint-large-default) {

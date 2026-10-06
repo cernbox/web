@@ -69,8 +69,9 @@
               @click="deleteConnection(item)"
             >
               <oc-icon name="delete-bin-5" fill-type="line" size="medium" />
-              <span v-text="$gettext('Delete')" /></oc-button
-          ></template>
+              <span v-text="$gettext('Delete')"
+            /></oc-button>
+          </template>
         </oc-table>
       </template>
     </div>
@@ -84,7 +85,8 @@ import {
   AppLoadingSpinner,
   useRouter,
   useClientService,
-  FederatedConnection
+  FederatedConnection,
+  useMessages
 } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
 import { ShareTypes } from '@ownclouders/web-client'
@@ -105,6 +107,7 @@ const emit = defineEmits<Emits>()
 const router = useRouter()
 const { $gettext } = useGettext()
 const clientService = useClientService()
+const { showErrorMessage } = useMessages()
 
 const fields = computed(() => {
   return [
@@ -139,7 +142,7 @@ const fields = computed(() => {
 const helperContent = computed(() => {
   return {
     text: $gettext(
-      'Federated conections for mutual sharing. To share, go to "Files" app, select the resource click "Share" in the context menu and select account type "federated".'
+      'Federated connections for mutual sharing. To share, go to "Files" app, select the resource click "Share" in the context menu and select account type "federated".'
     ),
     title: $gettext('Federated connections')
   }
@@ -165,6 +168,11 @@ const deleteConnection = async (user: FederatedConnection) => {
 
     emit('update:connections', updatedConnections)
   } catch (e) {
+    showErrorMessage({
+      title: $gettext('Error'),
+      desc: $gettext('Failed to delete connection'),
+      errors: [e]
+    })
     console.error(e)
   }
 }
@@ -182,6 +190,7 @@ const deleteConnection = async (user: FederatedConnection) => {
       visibility: none;
     }
   }
+
   #accepted-invitations-empty {
     height: 100%;
   }

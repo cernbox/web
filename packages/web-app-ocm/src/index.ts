@@ -1,4 +1,5 @@
 import App from './views/App.vue'
+import Wayf from './views/Wayf.vue'
 import { ApplicationInformation, defineWebApplication, useRouter } from '@ownclouders/web-pkg'
 import translations from '../l10n/translations.json'
 import { extensions } from './extensions'
@@ -19,6 +20,25 @@ const routes: RouteRecordRaw[] = [
     meta: {
       patchCleanPath: true,
       title: 'Invitations'
+    }
+  },
+  {
+    path: '/wayf',
+    name: 'open-cloud-mesh-wayf',
+    component: Wayf,
+    meta: {
+      patchCleanPath: true,
+      title: 'Where Are You From',
+      authContext: 'anonymous' // No authentication required
+    }
+  },
+  {
+    path: '/accept-invite',
+    name: 'open-cloud-mesh-accept-invite',
+    component: App,
+    meta: {
+      patchCleanPath: true,
+      title: 'Accept Invitation'
     }
   }
 ]

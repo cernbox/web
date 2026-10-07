@@ -93,6 +93,11 @@ export class FolderLoaderSpace implements FolderLoader {
             }
           } else if (!isPersonalSpaceResource(space) && !isPublicSpaceResource(space)) {
             // note: in the future we might want to show the space as root for personal spaces as well (to show quota and the like). Currently not needed.
+            spacesStore.updateSpaceField({
+              id: space.id,
+              field: 'starred',
+              value: currentFolder.starred ?? false
+            })
             currentFolder = space
           }
         }

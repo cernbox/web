@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useClientService, useMessages } from '@ownclouders/web-pkg'
+import { useClientService } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
 import {
   WayfFederation,
@@ -8,13 +8,15 @@ import {
   DiscoverResponse
 } from '../types/wayf'
 
+// the WAYF page renders in the plain layout, which has no message bar, so errors are
+// returned to the page to show inline instead of being dispatched as messages
 export const useWayf = () => {
-  const { showErrorMessage } = useMessages()
   const clientService = useClientService()
   const { $gettext } = useGettext()
 
   const federations = ref<WayfFederation>({})
   const isLoadingFederations = ref(false)
+  const loadFederationsFailed = ref(false)
   const isDiscovering = ref(false)
 
   const getCurrentHostname = (): string => {
@@ -38,6 +40,7 @@ export const useWayf = () => {
 
   const loadFederations = async () => {
     isLoadingFederations.value = true
+    loadFederationsFailed.value = false
     try {
       const { data } = await clientService.httpUnAuthenticated.get<FederationsApiResponse>(
         '/sciencemesh/federations'
@@ -62,11 +65,7 @@ export const useWayf = () => {
       federations.value = federationMap
     } catch (error) {
       console.error('Failed to load federations:', error)
-      showErrorMessage({
-        title: $gettext('Error'),
-        desc: $gettext('Failed to load federations'),
-        errors: [error]
-      })
+      loadFederationsFailed.value = true
     } finally {
       isLoadingFederations.value = false
     }
@@ -82,76 +81,69 @@ export const useWayf = () => {
       return data
     } catch (error) {
       console.error('Failed to discover provider:', error)
-      showErrorMessage({
-        title: $gettext('Error'),
-        desc: $gettext('Failed to discover provider'),
-        errors: [error]
-      })
       return null
     } finally {
       isDiscovering.value = false
     }
   }
 
-  const navigateToProvider = (
+  // the provider's invite accept dialog with the invitation attached, empty if it can't be built
+  const buildProviderInviteUrl = (
     provider: WayfProvider,
     token: string,
     providerDomain: string
-  ): void => {
-    if (isSelfDomain(provider.fqdn)) {
-      showErrorMessage({
-        title: $gettext('Error'),
-        desc: $gettext('You cannot select your own instance')
-      })
-      return
-    }
-
-    let targetUrl: string
+  ): string => {
+    // relative paths are resolved against the provider, absolute urls are kept as they are
     const inviteDialogPath = provider.inviteAcceptDialog || '/open-cloud-mesh/accept-invite'
-
-    if (inviteDialogPath.startsWith('http://') || inviteDialogPath.startsWith('https://')) {
-      // Absolute URL
-      targetUrl = inviteDialogPath
-    } else {
-      // Relative path
-      const cleanPath = inviteDialogPath.startsWith('/') ? inviteDialogPath : `/${inviteDialogPath}`
-      targetUrl = `https://${provider.fqdn}${cleanPath}`
+    try {
+      const url = new URL(inviteDialogPath, `https://${provider.fqdn}`)
+      // the dialog comes from the directory or the remote server, so anything that isn't a
+      // web url (e.g. javascript:) is rejected rather than linked to or navigated to
+      if (!['https:', 'http:'].includes(url.protocol)) {
+        return ''
+      }
+      url.searchParams.set('token', token)
+      url.searchParams.set('providerDomain', providerDomain)
+      return url.toString()
+    } catch {
+      return ''
     }
-
-    const url = new URL(targetUrl)
-    url.searchParams.set('token', token)
-    url.searchParams.set('providerDomain', providerDomain)
-
-    window.location.href = url.toString()
   }
 
+  // navigates to the provider's invite accept dialog, or resolves to an error message
   const navigateToManualProvider = async (
     input: string,
     token: string,
     providerDomain: string
-  ): Promise<void> => {
+  ): Promise<string | undefined> => {
     const domain = stripProtocolAndPort(input)
 
     if (isSelfDomain(domain)) {
-      showErrorMessage({
-        title: $gettext('Error'),
-        desc: $gettext('You cannot select your own instance')
-      })
-      return
+      return $gettext(
+        'This is the server the invitation came from. Enter the server where you have your account.'
+      )
     }
 
     const discoveryResult = await discoverProvider(domain)
-    if (!discoveryResult) {
-      return
+    const inviteUrl =
+      discoveryResult &&
+      buildProviderInviteUrl(
+        {
+          name: domain,
+          fqdn: domain,
+          inviteAcceptDialog: discoveryResult.inviteAcceptDialog || ''
+        },
+        token,
+        providerDomain
+      )
+    if (!inviteUrl) {
+      return $gettext(
+        'Could not find a server that accepts invitations at %{domain}. Check the address and try again.',
+        { domain }
+      )
     }
 
-    const provider: WayfProvider = {
-      name: domain,
-      fqdn: domain,
-      inviteAcceptDialog: discoveryResult.inviteAcceptDialog || ''
-    }
-
-    navigateToProvider(provider, token, providerDomain)
+    window.location.href = inviteUrl
   }
 
   const filterProviders = (providers: WayfProvider[], query: string): WayfProvider[] => {
@@ -170,12 +162,11 @@ export const useWayf = () => {
   return {
     federations,
     isLoadingFederations,
+    loadFederationsFailed,
     isDiscovering,
     loadFederations,
-    discoverProvider,
-    navigateToProvider,
+    buildProviderInviteUrl,
     navigateToManualProvider,
-    isSelfDomain,
     filterProviders,
     getCurrentHostname
   }

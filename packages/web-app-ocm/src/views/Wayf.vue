@@ -1,151 +1,87 @@
 <template>
-  <main id="wayf" class="oc-flex oc-height-1-1">
-    <div class="wayf-wrapper oc-width-expand oc-height-1-1">
-    <div class="wayf-content">
-        <!-- Header Section -->
-        <div class="wayf-header oc-flex oc-flex-middle oc-px-m oc-py-s">
-          <oc-icon name="cloud" size="large" class="oc-mr-s" />
-          <h1 class="oc-px-s" v-text="$gettext('Where Are You From?')" />
-          <oc-contextual-helper class="oc-pl-xs" v-bind="helperContent" />
-      </div>
+  <main id="wayf" class="wayf">
+    <div class="wayf-container">
+      <img v-if="logoImg" class="wayf-logo" :src="logoImg" alt="" :aria-hidden="true" />
+      <div class="wayf-card">
+        <h2 class="wayf-title" v-text="$gettext('Select your server')" />
 
-        <!-- No Token State -->
-        <no-content-message
+        <p
           v-if="!hasToken"
-          id="wayf-no-token"
-          icon="cloud"
-          class="oc-text-center oc-p-l"
-        >
-          <template #message>
-            <span v-text="$gettext('Token Required')" />
-          </template>
-          <template #callToAction>
-            <span
-              class="oc-text-muted"
-              v-text="$gettext('You need a token for this feature to work.')"
-            />
-          </template>
-        </no-content-message>
+          class="wayf-text-secondary oc-mb-rm"
+          v-text="$gettext('You need an invite link for this feature to work.')"
+        />
 
-        <!-- Loading State -->
-        <div v-else-if="isLoadingFederations" class="oc-text-center oc-p-l">
-          <app-loading-spinner />
-          <p class="oc-mt-s" v-text="$gettext('Loading providers...')" />
-      </div>
+        <template v-else>
+          <p
+            class="wayf-intro wayf-text-secondary"
+            v-text="
+              $gettext(
+                'To accept the invitation from %{provider}, choose the server where you have your account.',
+                { provider: providerDomain }
+              )
+            "
+          />
 
-        <!-- Main Content -->
-        <div v-else class="wayf-main oc-flex oc-flex-column oc-height-1-1">
-          <!-- Self Domain Error (CERNBox enhancement) -->
-      <div
-        v-if="selfDomainError"
-            class="wayf-error oc-background-danger oc-p-m oc-mx-m oc-mt-m oc-border-radius-medium"
-      >
-        <oc-icon name="error-warning" size="small" />
-        <span class="oc-ml-s" v-text="$gettext('Invalid Selection')" />
-        <p class="oc-mt-s" v-text="$gettext('You cannot select your own instance.')" />
-      </div>
-
-          <!-- Search Section -->
-          <div class="wayf-search oc-px-m oc-pb-s">
-          <oc-text-input
-            v-model="searchQuery"
-            :label="$gettext('Search providers')"
-              type="search"
-              id="wayf-search"
-              name="search"
-              class="oc-mb-s"
-          >
-            <template #icon>
-              <oc-icon name="search" />
-            </template>
-          </oc-text-input>
-        </div>
-
-          <!-- Empty State (no federations or no matches) -->
-          <div v-if="totalFilteredCount === 0" class="wayf-empty-state">
-            <no-content-message id="wayf-empty" class="oc-mx-m oc-my-m" icon="search">
-              <template #message>
-                <span v-text="$gettext('No providers match your search')" />
-              </template>
-              <template #callToAction>
-                <span
-                  class="oc-text-muted"
-                  v-text="$gettext('Try a different search or enter a domain manually below.')"
-                />
-              </template>
-            </no-content-message>
+          <div v-if="isLoadingFederations" class="oc-flex oc-flex-center oc-my-m">
+            <oc-spinner :aria-label="$gettext('Loading servers')" />
           </div>
 
-          <!-- Federation Sections -->
-          <div v-else class="wayf-federations oc-flex-1">
-            <div
+          <template v-else>
+            <oc-text-input
+              v-if="hasFederations"
+              id="wayf-search"
+              v-model="searchQuery"
+              class="oc-mb-m"
+              :label="$gettext('Type to search')"
+              :clear-button-enabled="true"
+            />
+
+            <section
               v-for="[federationName, providers] in sortedFederationEntries"
               :key="federationName"
               class="wayf-federation"
             >
-              <div class="wayf-federation-header oc-flex oc-flex-middle oc-px-m oc-py-s">
-                <oc-icon name="shield-check" :size="16" class="oc-mr-s" />
-                <h2 class="oc-text-truncate" :title="federationName">{{ federationName }}</h2>
-                <span class="wayf-provider-count oc-ml-s oc-text-muted oc-text-small">
-                  {{ providers.length }}
-                  {{ providers.length === 1 ? $gettext('provider') : $gettext('providers') }}
-                </span>
-              </div>
-              <div class="wayf-providers">
-                <oc-button
-                  v-for="provider in providers"
-                  :key="provider.fqdn"
-                  appearance="raw"
-                  class="wayf-provider-button oc-width-1-1 oc-px-s oc-py-s"
-                  :disabled="isLoadingFederations"
-                  :aria-label="$gettext('Select provider %{name}', { name: provider.name })"
-                  @click="handleProviderSelect(provider)"
-                >
-                  <div class="oc-flex oc-flex-middle oc-flex-center">
-                    <div class="oc-flex oc-flex-column oc-width-expand oc-text-center">
-                      <div class="wayf-provider-name oc-text-truncate">{{ provider.name }}</div>
-                      <div class="wayf-provider-fqdn oc-text-muted oc-text-small">
-                        {{ provider.fqdn }}
-                      </div>
-                    </div>
-                  </div>
-                </oc-button>
-                </div>
-              </div>
-            </div>
+              <h3 class="wayf-federation-name" v-text="federationName" />
+              <ul class="wayf-provider-list">
+                <li v-for="provider in providers" :key="provider.fqdn">
+                  <a class="wayf-provider" :href="provider.inviteUrl">
+                    <span class="wayf-provider-text">
+                      <span class="wayf-provider-name" v-text="provider.name" />
+                      <span class="wayf-provider-fqdn wayf-text-secondary" v-text="provider.fqdn" />
+                    </span>
+                    <oc-icon name="arrow-right-s" fill-type="line" />
+                  </a>
+                </li>
+              </ul>
+            </section>
 
-          <!-- Manual Provider Section -->
-          <div class="wayf-manual oc-px-m oc-pt-m">
-            <div class="oc-flex oc-flex-middle oc-mb-s">
-              <oc-icon name="cloud" :size="20" class="oc-mr-s" />
-              <h3 v-text="$gettext('Manual Provider Entry')" />
-            </div>
+            <p v-if="emptyMessage" class="wayf-empty wayf-text-secondary" v-text="emptyMessage" />
+          </template>
+
+          <form class="wayf-manual" @submit.prevent="handleManualProvider">
             <oc-text-input
-              v-model="manualProviderInput"
-              :label="$gettext('Enter provider domain manually')"
-              type="text"
               id="wayf-manual"
-              name="manual"
-              class="oc-mb-s"
+              v-model="manualProviderInput"
+              :label="$gettext('Your server not listed? Enter its address.')"
+              :error-message="manualProviderError"
               :disabled="isDiscovering"
-              @keyup.enter="handleManualProvider"
-            >
-              <template #icon>
-                <oc-icon name="cloud" :size="20" />
-              </template>
-            </oc-text-input>
-            <oc-button
-              appearance="filled"
-              variation="primary"
-              class="oc-mt-s oc-px-m oc-py-m wayf-continue-button"
-              :disabled="!manualProviderInput.trim() || isDiscovering"
-              @click="handleManualProvider"
-            >
-              <oc-icon v-if="isDiscovering" name="refresh" class="oc-mr-s" />
-              <span v-text="$gettext('Continue')" />
-            </oc-button>
-          </div>
-        </div>
+              @update:model-value="manualProviderError = ''"
+            />
+            <div class="oc-flex oc-flex-right oc-mt-s">
+              <oc-button
+                submit="submit"
+                appearance="filled"
+                variation="primary"
+                :disabled="!manualProviderInput.trim() || isDiscovering"
+                :show-spinner="isDiscovering"
+              >
+                <span v-text="$gettext('Continue')" />
+              </oc-button>
+            </div>
+          </form>
+        </template>
+
+        <p v-if="footerSlogan" class="wayf-footer wayf-text-secondary" v-text="footerSlogan" />
       </div>
     </div>
   </main>
@@ -153,121 +89,88 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, unref } from 'vue'
-import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { NoContentMessage, AppLoadingSpinner } from '@ownclouders/web-pkg'
+import { queryItemAsString, useRoute, useThemeStore } from '@ownclouders/web-pkg'
 import { useWayf } from '../composables/useWayf'
-import { WayfProvider, WayfFederation } from '../types/wayf'
+import { WayfProvider } from '../types/wayf'
+
+type WayfProviderWithInviteUrl = WayfProvider & { inviteUrl: string }
 
 export default defineComponent({
   name: 'Wayf',
-  components: {
-    NoContentMessage,
-    AppLoadingSpinner
-  },
   setup() {
     const route = useRoute()
     const { $gettext } = useGettext()
+    const themeStore = useThemeStore()
     const {
       federations,
       isLoadingFederations,
+      loadFederationsFailed,
       isDiscovering,
       loadFederations,
-      navigateToProvider,
+      buildProviderInviteUrl,
       navigateToManualProvider,
-      isSelfDomain,
       filterProviders,
       getCurrentHostname
     } = useWayf()
 
-    // Local state
     const searchQuery = ref('')
     const manualProviderInput = ref('')
-    const selfDomainError = ref(false)
+    const manualProviderError = ref('')
 
-    // Computed properties
-    const token = computed(() => {
-      return (route.query.token as string) || ''
+    const logoImg = computed(() => themeStore.currentTheme?.logo?.login)
+    const footerSlogan = computed(() => themeStore.currentTheme?.common?.slogan)
+
+    const token = computed(() => queryItemAsString(unref(route).query.token)?.trim() || '')
+    const hasToken = computed(() => !!unref(token))
+
+    // the invitation was created on this server, so this server is the inviting provider
+    const providerDomain = computed(() => getCurrentHostname())
+
+    const hasFederations = computed(() => Object.keys(unref(federations)).length > 0)
+
+    // federations sorted by name, with the providers matching the search and a link to
+    // their invite accept dialog. federations without matches are left out
+    const sortedFederationEntries = computed((): [string, WayfProviderWithInviteUrl[]][] => {
+      return Object.entries(unref(federations))
+        .map(([federationName, providers]): [string, WayfProviderWithInviteUrl[]] => [
+          federationName,
+          filterProviders(providers, unref(searchQuery))
+            .map((provider) => ({
+              ...provider,
+              inviteUrl: buildProviderInviteUrl(provider, unref(token), unref(providerDomain))
+            }))
+            .filter(({ inviteUrl }) => !!inviteUrl)
+        ])
+        .filter(([, providers]) => providers.length > 0)
+        .sort(([a], [b]) => a.localeCompare(b))
     })
 
-    const hasToken = computed(() => {
-      return !!unref(token).trim()
-    })
-
-    const providerDomain = computed(() => {
-      return getCurrentHostname()
-    })
-
-    const helperContent = computed(() => {
-      return {
-        text: $gettext(
-          'Select your cloud provider to continue with the invitation process. You can search for providers or enter a domain manually.'
-        ),
-        title: $gettext('Where Are You From?')
+    const emptyMessage = computed(() => {
+      if (unref(loadFederationsFailed)) {
+        return $gettext(
+          'The list of servers could not be loaded. You can still enter your server below.'
+        )
       }
-    })
-
-    const filteredFederations = computed(() => {
-      if (!unref(searchQuery)) {
-        return unref(federations)
+      if (!unref(hasFederations)) {
+        return $gettext('No servers are currently available.')
       }
-
-      const filtered: WayfFederation = {}
-      Object.entries(unref(federations)).forEach(([federationName, providers]) => {
-        const filteredProviders = filterProviders(providers, unref(searchQuery))
-        if (filteredProviders.length > 0) {
-          filtered[federationName] = filteredProviders
-        }
-      })
-
-      return filtered
-    })
-
-    const totalFilteredCount = computed(() => {
-      return Object.values(unref(filteredFederations)).reduce(
-        (sum, arr) => sum + arr.length,
-        0
-      )
-    })
-
-    const sortedFederationEntries = computed(() => {
-      return Object.entries(unref(filteredFederations)).sort(([a], [b]) =>
-        a.localeCompare(b)
-      )
-    })
-
-    // Methods
-    const showSelfDomainError = () => {
-      selfDomainError.value = true
-      setTimeout(() => {
-        selfDomainError.value = false
-      }, 5000)
-    }
-
-    const handleProviderSelect = (provider: WayfProvider) => {
-      if (isSelfDomain(provider.fqdn)) {
-        showSelfDomainError()
-        return
+      if (!unref(sortedFederationEntries).length) {
+        return $gettext('No servers match your search.')
       }
-
-      navigateToProvider(provider, unref(token), unref(providerDomain))
-    }
+      return ''
+    })
 
     const handleManualProvider = async () => {
       const input = unref(manualProviderInput).trim()
-      if (!input) {
+      if (!input || unref(isDiscovering)) {
         return
       }
 
-      if (isSelfDomain(input)) {
-        showSelfDomainError()
-        return
-      }
-
-      await navigateToManualProvider(input, unref(token), unref(providerDomain))
+      manualProviderError.value =
+        (await navigateToManualProvider(input, unref(token), unref(providerDomain))) || ''
     }
 
-    // Lifecycle
     onMounted(async () => {
       if (unref(hasToken)) {
         await loadFederations()
@@ -275,21 +178,18 @@ export default defineComponent({
     })
 
     return {
-      // State
-      federations,
+      logoImg,
+      footerSlogan,
+      hasToken,
+      providerDomain,
       isLoadingFederations,
       isDiscovering,
+      hasFederations,
       searchQuery,
-      manualProviderInput,
-      selfDomainError,
-      // Computed
-      hasToken,
-      helperContent,
-      filteredFederations,
-      totalFilteredCount,
       sortedFederationEntries,
-      // Methods
-      handleProviderSelect,
+      emptyMessage,
+      manualProviderInput,
+      manualProviderError,
       handleManualProvider
     }
   }
@@ -297,258 +197,134 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-#wayf {
-  background-color: var(--oc-color-background-hover);
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.wayf-wrapper {
-  width: 100%;
-  height: 100%;
-  background-color: var(--oc-color-background-default);
-  border-radius: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.wayf-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.wayf-header {
-  background-color: var(--oc-color-background-hover);
-  border-bottom: 1px solid var(--oc-color-border);
-  flex-shrink: 0;
-  min-height: 60px;
-
-  h1 {
-    color: var(--oc-color-text-default);
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-  }
-}
-
-.wayf-error {
-  flex-shrink: 0;
-}
-
-.wayf-main {
-  background-color: var(--oc-color-background-default);
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-
-.wayf-search {
-  background-color: var(--oc-color-background-hover);
-  border-bottom: 1px solid var(--oc-color-border);
-  flex-shrink: 0;
-  overflow: hidden;
-  min-height: 80px;
-}
-
-.wayf-federations {
+// the plain layout doesn't scroll, so the page has to
+.wayf {
+  height: 100vh;
   overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
-  min-height: 0;
-  padding: var(--oc-space-small);
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  grid-gap: var(--oc-space-small);
-  align-content: start;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--oc-color-border);
-    border-radius: 3px;
-
-    &:hover {
-      background: var(--oc-color-text-muted);
-    }
-  }
+  box-sizing: border-box;
+  padding: var(--oc-space-xlarge) var(--oc-space-medium);
 }
 
-.wayf-federation {
+.wayf-container {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.wayf-logo {
+  display: block;
+  max-height: 120px;
+  max-width: 200px;
+  margin: 0 auto var(--oc-space-large);
+}
+
+.wayf-card {
+  background-color: var(--oc-color-background-default);
+  color: var(--oc-color-text-default);
+  border-radius: 15px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  padding: var(--oc-space-large);
+}
+
+// text-muted is too close to the backgrounds in some dark themes (in the CERNBox one it
+// equals background-muted), so secondary text is the default text color, toned down
+.wayf-text-secondary {
+  color: var(--oc-color-text-default);
+  opacity: 0.75;
+}
+
+.wayf-title {
+  margin: 0 0 var(--oc-space-small);
+  font-size: 1.5rem;
+}
+
+.wayf-intro {
+  margin: 0 0 var(--oc-space-medium);
+}
+
+.wayf-federation + .wayf-federation {
+  margin-top: var(--oc-space-medium);
+}
+
+.wayf-federation-name {
+  margin: 0 0 var(--oc-space-xsmall);
+  font-size: 1rem;
+}
+
+.wayf-provider-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wayf-provider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oc-space-small);
+  margin: var(--oc-space-xsmall) 0;
+  padding: var(--oc-space-small) var(--oc-space-medium);
   border: 1px solid var(--oc-color-border);
   border-radius: 10px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-height: 280px;
-  height: 280px;
-}
-
-.wayf-federation-header {
   background-color: var(--oc-color-background-hover);
-  border-bottom: 1px solid var(--oc-color-border);
-  min-height: 42px;
+  color: var(--oc-color-text-default);
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
-  h2 {
-    color: var(--oc-color-text-default);
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0;
-    min-width: 0;
-    flex: 1 1 auto;
+  &:hover,
+  &:focus-visible {
+    background-color: var(--oc-color-background-highlight);
+    border-color: var(--oc-color-swatch-primary-default);
+    text-decoration: none;
   }
 
-  .wayf-provider-count {
-    background-color: var(--oc-color-background-default);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-left: auto;
-    min-width: fit-content;
-    text-align: right;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-}
-
-.wayf-providers {
-  background-color: var(--oc-color-background-default);
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-}
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
+  &:focus-visible {
+    outline: 2px solid var(--oc-color-swatch-primary-default);
+    outline-offset: 2px;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background: var(--oc-color-border);
-    border-radius: 3px;
+  &:active {
+    background-color: var(--oc-color-swatch-primary-default);
+    color: var(--oc-color-swatch-primary-contrast);
 
-    &:hover {
-      background: var(--oc-color-text-muted);
+    .wayf-provider-fqdn {
+      color: inherit;
     }
   }
 }
 
-.wayf-provider-button {
-  border: none;
-  border-bottom: 1px solid var(--oc-color-border);
-  border-radius: 0;
-  text-align: left;
-  transition: background-color 0.15s ease;
-  font-size: 0.9rem;
-  padding-top: var(--oc-space-2xsmall);
-  padding-bottom: var(--oc-space-2xsmall);
-
-  &:hover:not(:disabled) {
-    background-color: var(--oc-color-background-hover);
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+.wayf-provider-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .wayf-provider-name {
   font-weight: 600;
-  color: var(--oc-color-text-default);
-  margin-bottom: 2px;
-  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wayf-provider-fqdn {
-  color: var(--oc-color-text-muted);
-  font-family: monospace;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wayf-empty {
+  margin: var(--oc-space-small) 0 0;
 }
 
 .wayf-manual {
-  background-color: var(--oc-color-background-hover);
-  border-top: 1px solid var(--oc-color-border);
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
-  flex-shrink: 0;
-  padding-bottom: var(--oc-space-medium);
-  display: flex;
-  flex-direction: column;
-
-  h3 {
-    color: var(--oc-color-text-default);
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-  }
+  margin-top: var(--oc-space-large);
 }
 
-.wayf-continue-button {
-  width: 100%;
-}
-
-.wayf-empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  flex: 1;
-}
-
-@media (max-width: $oc-breakpoint-large-default) {
-  .wayf-federations {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: $oc-breakpoint-medium-default) {
-  .wayf-header {
-    h1 {
-      font-size: 1.25rem;
-    }
-  }
-
-  .wayf-federation-header {
-    h2 {
-      font-size: 1rem;
-    }
-  }
-
-  .wayf-federations {
-    grid-template-columns: 1fr;
-  }
-
-  .wayf-federation {
-    max-height: 240px;
-    height: 240px;
-  }
-}
-
-@media (max-height: 600px) {
-  .wayf-federation {
-    max-height: 200px;
-    height: 200px;
-  }
+.wayf-footer {
+  margin: var(--oc-space-large) 0 0;
+  text-align: center;
+  font-size: 0.875rem;
 }
 </style>

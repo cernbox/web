@@ -29,7 +29,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       patchCleanPath: true,
       title: 'Where Are You From',
-      authContext: 'anonymous' // No authentication required
+      authContext: 'anonymous', // No authentication required
+      layout: 'plain'
     }
   },
   {

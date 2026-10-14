@@ -64,6 +64,27 @@ describe('HandleUpload', () => {
     expect(processedFiles[0].meta.routeDriveAliasAndItem).toEqual(route.params.driveAliasAndItem)
     expect(processedFiles[0].meta.routeShareId).toEqual(route.query.shareId)
   })
+  describe('upload endpoint per file', () => {
+    const publicLinkToken = 'token'
+    const publicFileUrl = 'https://cernbox.cern.ch/remote.php/dav/public-files/token'
+
+    it('builds a separate endpoint for each file when uploading', () => {
+      const { instance, mocks } = getWrapper({ publicLinkToken })
+      mocks.uppy.getPlugin.mockReturnValue(undefined)
+      mocks.opts.clientService.webdav.getPublicFileUrl.mockReturnValue(publicFileUrl)
+      const filesToUpload = ['a.txt', 'b.txt', 'c.txt'].map((name) =>
+        mock<OcUppyFile>({ id: name, name })
+      )
+
+      const processedFiles = instance.prepareFiles(filesToUpload, mock<Resource>())
+
+      expect(processedFiles.map(({ xhrUpload }) => xhrUpload.endpoint)).toEqual([
+        `${publicFileUrl}/a.txt`,
+        `${publicFileUrl}/b.txt`,
+        `${publicFileUrl}/c.txt`
+      ])
+    })
+  })
   describe('method createDirectoryTree', () => {
     it('creates a directory for a single file with a relative folder given', async () => {
       const { instance, mocks } = getWrapper()
@@ -280,7 +301,8 @@ const getWrapper = ({
   quotaCheckEnabled = true,
   conflicts = [],
   conflictHandlerResult = [],
-  spaces = []
+  spaces = [],
+  publicLinkToken = ''
 } = {}) => {
   const resourceConflict = mock<UploadResourceConflict>()
   resourceConflict.getConflicts.mockReturnValue(conflicts)
@@ -292,6 +314,9 @@ const getWrapper = ({
   const route = mock<RouteLocationNormalizedLoaded>()
   route.params.driveAliasAndItem = '1'
   route.query.shareId = '1'
+  if (publicLinkToken) {
+    route.params.token = publicLinkToken
+  }
 
   const uppy = mockDeep<Uppy<OcUppyMeta, OcUppyBody>>()
   uppy.getState.mockReturnValue(mock<State<OcUppyMeta, OcUppyBody>>({ files: {} }))
@@ -299,7 +324,11 @@ const getWrapper = ({
   createTestingPinia({
     initialState: {
       spaces: { spaces },
-      resources: { currentFolder: mock<Resource>({ path: '/' }), resources: [mock<Resource>()] }
+      resources: {
+        // a public file drop has no current folder
+        currentFolder: publicLinkToken ? null : mock<Resource>({ path: '/' }),
+        resources: [mock<Resource>()]
+      }
     }
   })
 

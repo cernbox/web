@@ -98,6 +98,9 @@ export const useFileActionsRename = () => {
         path: newPath
       })
 
+      const fileInfo = await clientService.webdav.getFileInfo(space, { path: newPath })
+      const privateLink = fileInfo?.privateLink
+
       const isCurrentFolder = isSameResource(resource, currentFolder)
 
       // if (isShareSpaceResource(space) && resource.isReceivedShare()) {
@@ -123,7 +126,7 @@ export const useFileActionsRename = () => {
 
       if (isCurrentFolder) {
         currentFolder = { ...currentFolder } as Resource
-        _renameResource(space, currentFolder, newPath)
+        _renameResource(space, currentFolder, newPath, privateLink)
         setCurrentFolder(currentFolder)
         return router.push(
           createFileRouteOptions(space, {
@@ -133,7 +136,7 @@ export const useFileActionsRename = () => {
         )
       }
       const fileResource = { ...resource } as Resource
-      _renameResource(space, fileResource, newPath)
+      _renameResource(space, fileResource, newPath, privateLink)
       upsertResource(fileResource)
     } catch (error) {
       console.error(error)

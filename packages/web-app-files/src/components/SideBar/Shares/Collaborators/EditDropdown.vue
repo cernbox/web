@@ -238,10 +238,6 @@ const editingGroup = computed(() => {
 })
 
 const isExpirationSupported = computed(() => {
-  const { runningOnEos } = configStore.options
-  if (runningOnEos) {
-    return false
-  }
   return unref(editingUser) || unref(editingGroup)
 })
 

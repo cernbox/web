@@ -246,10 +246,6 @@ export default defineComponent({
     },
 
     isExpirationSupported() {
-      const { runningOnEos } = this.configStore.options
-      if (runningOnEos) {
-        return false
-      }
       return this.editingUser || this.editingGroup
     },
 

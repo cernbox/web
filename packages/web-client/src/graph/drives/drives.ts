@@ -5,6 +5,16 @@ import type { GraphDrives } from './types'
 
 const getServerUrlFromDrive = (drive: Drive) => new URL(drive.webUrl).origin
 
+const hasValidWebUrl = (drive: Drive) => {
+  try {
+    getServerUrlFromDrive(drive)
+    return true
+  } catch {
+    console.warn('Skipping drive with invalid webUrl', drive)
+    return false
+  }
+}
+
 const roleIdv1Tov2Map = {
   manager: '312c0871-5ef7-4b3a-85b6-0e4074c64049',
   editor: '58c63c02-1d89-4572-916a-870abc5a1b7d',
@@ -66,14 +76,18 @@ export const DrivesFactory = ({ axiosClient, config }: GraphFactoryOptions): Gra
       const {
         data: { value }
       } = await meDrivesApi.listMyDrivesBeta(options?.orderBy, options?.filter, requestOptions)
-      return value.map((d) => buildSpace({ ...d, serverUrl: getServerUrlFromDrive(d) }, graphRoles))
+      return value
+        .filter(hasValidWebUrl)
+        .map((d) => buildSpace({ ...d, serverUrl: getServerUrlFromDrive(d) }, graphRoles))
     },
 
     async listAllDrives(graphRoles, options, requestOptions) {
       const {
         data: { value }
       } = await allDrivesApi.listAllDrivesBeta(options?.orderBy, options?.filter, requestOptions)
-      return value.map((d) => buildSpace({ ...d, serverUrl: getServerUrlFromDrive(d) }, graphRoles))
+      return value
+        .filter(hasValidWebUrl)
+        .map((d) => buildSpace({ ...d, serverUrl: getServerUrlFromDrive(d) }, graphRoles))
     }
   }
 }

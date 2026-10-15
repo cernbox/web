@@ -28,6 +28,9 @@ describe('useCollaboraPostMessages', () => {
 
   const createMentionsMock = () => ({
     resolveMentionCandidates: vi.fn().mockResolvedValue([]),
+    // EuroOffice-only, but mockReturnValue needs the whole composable's shape
+    resolveMentionUsers: vi.fn().mockResolvedValue([]),
+    resolveUserIdsForEmails: vi.fn().mockResolvedValue([]),
     queueMention: vi.fn(),
     notifyMentionedUsers: vi.fn().mockResolvedValue(undefined),
     resetMentionState: vi.fn(),

@@ -2,7 +2,7 @@ import {
   ApplicationInformation,
   Extension,
   FileActionOptions,
-  useClientService,
+  useAuthStore,
   useConfigStore,
   useMessages,
   useUserStore
@@ -32,48 +32,10 @@ const readOcmWebAppName = (resource: unknown): string | undefined => {
   return metadata.appName
 }
 
-const getLaunchUrl = (value: unknown): string | null => {
-  if (!isNonEmptyString(value)) {
-    return null
-  }
-
-  try {
-    const url = new URL(value)
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      return null
-    }
-    return url.toString()
-  } catch {
-    return null
-  }
-}
-
-const submitRemoteAppLaunch = (appUrl: string, accessToken: string, targetWindowName: string) => {
-  const form = document.createElement('form')
-  form.method = 'POST'
-  form.action = appUrl
-  form.target = targetWindowName
-  form.style.display = 'none'
-
-  const tokenInput = document.createElement('input')
-  tokenInput.type = 'hidden'
-  tokenInput.name = 'access_token'
-  tokenInput.value = accessToken
-  form.appendChild(tokenInput)
-  document.body.appendChild(form)
-
-  try {
-    form.submit()
-  } finally {
-    // form.remove() throws in happy-dom and leaves the node mounted.
-    document.body.removeChild(form)
-  }
-}
-
 export const extensions = (appInfo: ApplicationInformation) => {
   const { showErrorMessage, showMessage } = useMessages()
-  const clientService = useClientService()
   const configStore = useConfigStore()
+  const authStore = useAuthStore()
   const userStore = useUserStore()
   const { $gettext } = useGettext()
 
@@ -95,7 +57,39 @@ export const extensions = (appInfo: ApplicationInformation) => {
     })
   }
 
-  const handler = async ({ resources }: FileActionOptions) => {
+  const submitServedWebappLaunch = (
+    remoteWindow: Window,
+    targetWindowName: string,
+    action: string,
+    fields: readonly (readonly [string, string])[]
+  ) => {
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = action
+    form.target = targetWindowName
+    form.style.display = 'none'
+
+    for (const [name, value] of fields) {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = name
+      input.value = value
+      form.appendChild(input)
+    }
+
+    document.body.appendChild(form)
+    try {
+      form.submit()
+    } catch {
+      remoteWindow.close()
+      showOpenError()
+    } finally {
+      // form.remove() throws in happy-dom and leaves the node mounted.
+      document.body.removeChild(form)
+    }
+  }
+
+  const handler = ({ resources }: FileActionOptions) => {
     const targetWindowName = `ocm-remote-${Date.now()}`
     const remoteWindow = window.open('about:blank', targetWindowName)
 
@@ -106,36 +100,25 @@ export const extensions = (appInfo: ApplicationInformation) => {
 
     remoteWindow.focus()
 
-    try {
-      const resource = resources?.[0]
-      if (!resource) {
-        remoteWindow.close()
-        showOpenError()
-        return
-      }
-
-      const params = new URLSearchParams()
-      params.append('file', resource.id.toString())
-
-      const { data } = await clientService.httpAuthenticated.post(
-        '/sciencemesh/open-in-app',
-        params
-      )
-      const payload: unknown = data
-      const appUrl = getLaunchUrl(isPlainObject(payload) ? payload.app_url : undefined)
-      const accessToken = isPlainObject(payload) ? payload.access_token : undefined
-
-      if (appUrl === null || !isNonEmptyString(accessToken)) {
-        remoteWindow.close()
-        showOpenError()
-        return
-      }
-
-      submitRemoteAppLaunch(appUrl, accessToken, targetWindowName)
-    } catch {
+    const resource = resources?.[0]
+    if (!resource) {
       remoteWindow.close()
       showOpenError()
+      return
     }
+
+    const accessToken = typeof authStore.accessToken === 'string' ? authStore.accessToken : ''
+    // Reva keeps this only for https on the receiver host, port 443 or none.
+    // The hostname is the SPA origin; the page query and port are not copied.
+    const expiredSessionRedirectUri = `https://${window.location.hostname}`
+    const action = urlJoin(configStore.serverUrl, 'sciencemesh/webapp-launch')
+
+    submitServedWebappLaunch(remoteWindow, targetWindowName, action, [
+      ['file', resource.id.toString()],
+      ['expired_session_redirect_uri', expiredSessionRedirectUri],
+      ['access-token', accessToken],
+      ['access_token', accessToken]
+    ])
   }
 
   const appNameFor = (options?: FileActionOptions) => {

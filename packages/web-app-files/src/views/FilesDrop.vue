@@ -195,7 +195,7 @@ export default defineComponent({
           if (error.statusCode === 401) {
             return authService.handleAuthError(unref(router.currentRoute))
           }
-          console.error(error)
+          console.error('Failed to load public link')
           errorMessage.value = error
         })
         .finally(() => {

@@ -3,12 +3,13 @@ import {
   getComposableWrapper,
   mockAxiosResolve
 } from '@ownclouders/web-test-helpers'
-import { Resource, SpaceResource } from '@ownclouders/web-client'
+import { Resource, SpaceResource, urlJoin } from '@ownclouders/web-client'
 import {
   ActionExtension,
   ApplicationInformation,
   FileAction,
   FileActionOptions,
+  useConfigStore,
   useMessages
 } from '@ownclouders/web-pkg'
 import { mock } from 'vitest-mock-extended'
@@ -19,9 +20,13 @@ import resourceExpectations from '../../../web-client/tests/unit/helpers/share/f
 const remoteActionId = 'com.github.owncloud.web.open-file-remote'
 const targetStamp = 1700000000000
 const targetName = `ocm-remote-${targetStamp}`
-const httpsUrl = 'https://remote.example/open'
-const httpUrl = 'http://remote.example/open'
+const server = 'https://receiver.example'
+const launchAction = 'https://receiver.example/sciencemesh/webapp-launch'
+const redirectUri = 'https://receiver.example'
+const pageUrl =
+  'http://receiver.example:8443/apps/files/space?access_token=page-query-secret&token=synthetic-launch-token#frag'
 const token = 'synthetic-launch-token'
+const pageSecret = 'page-query-secret'
 const openError = {
   title: 'An error occurred',
   desc: "Couldn't open remotely"
@@ -32,6 +37,7 @@ const popupWarning = {
   status: 'warning',
   desc: 'Please turn on pop-ups and redirects in your browser settings to make sure everything works right.'
 }
+const fieldNames = ['file', 'expired_session_redirect_uri', 'access-token', 'access_token'] as const
 
 const appInfo: ApplicationInformation = {
   id: 'open-cloud-mesh',
@@ -41,6 +47,7 @@ const appInfo: ApplicationInformation = {
 }
 
 type MessageStore = ReturnType<typeof useMessages>
+type LaunchField = { name: string | null; type: string | null; value: string }
 
 const positiveCase = resourceExpectations.cases.find(
   (item) => item.response === 'positive.sharedWithMe.json'
@@ -73,17 +80,31 @@ const findRemoteAction = (items: ReturnType<typeof extensions>['value']): FileAc
   return extension.action as FileAction
 }
 
-const mountLaunch = () => {
+const setPageUrl = (url: string) => {
+  const browser = window as Window & { happyDOM?: { setURL?: (next: string) => void } }
+  if (!browser.happyDOM?.setURL) {
+    throw new Error('happy-dom setURL is unavailable')
+  }
+  browser.happyDOM.setURL(url)
+}
+
+const mountLaunch = (trackSpy?: <T extends { mockRestore: () => void }>(spy: T) => T) => {
   const mocks = defaultComponentMocks()
   let action: FileAction | undefined
   let showErrorMessage: MessageStore['showErrorMessage'] | undefined
   let showMessage: MessageStore['showMessage'] | undefined
+  let serverUrl = ''
 
   getComposableWrapper(
     () => {
       const messages = useMessages()
       showErrorMessage = messages.showErrorMessage
       showMessage = messages.showMessage
+      const configStore = useConfigStore()
+      // The server ref is not store state; stub the public URL the handler joins.
+      const serverUrlSpy = vi.spyOn(configStore, 'serverUrl', 'get').mockReturnValue(`${server}/`)
+      trackSpy?.(serverUrlSpy)
+      serverUrl = configStore.serverUrl
       action = findRemoteAction(unref(extensions(appInfo)))
     },
     {
@@ -91,7 +112,9 @@ const mountLaunch = () => {
       provide: mocks,
       pluginOptions: {
         piniaOptions: {
+          authState: { accessToken: token },
           configState: {
+            server,
             options: {
               cernFeatures: true,
               ocm: { openRemotely: true }
@@ -111,35 +134,46 @@ const mountLaunch = () => {
     handler: action.handler,
     showErrorMessage,
     showMessage,
-    post: mocks.$clientService.httpAuthenticated.post
+    serverUrl,
+    http: mocks.$clientService.httpAuthenticated
   }
 }
 
-const assertPostedFile = (post: ReturnType<typeof mountLaunch>['post'], fileId: string) => {
-  expect(post).toHaveBeenCalledTimes(1)
-  expect(post).toHaveBeenCalledWith('/sciencemesh/open-in-app', expect.any(URLSearchParams))
-  const body = post.mock.calls[0]?.[1]
-  if (!(body instanceof URLSearchParams)) {
-    throw new Error('expected URLSearchParams body')
-  }
-  expect(body.get('file')).toBe(fileId)
-  expect(Array.from(body.keys())).toEqual(['file'])
+const isFormOrInputTarget = (target: unknown): target is HTMLFormElement | HTMLInputElement => {
+  return target instanceof HTMLFormElement || target instanceof HTMLInputElement
 }
 
-const expectSafeError = (showErrorMessage: MessageStore['showErrorMessage'], secret: string) => {
-  expect(showErrorMessage).toHaveBeenCalledTimes(1)
-  expect(showErrorMessage).toHaveBeenCalledWith(openError)
-  expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain(secret)
-  expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain('?')
+const fieldsOf = (form: HTMLFormElement | undefined): LaunchField[] => {
+  return Array.from(form?.querySelectorAll('input, textarea, select, button') ?? []).map((node) => {
+    if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+      return { name: node.getAttribute('name'), type: node.getAttribute('type'), value: node.value }
+    }
+    return {
+      name: node.getAttribute('name'),
+      type: node.getAttribute('type'),
+      value: node.getAttribute('value') ?? ''
+    }
+  })
+}
+
+const expectCleanDom = (secret: string) => {
+  expect(document.body.querySelector('form')).toBeNull()
+  expect(document.body.innerHTML).not.toContain(secret)
+  expect(document.body.innerHTML).not.toContain(pageSecret)
 }
 
 describe('remote webapp launch', () => {
   const restorables: { mockRestore: () => void }[] = []
+  const originalUrl = window.location.href
 
   const track = <T extends { mockRestore: () => void }>(spy: T) => {
     restorables.push(spy)
     return spy
   }
+
+  beforeEach(() => {
+    setPageUrl(pageUrl)
+  })
 
   afterEach(() => {
     while (restorables.length > 0) {
@@ -148,6 +182,7 @@ describe('remote webapp launch', () => {
     for (const form of document.body.querySelectorAll('form')) {
       document.body.removeChild(form)
     }
+    setPageUrl(originalUrl)
   })
 
   const installBrowser = () => {
@@ -186,6 +221,15 @@ describe('remote webapp launch', () => {
     })
   }
 
+  const expectNoHttp = (http: ReturnType<typeof mountLaunch>['http']) => {
+    expect(http.post).not.toHaveBeenCalled()
+    expect(http.get).not.toHaveBeenCalled()
+    expect(http.put).not.toHaveBeenCalled()
+    expect(http.patch).not.toHaveBeenCalled()
+    expect(http.delete).not.toHaveBeenCalled()
+    expect(http.request).not.toHaveBeenCalled()
+  }
+
   it('locks the fixture launch file ids', () => {
     expect(resourceExpectations.revision).toBe('received-webapp-v1-2026-09-28')
     expect(rootResource.id).toBe(resourceExpectations.launch.rootFileParameter)
@@ -193,16 +237,126 @@ describe('remote webapp launch', () => {
     expect(rootResource.id).toBe('ocm-share-1')
   })
 
-  it('opens a named blank window before the ScienceMesh request and focuses it', async () => {
-    const { handler, post, showErrorMessage, showMessage } = mountLaunch()
+  it.each([
+    ['root', rootResource],
+    ['nested', nestedResource]
+  ] as const)(
+    'submits the %s file through the same-origin launcher form',
+    (_label, resource) => {
+      const { handler, http, showErrorMessage, showMessage, serverUrl } = mountLaunch(track)
+      const browser = installBrowser()
+      const childCount = document.body.childElementCount
+
+      const result = handler(optionsFor(resource))
+
+      expect(result).toBeUndefined()
+      expect(serverUrl).toBe(urlJoin(server, { trailingSlash: true }))
+      expect(browser.openSpy).toHaveBeenCalledTimes(1)
+      expect(browser.openSpy.mock.calls[0]).toEqual(['about:blank', targetName])
+      expect(browser.submitSpy).toHaveBeenCalledTimes(1)
+      expectNoHttp(http)
+
+      const form = browser.submitted()
+      expect(form).toBeInstanceOf(HTMLFormElement)
+      expect(form?.method.toLowerCase()).toBe('post')
+      expect(form?.getAttribute('action')).toBe(urlJoin(serverUrl, 'sciencemesh/webapp-launch'))
+      expect(form?.getAttribute('action')).toBe(launchAction)
+      expect(form?.action).toBe(launchAction)
+      expect(form?.getAttribute('onsubmit')).toBeNull()
+      expect(form?.onsubmit).toBeNull()
+      expect(form?.target).toBe(targetName)
+      expect(form?.getAttribute('target')).toBe(targetName)
+
+      const actionUrl = new URL(form?.action || '')
+      expect(`${actionUrl.origin}${actionUrl.pathname}`).toBe(launchAction)
+      expect(actionUrl.search).toBe('')
+      expect(actionUrl.hash).toBe('')
+      expect(actionUrl.username).toBe('')
+      expect(actionUrl.password).toBe('')
+      expect(actionUrl.href).not.toContain(token)
+      expect(actionUrl.href).not.toContain(pageSecret)
+      expect(actionUrl.href).not.toContain('access_token')
+      expect(actionUrl.href).not.toContain('access-token')
+      expect(serverUrl).not.toContain(token)
+      expect(serverUrl).not.toContain('access_token')
+
+      expect(browser.remoteWindow.close).not.toHaveBeenCalled()
+      expect(showErrorMessage).not.toHaveBeenCalled()
+      expect(showMessage).not.toHaveBeenCalled()
+      expect(document.body.childElementCount).toBe(childCount)
+      expectCleanDom(token)
+    }
+  )
+
+  it.each([
+    ['root', rootResource],
+    ['nested', nestedResource]
+  ] as const)('sends only the four launcher fields for the %s file', (_label, resource) => {
+    const { handler } = mountLaunch(track)
+    const browser = installBrowser()
+
+    handler(optionsFor(resource))
+
+    const form = browser.submitted()
+    const fields = fieldsOf(form)
+    expect(fields.map((field) => field.name)).toEqual([...fieldNames])
+    expect(fields).toEqual([
+      { name: 'file', type: 'hidden', value: resource.id.toString() },
+      { name: 'expired_session_redirect_uri', type: 'hidden', value: redirectUri },
+      { name: 'access-token', type: 'hidden', value: token },
+      { name: 'access_token', type: 'hidden', value: token }
+    ])
+    expect(fields[2]?.value).toBe(fields[3]?.value)
+    expect(form?.querySelectorAll('input')).toHaveLength(4)
+    expect(redirectUri).toBe(`https://${window.location.hostname}`)
+    expect(redirectUri).not.toBe(window.location.origin)
+    expect(redirectUri).not.toContain(token)
+    expect(redirectUri).not.toContain(pageSecret)
+    expect(redirectUri).not.toContain('?')
+    expect(window.location.origin).toBe('http://receiver.example:8443')
+  })
+
+  it('keeps the token out of every URL the launch touches', () => {
+    const { handler, serverUrl } = mountLaunch(track)
+    const browser = installBrowser()
+
+    handler(optionsFor(rootResource))
+
+    const form = browser.submitted()
+    const touched = [
+      serverUrl,
+      launchAction,
+      form?.action ?? '',
+      form?.getAttribute('action') ?? '',
+      redirectUri,
+      ...browser.openSpy.mock.calls.map((call) => String(call[0]))
+    ]
+    for (const url of touched) {
+      expect(url).not.toContain(token)
+      expect(url).not.toContain(pageSecret)
+      expect(url).not.toContain('access_token=')
+      expect(url).not.toContain('access-token=')
+      expect(new URL(url, window.location.origin).search).toBe('')
+    }
+    expect(fieldsOf(form).map((field) => field.value)).toEqual([
+      rootResource.id.toString(),
+      redirectUri,
+      token,
+      token
+    ])
+  })
+
+  it('submits synchronously after opening the popup and does not call the network', () => {
+    const { handler, http } = mountLaunch(track)
     const order: string[] = []
     const browser = installBrowser()
-    let resolvePost: (value: ReturnType<typeof mockAxiosResolve>) => void = () => undefined
-    post.mockImplementation(() => {
+    const fetchSpy = track(vi.spyOn(window, 'fetch').mockResolvedValue(new Response()))
+    const addListener = track(vi.spyOn(EventTarget.prototype, 'addEventListener'))
+    http.post.mockImplementation(() => {
       order.push('post')
-      return new Promise((resolve) => {
-        resolvePost = resolve
-      })
+      return Promise.resolve(
+        mockAxiosResolve({ access_token: token, app_url: 'https://remote.example/open' })
+      )
     })
     browser.openSpy.mockImplementation((url, name) => {
       order.push('open')
@@ -215,165 +369,117 @@ describe('remote webapp launch', () => {
         close: browser.remoteWindow.close
       } as unknown as Window
     })
+    let submitted: HTMLFormElement | undefined
+    browser.submitSpy.mockImplementation(function (this: HTMLFormElement) {
+      order.push('submit')
+      expect(this.parentNode).toBe(document.body)
+      expect(document.body.querySelectorAll('form')).toHaveLength(1)
+      const copy = this.cloneNode(true)
+      if (!(copy instanceof HTMLFormElement)) {
+        throw new Error('expected a form copy')
+      }
+      submitted = copy
+    })
 
-    const pending = handler(optionsFor(rootResource))
-    expect(order).toEqual(['open', 'focus', 'post'])
-    resolvePost(mockAxiosResolve({ app_url: httpsUrl, access_token: token }))
-    await pending
+    const result = handler(optionsFor(rootResource))
 
-    expect(showErrorMessage).not.toHaveBeenCalled()
-    expect(showMessage).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
+    expect(order).toEqual(['open', 'focus', 'submit'])
+    expect(browser.submitSpy).toHaveBeenCalledTimes(1)
+    expectNoHttp(http)
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(addListener.mock.instances.some((target) => isFormOrInputTarget(target))).toBe(false)
+    expect(submitted?.target).toBe(targetName)
     expect(browser.remoteWindow.close).not.toHaveBeenCalled()
+    expectCleanDom(token)
   })
 
-  it('warns and skips the request when the popup is blocked', async () => {
-    const { handler, post, showErrorMessage, showMessage } = mountLaunch()
+  it('warns and skips the form when the popup is blocked', () => {
+    const { handler, http, showErrorMessage, showMessage } = mountLaunch(track)
     const browser = installBrowser()
     browser.openSpy.mockReturnValue(null)
 
-    await handler(optionsFor(rootResource))
+    const result = handler(optionsFor(rootResource))
 
+    expect(result).toBeUndefined()
     expect(browser.openSpy).toHaveBeenCalledTimes(1)
     expect(browser.openSpy).toHaveBeenCalledWith('about:blank', targetName)
-    expect(post).not.toHaveBeenCalled()
+    expectNoHttp(http)
     expect(browser.submitSpy).not.toHaveBeenCalled()
+    expect(browser.remoteWindow.close).not.toHaveBeenCalled()
     expect(showMessage).toHaveBeenCalledTimes(1)
     expect(showMessage).toHaveBeenCalledWith(popupWarning)
     expect(showErrorMessage).not.toHaveBeenCalled()
+    expectCleanDom(token)
   })
 
   it.each([
-    ['root', rootResource, httpsUrl],
-    ['nested', nestedResource, httpsUrl],
-    ['http root', rootResource, httpUrl]
-  ] as const)(
-    'posts the %s file id and submits the token form',
-    async (_label, resource, appUrl) => {
-      const { handler, post, showErrorMessage, showMessage } = mountLaunch()
-      const browser = installBrowser()
-      post.mockResolvedValue(mockAxiosResolve({ app_url: appUrl, access_token: token }))
-
-      await handler(optionsFor(resource))
-
-      assertPostedFile(post, resource.id)
-      expect(browser.openSpy).toHaveBeenCalledTimes(1)
-      expect(browser.openSpy).toHaveBeenCalledWith('about:blank', targetName)
-      expect(browser.openSpy.mock.calls.some((call) => String(call[0]).includes(token))).toBe(false)
-      expect(browser.openSpy.mock.calls.some((call) => call[0] === appUrl)).toBe(false)
-      expect(browser.submitSpy).toHaveBeenCalledTimes(1)
-
-      const form = browser.submitted()
-      const input = form?.querySelector('input')
-      expect(form).toBeInstanceOf(HTMLFormElement)
-      expect(form?.method.toLowerCase()).toBe('post')
-      expect(form?.getAttribute('action')).toBe(appUrl)
-      expect(form?.target).toBe(targetName)
-      expect(input).toBeInstanceOf(HTMLInputElement)
-      if (!(input instanceof HTMLInputElement)) {
-        throw new Error('missing access token input')
-      }
-      expect(input.name).toBe('access_token')
-      expect(input.type).toBe('hidden')
-      expect(input.value).toBe(token)
-      expect(form?.action).not.toContain(token)
-      expect(form?.action).not.toContain('access_token')
-      expect(document.body.querySelector('form')).toBeNull()
-      expect(document.body.innerHTML).not.toContain(token)
-      expect(browser.remoteWindow.close).not.toHaveBeenCalled()
-      expect(showErrorMessage).not.toHaveBeenCalled()
-      expect(showMessage).not.toHaveBeenCalled()
-    }
-  )
-
-  it.each([
-    ['missing url', { access_token: token }],
-    ['null url', { app_url: null, access_token: token }],
-    ['empty url', { app_url: '', access_token: token }],
-    ['whitespace url', { app_url: '   ', access_token: token }],
-    ['unparsed url', { app_url: 'not a url', access_token: token }],
-    ['non-http url', { app_url: 'ftp://remote.example/open', access_token: token }],
-    ['javascript url', { app_url: 'javascript:alert(1)', access_token: token }],
-    ['missing token', { app_url: httpsUrl }],
-    ['null token', { app_url: httpsUrl, access_token: null }],
-    ['empty token', { app_url: httpsUrl, access_token: '' }],
-    ['whitespace token', { app_url: httpsUrl, access_token: '   ' }],
-    ['non-string token', { app_url: httpsUrl, access_token: 42 }],
-    ['null body', null]
-  ] as const)('closes the window for a %s response', async (name, data) => {
-    const { handler, post, showErrorMessage, showMessage } = mountLaunch()
+    ['empty', []],
+    ['missing', undefined]
+  ] as const)('closes the popup for a %s resource list and does not submit', (_label, resources) => {
+    const { handler, http, showErrorMessage, showMessage } = mountLaunch(track)
     const browser = installBrowser()
-    const logs = silenceConsole()
-    post.mockResolvedValue(mockAxiosResolve(data))
 
-    await handler(optionsFor(rootResource))
+    const result = handler({ resources, space: mock<SpaceResource>() })
 
-    expect(name).not.toHaveLength(0)
-    assertPostedFile(post, resourceExpectations.launch.rootFileParameter)
-    expect(browser.remoteWindow.close).toHaveBeenCalledTimes(1)
-    expect(browser.submitSpy).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
     expect(browser.openSpy).toHaveBeenCalledTimes(1)
     expect(browser.openSpy).toHaveBeenCalledWith('about:blank', targetName)
-    expectSafeError(showErrorMessage, token)
+    expect(browser.remoteWindow.focus).toHaveBeenCalledTimes(1)
+    expect(browser.remoteWindow.close).toHaveBeenCalledTimes(1)
+    expectNoHttp(http)
+    expect(browser.submitSpy).not.toHaveBeenCalled()
+    expect(showErrorMessage).toHaveBeenCalledTimes(1)
+    expect(showErrorMessage).toHaveBeenCalledWith(openError)
+    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain(token)
+    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain(pageSecret)
     expect(showMessage).not.toHaveBeenCalled()
-    expect(document.body.querySelector('form')).toBeNull()
+    expectCleanDom(token)
+  })
+
+  it('removes the form when submit throws and reports the fixed error', () => {
+    const { handler, http, showErrorMessage, showMessage } = mountLaunch(track)
+    const browser = installBrowser()
+    const logs = silenceConsole()
+    const addListener = track(vi.spyOn(EventTarget.prototype, 'addEventListener'))
+    browser.submitSpy.mockImplementation(function (this: HTMLFormElement) {
+      expect(this.querySelector('input[name="access_token"]')?.getAttribute('value')).toBe(token)
+      expect(document.body.contains(this)).toBe(true)
+      throw new Error(`submit failed ${token}`)
+    })
+
+    const result = handler(optionsFor(rootResource))
+
+    expect(result).toBeUndefined()
+    expect(browser.submitSpy).toHaveBeenCalledTimes(1)
+    expect(browser.remoteWindow.close).toHaveBeenCalledTimes(1)
+    expect(showErrorMessage).toHaveBeenCalledTimes(1)
+    expect(showErrorMessage).toHaveBeenCalledWith(openError)
+    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain(token)
+    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain('submit failed')
+    expect(showMessage).not.toHaveBeenCalled()
+    expectNoHttp(http)
+    expect(addListener.mock.instances.some((target) => isFormOrInputTarget(target))).toBe(false)
+    expectCleanDom(token)
     for (const log of logs) {
+      expect(log).not.toHaveBeenCalled()
       expect(JSON.stringify(log.mock.calls)).not.toContain(token)
     }
   })
 
-  it('closes the window when the request throws and does not leak the token', async () => {
-    const { handler, post, showErrorMessage } = mountLaunch()
+  it('does not submit twice or leave a listener when the launch succeeds', () => {
+    const { handler } = mountLaunch(track)
     const browser = installBrowser()
-    const logs = silenceConsole()
-    const secret = 'synthetic-launch-token'
-    post.mockRejectedValue(
-      Object.assign(new Error(`request failed ${secret}`), {
-        isAxiosError: true,
-        response: {
-          data: {
-            access_token: secret,
-            app_url: `${httpsUrl}?access_token=${secret}`
-          }
-        },
-        config: { url: `/sciencemesh/open-in-app?access_token=${secret}` }
-      })
-    )
+    const addListener = track(vi.spyOn(EventTarget.prototype, 'addEventListener'))
+    const childCount = document.body.childElementCount
 
-    await handler(optionsFor(nestedResource))
+    handler(optionsFor(rootResource))
+    handler(optionsFor(nestedResource))
 
-    assertPostedFile(post, resourceExpectations.launch.nestedFileParameter)
-    expect(browser.remoteWindow.close).toHaveBeenCalledTimes(1)
-    expect(browser.submitSpy).not.toHaveBeenCalled()
-    expect(browser.openSpy.mock.calls.some((call) => String(call[0]).includes(secret))).toBe(false)
-    expectSafeError(showErrorMessage, secret)
-    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain('request failed')
-    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain(httpsUrl)
-    for (const log of logs) {
-      expect(log).not.toHaveBeenCalled()
-      expect(JSON.stringify(log.mock.calls)).not.toContain(secret)
-    }
-  })
-
-  it('removes the form when submit throws and reports the fixed error', async () => {
-    const { handler, post, showErrorMessage } = mountLaunch()
-    const browser = installBrowser()
-    const logs = silenceConsole()
-    post.mockResolvedValue(mockAxiosResolve({ app_url: httpsUrl, access_token: token }))
-    browser.submitSpy.mockImplementation(function (this: HTMLFormElement) {
-      expect(this.querySelector('input')?.getAttribute('value')).toBe(token)
-      throw new Error('submit failed')
-    })
-
-    await handler(optionsFor(rootResource))
-
-    expect(browser.submitSpy).toHaveBeenCalledTimes(1)
-    expect(browser.remoteWindow.close).toHaveBeenCalledTimes(1)
+    expect(browser.submitSpy).toHaveBeenCalledTimes(2)
+    expect(browser.openSpy).toHaveBeenCalledTimes(2)
+    expect(document.body.childElementCount).toBe(childCount)
     expect(document.body.querySelector('form')).toBeNull()
-    expect(document.body.innerHTML).not.toContain(token)
-    expectSafeError(showErrorMessage, token)
-    expect(JSON.stringify(vi.mocked(showErrorMessage).mock.calls)).not.toContain('submit failed')
-    for (const log of logs) {
-      expect(log).not.toHaveBeenCalled()
-    }
+    expect(addListener.mock.instances.some((target) => isFormOrInputTarget(target))).toBe(false)
   })
 })

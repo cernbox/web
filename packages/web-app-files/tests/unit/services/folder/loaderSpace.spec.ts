@@ -32,6 +32,7 @@ const serverUrl = resourceExpectations.inputs.serverUrl
 const folderSpec = resourceExpectations.inputs.currentFolder
 const childSpec = resourceExpectations.inputs.children[0]
 const syntheticSessionToken = 'SYNTHETIC-REVIEW-SESSION-TOKEN'
+const receivedOcmWebAppMemoTtlMs = 60 * 1000
 
 describe('FolderLoaderSpace received webapp metadata', () => {
   beforeEach(() => {
@@ -39,6 +40,7 @@ describe('FolderLoaderSpace received webapp metadata', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -151,6 +153,7 @@ describe('FolderLoaderSpace received webapp metadata', () => {
   })
 
   it('clears metadata when the remote id is missing or duplicated', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] })
     const harness = createHarness()
     const listed = driveItemFrom(positiveSharedWithMe)
     const space = shareSpace(remoteId(listed))
@@ -168,6 +171,8 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(listing.resource.ocmWebApp).toBeUndefined()
     expect(listing.children[0].ocmWebApp).toBeUndefined()
 
+    // Same user and space stay memoized for 60s, so the duplicate response is a later lookup.
+    await vi.advanceTimersByTimeAsync(receivedOcmWebAppMemoTtlMs)
     const duplicateA = driveItemFrom(positiveSharedWithMe)
     const duplicateB = driveItemFrom(positiveSharedWithMe)
     listing.resource.ocmWebApp = { appName: 'Stale' }
@@ -231,6 +236,7 @@ describe('FolderLoaderSpace received webapp metadata', () => {
   })
 
   it('clears metadata when the share is opened again after removal', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] })
     const harness = createHarness()
     const driveItem = driveItemFrom(positiveSharedWithMe)
     const space = shareSpace(remoteId(driveItem))
@@ -243,6 +249,8 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(listing.resource.ocmWebApp).toEqual({ appName: 'CodiMD' })
     expect(listing.children[0].id).toBe(childSpec.id)
 
+    // Removal is visible once the per-user memo expires.
+    await vi.advanceTimersByTimeAsync(receivedOcmWebAppMemoTtlMs)
     await harness.run(space)
 
     expect(stored.ocmWebApp).toBeUndefined()
@@ -651,6 +659,295 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(stored.ocmWebApp).toBeUndefined()
     expect(space.ocmWebApp).toBeUndefined()
   })
+
+  it('memoizes received webapp metadata for the same user and space', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    const listing = webdavListing()
+    harness.useListing(listing)
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+
+    await harness.run(space)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.published().resources[0].ocmWebApp).toEqual({ appName: 'CodiMD' })
+
+    const decoy = driveItemFrom(positiveSharedWithMe)
+    setAppName(decoy, 'Etherpad')
+    harness.listSharedWithMe.mockResolvedValue([decoy])
+    harness.rebindTask()
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.published().resources[0].ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(listing.children[0].id).toBe(childSpec.id)
+  })
+
+  it('keeps a separate received webapp memo for each space', async () => {
+    const harness = createHarness()
+    const firstItem = driveItemFrom(positiveSharedWithMe)
+    const secondItem = driveItemFrom(positiveSharedWithMe)
+    setRemoteId(secondItem, 'second-remote')
+    setAppName(secondItem, 'Etherpad')
+    const firstSpace = shareSpace(remoteId(firstItem))
+    const secondSpace = shareSpace(remoteId(secondItem))
+    const storedFirst = harness.remember(firstSpace)
+    const storedSecond = harness.remember(secondSpace)
+    const firstListing = webdavListing()
+    const secondListing = webdavListing()
+    secondListing.resource.id = 'second-folder'
+    secondListing.children[0].id = 'second-child'
+    harness.context.clientService.webdav.listFiles.mockImplementation((space) => {
+      return Promise.resolve(space.id === firstSpace.id ? firstListing : secondListing)
+    })
+    harness.listSharedWithMe.mockResolvedValueOnce([firstItem]).mockResolvedValueOnce([secondItem])
+
+    await harness.run(firstSpace)
+    await harness.run(secondSpace)
+    await harness.run(firstSpace)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(storedFirst.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(storedSecond.ocmWebApp).toEqual({ appName: 'Etherpad' })
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.published().resources[0].ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(firstListing.children[0].id).toBe(childSpec.id)
+    expect(secondListing.children[0].id).toBe('second-child')
+  })
+
+  it('refetches received webapp metadata after the 60 second memo expires', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] })
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+
+    await harness.run(space)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+
+    const refreshed = driveItemFrom(positiveSharedWithMe)
+    setAppName(refreshed, 'Etherpad')
+    harness.listSharedWithMe.mockResolvedValue([refreshed])
+    await vi.advanceTimersByTimeAsync(receivedOcmWebAppMemoTtlMs)
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'Etherpad' })
+    expect(harness.published().resources[0].ocmWebApp).toEqual({ appName: 'Etherpad' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Etherpad' })
+  })
+
+  it('expires the received webapp memo at 60 seconds without extending it on read', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] })
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+
+    await harness.run(space)
+
+    const stillFresh = driveItemFrom(positiveSharedWithMe)
+    setAppName(stillFresh, 'Etherpad')
+    harness.listSharedWithMe.mockResolvedValue([stillFresh])
+    await vi.advanceTimersByTimeAsync(receivedOcmWebAppMemoTtlMs - 1)
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+
+    const expired = driveItemFrom(positiveSharedWithMe)
+    setAppName(expired, 'OnlyOffice')
+    harness.listSharedWithMe.mockResolvedValue([expired])
+    await vi.advanceTimersByTimeAsync(1)
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'OnlyOffice' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'OnlyOffice' })
+  })
+
+  it('drops the received webapp memo when the signed-in user changes', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+
+    await harness.run(space)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+
+    const nextUserItem = driveItemFrom(positiveSharedWithMe)
+    setAppName(nextUserItem, 'Etherpad')
+    harness.context.userStore.user.id = 'user-2'
+    harness.context.userStore.user.displayName = 'User Two'
+    harness.listSharedWithMe.mockResolvedValue([nextUserItem])
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'Etherpad' })
+    expect(harness.published().resources[0].ocmWebApp).toEqual({ appName: 'Etherpad' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Etherpad' })
+
+    const returnedUserItem = driveItemFrom(positiveSharedWithMe)
+    setAppName(returnedUserItem, 'OnlyOffice')
+    harness.context.userStore.user.id = 'user-1'
+    harness.context.userStore.user.displayName = 'User One'
+    harness.listSharedWithMe.mockResolvedValue([returnedUserItem])
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(3)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'OnlyOffice' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'OnlyOffice' })
+  })
+
+  it('drops the received webapp memo when the user signs out', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+
+    await harness.run(space)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+
+    const signedOutItem = driveItemFrom(positiveSharedWithMe)
+    setAppName(signedOutItem, 'Etherpad')
+    harness.context.userStore.user = null
+    harness.listSharedWithMe.mockResolvedValue([signedOutItem])
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'Etherpad' })
+
+    const stillSignedOut = driveItemFrom(positiveSharedWithMe)
+    setAppName(stillSignedOut, 'OnlyOffice')
+    harness.listSharedWithMe.mockResolvedValue([stillSignedOut])
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(3)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'OnlyOffice' })
+  })
+
+  it('does not memoize a transient received webapp failure', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockRejectedValueOnce(new Error('metadata unavailable'))
+
+    await harness.run(space)
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
+
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(console.error).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not memoize a received webapp lookup that fails authentication', async () => {
+    const harness = createHarness()
+    const cachedItem = driveItemFrom(positiveSharedWithMe)
+    const cachedSpace = shareSpace(remoteId(cachedItem))
+    const storedCached = harness.remember(cachedSpace)
+    const deniedItem = driveItemFrom(positiveSharedWithMe)
+    setRemoteId(deniedItem, 'denied-remote')
+    const deniedSpace = shareSpace(remoteId(deniedItem))
+    harness.remember(deniedSpace)
+    const cachedListing = webdavListing()
+    const deniedListing = webdavListing()
+    deniedListing.resource.id = 'denied-folder'
+    deniedListing.children[0].id = 'denied-child'
+    harness.context.clientService.webdav.listFiles.mockImplementation((space) => {
+      return Promise.resolve(space.id === cachedSpace.id ? cachedListing : deniedListing)
+    })
+    harness.listSharedWithMe.mockResolvedValue([cachedItem])
+
+    await harness.run(cachedSpace)
+    expect(storedCached.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+
+    harness.listSharedWithMe.mockRejectedValue({ statusCode: 401 })
+    await harness.run(deniedSpace)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(harness.context.authService.handleAuthError).toHaveBeenCalledTimes(1)
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+
+    const poisoned = driveItemFrom(positiveSharedWithMe)
+    setAppName(poisoned, 'OnlyOffice')
+    harness.listSharedWithMe.mockResolvedValue([poisoned])
+    await harness.run(cachedSpace)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(harness.published().currentFolder.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(storedCached.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.context.authService.handleAuthError).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not memoize a cancelled received webapp lookup', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    const abortError = new Error('aborted')
+    abortError.name = 'AbortError'
+    harness.listSharedWithMe.mockRejectedValueOnce(abortError)
+
+    await harness.run(space)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(stored.ocmWebApp).toBeUndefined()
+    expect(harness.context.resourcesStore.initResourceList).not.toHaveBeenCalled()
+
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(stored.ocmWebApp).toEqual({ appName: 'CodiMD' })
+    expect(harness.published().resources[0].ocmWebApp).toEqual({ appName: 'CodiMD' })
+  })
+
+  it('does not memoize metadata discarded by a later cancellation', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem), {})
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+    harness.getMountPoint.mockResolvedValue(
+      mock<MountPointSpaceResource>({ id: 'mount-drive!root-item' })
+    )
+    const cancelError = new Error('cancelled')
+    cancelError.name = 'CanceledError'
+    harness.getDriveItem.mockRejectedValue(cancelError)
+
+    await harness.run(space, folderSpec.path, folderSpec.fileId)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+    expect(stored.ocmWebApp).toBeUndefined()
+
+    await harness.run(space, folderSpec.path, folderSpec.fileId)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(2)
+    expect(stored.ocmWebApp).toBeUndefined()
+    expect(harness.context.resourcesStore.initResourceList).not.toHaveBeenCalled()
+  })
 })
 
 function createHarness() {
@@ -670,7 +967,7 @@ function createHarness() {
   })
 
   const loader = new FolderLoaderSpace()
-  const task = loader.getTask(context)
+  let task = loader.getTask(context)
   const listSharedWithMe = context.clientService.graphAuthenticated.driveItems.listSharedWithMe
   const getDriveItem = context.clientService.graphAuthenticated.driveItems.getDriveItem
   const getMountPoint = context.spacesStore.getMountPointForSpace
@@ -678,6 +975,9 @@ function createHarness() {
   return {
     context,
     task,
+    rebindTask() {
+      task = loader.getTask(context)
+    },
     listSharedWithMe,
     getDriveItem,
     getMountPoint,

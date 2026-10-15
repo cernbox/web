@@ -270,11 +270,13 @@ describe('FolderLoaderSpace received webapp metadata', () => {
 
     const published = harness.published()
     expect(published.resources[0].id).toBe(childSpec.id)
-    expect(published.resources[0].ocmWebApp).toBeUndefined()
+    expect(published.resources[0].ocmWebApp).toEqual({ appName: 'Stale' })
     expect(published.currentFolder.id).toBe(folderSpec.id)
-    expect(published.currentFolder.ocmWebApp).toBeUndefined()
-    expect(stored.ocmWebApp).toBeUndefined()
+    expect(published.currentFolder.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(space.ocmWebApp).toEqual({ appName: 'Stale' })
     expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
   })
 
   it('clears metadata when the matched item is malformed', async () => {
@@ -291,6 +293,61 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(stored.ocmWebApp).toBeUndefined()
     expect(harness.published().resources).toHaveLength(1)
     expect(harness.published().resources[0].id).toBe(childSpec.id)
+    expectFixedConsoleError('Failed to map received OCM web app metadata')
+  })
+
+  it('keeps browsing when sharedWithMe returns a malformed list shape', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue({} as unknown as DriveItem[])
+
+    await harness.run(space)
+
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+    expect(harness.published().resources[0].id).toBe(childSpec.id)
+    expect(space.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
+  })
+
+  it('keeps browsing when sharedWithMe returns a list with a null entry', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([null] as unknown as DriveItem[])
+
+    await harness.run(space)
+
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+    expect(harness.published().resources[0].id).toBe(childSpec.id)
+    expect(space.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
+  })
+
+  it('keeps browsing when sharedWithMe returns a list with a nested array entry', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([[]] as unknown as DriveItem[])
+
+    await harness.run(space)
+
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+    expect(harness.published().resources[0].id).toBe(childSpec.id)
+    expect(space.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
+    expectFixedConsoleError('Failed to load received OCM web app metadata')
   })
 
   it('does not publish a list when metadata authentication fails', async () => {
@@ -345,8 +402,8 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(JSON.stringify(error.response?.data)).toContain(syntheticSessionToken)
     expect(JSON.stringify(error.response?.headers)).toContain(syntheticSessionToken)
     expectFixedConsoleError('Failed to load received OCM web app metadata')
-    expect(space.ocmWebApp).toBeUndefined()
-    expect(stored.ocmWebApp).toBeUndefined()
+    expect(space.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
     expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
     expect(harness.published().resources[0].id).toBe(childSpec.id)
     expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()
@@ -368,8 +425,8 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(error.response).toBeUndefined()
     expect(JSON.stringify(error.config?.headers)).toContain(syntheticSessionToken)
     expectFixedConsoleError('Failed to load received OCM web app metadata')
-    expect(space.ocmWebApp).toBeUndefined()
-    expect(stored.ocmWebApp).toBeUndefined()
+    expect(space.ocmWebApp).toEqual({ appName: 'Stale' })
+    expect(stored.ocmWebApp).toEqual({ appName: 'Stale' })
     expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
     expect(harness.published().resources[0].id).toBe(childSpec.id)
     expect(harness.context.authService.handleAuthError).not.toHaveBeenCalled()

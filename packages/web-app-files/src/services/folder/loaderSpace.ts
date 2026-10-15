@@ -69,6 +69,7 @@ export class FolderLoaderSpace implements FolderLoader {
     ) {
       try {
         resourcesStore.clearResourceList()
+        const previousShareOcmWebApp = isShareSpaceResource(space) ? space.ocmWebApp : undefined
         if (isShareSpaceResource(space)) {
           clearSpaceOcmWebApp(space, spacesStore)
         }
@@ -123,7 +124,7 @@ export class FolderLoaderSpace implements FolderLoader {
 
         if (isShareSpaceResource(space)) {
           // One shared-with-me lookup is authoritative for received webapp metadata.
-          const ocmWebApp = yield* call(
+          const receivedOcmWebAppLookup = yield* call(
             loadReceivedOcmWebApp({
               graphClient,
               graphRoles: sharesStore.graphRoles,
@@ -149,20 +150,36 @@ export class FolderLoaderSpace implements FolderLoader {
             })
           }
 
-          space.ocmWebApp = ocmWebApp
-          spacesStore.updateSpaceField({
-            id: space.id,
-            field: 'ocmWebApp',
-            value: ocmWebApp
-          })
+          if (receivedOcmWebAppLookup.kind === 'resolved') {
+            const ocmWebApp = receivedOcmWebAppLookup.ocmWebApp
+            space.ocmWebApp = ocmWebApp
+            spacesStore.updateSpaceField({
+              id: space.id,
+              field: 'ocmWebApp',
+              value: ocmWebApp
+            })
 
-          // TODO: remove when server returns share id for federated shares in propfind response
-          resources.forEach((resource) => {
-            resource.remoteItemId = space.id
-            resource.ocmWebApp = ocmWebApp
-          })
-          currentFolder.remoteItemId = space.id
-          currentFolder.ocmWebApp = ocmWebApp
+            // TODO: remove when server returns share id for federated shares in propfind response
+            resources.forEach((resource) => {
+              resource.remoteItemId = space.id
+              resource.ocmWebApp = ocmWebApp
+            })
+            currentFolder.remoteItemId = space.id
+            currentFolder.ocmWebApp = ocmWebApp
+          } else {
+            if (previousShareOcmWebApp !== undefined) {
+              space.ocmWebApp = previousShareOcmWebApp
+              spacesStore.updateSpaceField({
+                id: space.id,
+                field: 'ocmWebApp',
+                value: previousShareOcmWebApp
+              })
+            }
+            resources.forEach((resource) => {
+              resource.remoteItemId = space.id
+            })
+            currentFolder.remoteItemId = space.id
+          }
         } else {
           clearInheritedOcmWebApp(currentFolder, resources)
         }
@@ -245,6 +262,10 @@ function clearInheritedOcmWebApp(currentFolder: Resource, resources: Resource[])
   })
 }
 
+type ReceivedOcmWebAppLookupResult =
+  | { kind: 'resolved'; ocmWebApp: Resource['ocmWebApp'] }
+  | { kind: 'transient_failure' }
+
 async function loadReceivedOcmWebApp({
   graphClient,
   graphRoles,
@@ -257,26 +278,46 @@ async function loadReceivedOcmWebApp({
   serverUrl: string
   spaceId: string
   signal?: AbortSignal
-}): Promise<Resource['ocmWebApp']> {
+}): Promise<ReceivedOcmWebAppLookupResult> {
+  let driveItems: Awaited<ReturnType<Graph['driveItems']['listSharedWithMe']>>
   try {
-    const driveItems = await graphClient.driveItems.listSharedWithMe({ signal })
-    const matches = driveItems.filter((driveItem) => driveItem.remoteItem?.id === spaceId)
-    const match = matches[0]
-    if (matches.length !== 1 || !match) {
-      return undefined
-    }
-
-    return buildIncomingShareResource({
-      driveItem: match,
-      graphRoles,
-      serverUrl
-    }).ocmWebApp
+    driveItems = await graphClient.driveItems.listSharedWithMe({ signal })
   } catch (error) {
     if (signal?.aborted || isCancelledLoad(error) || isAuthError(error)) {
       throw error
     }
     console.error('Failed to load received OCM web app metadata')
-    return undefined
+    return { kind: 'transient_failure' }
+  }
+
+  if (!Array.isArray(driveItems)) {
+    console.error('Failed to load received OCM web app metadata')
+    return { kind: 'transient_failure' }
+  }
+
+  if (driveItems.some((driveItem) => !isDriveItemElement(driveItem))) {
+    console.error('Failed to load received OCM web app metadata')
+    return { kind: 'transient_failure' }
+  }
+
+  const matches = driveItems.filter((driveItem) => driveItem.remoteItem?.id === spaceId)
+  const match = matches[0]
+  if (matches.length !== 1 || !match) {
+    return { kind: 'resolved', ocmWebApp: undefined }
+  }
+
+  try {
+    return {
+      kind: 'resolved',
+      ocmWebApp: buildIncomingShareResource({
+        driveItem: match,
+        graphRoles,
+        serverUrl
+      }).ocmWebApp
+    }
+  } catch {
+    console.error('Failed to map received OCM web app metadata')
+    return { kind: 'resolved', ocmWebApp: undefined }
   }
 }
 
@@ -301,6 +342,10 @@ function isCancelledLoad(error: unknown): boolean {
   return (
     error.name === 'AbortError' || error.name === 'CanceledError' || error.code === 'ERR_CANCELED'
   )
+}
+
+function isDriveItemElement(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

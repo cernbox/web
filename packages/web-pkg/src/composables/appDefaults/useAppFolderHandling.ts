@@ -103,11 +103,12 @@ export function useAppFolderHandling({
         resourcesStore.initResourceList({ currentFolder: resource, resources: children })
       }
     } catch (error) {
-      if (error.statusCode === 401) {
+      resourcesStore.setCurrentFolder(null)
+      console.error('Failed to load app folder')
+
+      if (isAuthError(error)) {
         return authService.handleAuthError(unref(currentRoute))
       }
-      resourcesStore.setCurrentFolder(null)
-      console.error(error)
     }
     isFolderLoading.value = false
   }
@@ -117,4 +118,19 @@ export function useAppFolderHandling({
     loadFolderForFileContext,
     activeFiles: activeResources
   }
+}
+
+function isAuthError(error: unknown): boolean {
+  if (!isRecord(error)) {
+    return false
+  }
+  if (error.statusCode === 401) {
+    return true
+  }
+  const response = error.response
+  return isRecord(response) && response.status === 401
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }

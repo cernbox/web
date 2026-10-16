@@ -208,21 +208,25 @@ export class FolderLoaderSpace implements FolderLoader {
                 rememberReceivedOcmWebApp(userId, space.id, receivedOcmWebAppLookup.ocmWebApp)
               }
             }
-            const ocmWebApp = receivedOcmWebAppLookup.ocmWebApp
-            space.ocmWebApp = ocmWebApp
-            spacesStore.updateSpaceField({
-              id: space.id,
-              field: 'ocmWebApp',
-              value: ocmWebApp
-            })
+            // A user switch during the lookup must not publish that user's metadata.
+            const userIdAtPublish = receivedOcmWebAppUserId(userStore)
+            if (userIdAtPublish === userId) {
+              const ocmWebApp = receivedOcmWebAppLookup.ocmWebApp
+              space.ocmWebApp = ocmWebApp
+              spacesStore.updateSpaceField({
+                id: space.id,
+                field: 'ocmWebApp',
+                value: ocmWebApp
+              })
 
-            // TODO: remove when server returns share id for federated shares in propfind response
-            resources.forEach((resource) => {
-              resource.remoteItemId = space.id
-              resource.ocmWebApp = ocmWebApp
-            })
-            currentFolder.remoteItemId = space.id
-            currentFolder.ocmWebApp = ocmWebApp
+              // TODO: remove when server returns share id for federated shares in propfind response
+              resources.forEach((resource) => {
+                resource.remoteItemId = space.id
+                resource.ocmWebApp = ocmWebApp
+              })
+              currentFolder.remoteItemId = space.id
+              currentFolder.ocmWebApp = ocmWebApp
+            }
           } else {
             if (previousShareOcmWebApp !== undefined) {
               space.ocmWebApp = previousShareOcmWebApp

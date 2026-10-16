@@ -107,6 +107,7 @@ export function useAppFolderHandling({
       console.error('Failed to load app folder')
 
       if (isAuthError(error)) {
+        isFolderLoading.value = false
         return authService.handleAuthError(unref(currentRoute))
       }
     }

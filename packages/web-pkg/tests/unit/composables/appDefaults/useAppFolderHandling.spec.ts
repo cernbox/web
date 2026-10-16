@@ -159,6 +159,7 @@ describe('useAppFolderHandling', () => {
     expect(handleAuthErrorMock).toHaveBeenCalledWith(currentRoute)
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder')
     expect(consoleErrorSpy).not.toHaveBeenCalledWith(authError)
+    expect(composable.isFolderLoading.value).toBe(false)
   })
 
   it('handles a 401 with response.status via the auth service', async () => {
@@ -177,5 +178,6 @@ describe('useAppFolderHandling', () => {
     expect(handleAuthErrorMock).toHaveBeenCalledWith(currentRoute)
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder')
     expect(consoleErrorSpy).not.toHaveBeenCalledWith(authError)
+    expect(composable.isFolderLoading.value).toBe(false)
   })
 })

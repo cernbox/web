@@ -812,6 +812,54 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     expect(stored.ocmWebApp).toEqual({ appName: 'OnlyOffice' })
   })
 
+  it('does not publish received webapp metadata when the user changes during the lookup', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem))
+    const stored = harness.remember(space)
+    const listing = webdavListing()
+    harness.useListing(listing)
+    const pending: Array<(items: DriveItem[]) => void> = []
+    harness.listSharedWithMe.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve)
+        })
+    )
+
+    const pendingLoad = harness.task.perform(
+      undefined,
+      space,
+      folderSpec.path,
+      folderSpec.fileId,
+      {}
+    )
+    await vi.waitUntil(() => pending.length === 1)
+    expect(space.ocmWebApp).toBeUndefined()
+    expect(stored.ocmWebApp).toBeUndefined()
+
+    harness.context.userStore.user.id = 'user-2'
+    harness.context.userStore.user.displayName = 'User Two'
+    pending[0]([driveItem])
+    await pendingLoad
+
+    expect(space.ocmWebApp).toBeUndefined()
+    expect(stored.ocmWebApp).toBeUndefined()
+    expect(listing.resource.ocmWebApp).toBeUndefined()
+    expect(listing.children[0].ocmWebApp).toBeUndefined()
+    expect(harness.context.spacesStore.updateSpaceField).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        field: 'ocmWebApp',
+        value: { appName: 'CodiMD' }
+      })
+    )
+    const published = harness.published()
+    expect(published.currentFolder.ocmWebApp).toBeUndefined()
+    expect(published.resources[0].ocmWebApp).toBeUndefined()
+    expect(harness.context.resourcesStore.initResourceList).toHaveBeenCalledTimes(1)
+    expect(harness.listSharedWithMe).toHaveBeenCalledTimes(1)
+  })
+
   it('drops the received webapp memo when the user signs out', async () => {
     const harness = createHarness()
     const driveItem = driveItemFrom(positiveSharedWithMe)

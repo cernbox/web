@@ -56,6 +56,7 @@ export const useConfigStore = defineStore('config', () => {
   const oAuth2 = ref<RawConfig['auth']>()
   const openIdConnect = ref<RawConfig['openIdConnect']>()
   const sentry = ref<RawConfig['sentry']>()
+  const matomo = ref<RawConfig['matomo']>()
   const scripts = ref<RawConfig['scripts']>([])
   const styles = ref<RawConfig['styles']>([])
 
@@ -76,6 +77,7 @@ export const useConfigStore = defineStore('config', () => {
     oAuth2.value = data.auth
     openIdConnect.value = data.openIdConnect
     sentry.value = data.sentry
+    matomo.value = data.matomo
     scripts.value = data.scripts || []
     styles.value = data.styles || []
     theme.value = data.theme
@@ -107,6 +109,7 @@ export const useConfigStore = defineStore('config', () => {
     apps,
     externalApps,
     sentry,
+    matomo,
     theme,
     scripts,
     styles,

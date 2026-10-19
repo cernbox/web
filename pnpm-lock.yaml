@@ -1129,6 +1129,9 @@ importers:
       '@casl/vue':
         specifier: ^2.2.2
         version: 2.2.6(@casl/ability@6.7.2)(vue@3.5.12(typescript@5.6.3))
+      '@certible/use-matomo':
+        specifier: 1.2.1
+        version: 1.2.1
       '@microsoft/fetch-event-source':
         specifier: 2.0.1
         version: 2.0.1
@@ -1861,6 +1864,9 @@ packages:
     peerDependencies:
       '@casl/ability': ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.1.0 || ^6.0.0
       vue: ^3.0.0
+
+  '@certible/use-matomo@1.2.1':
+    resolution: {integrity: sha512-ez0Xf+0U3MSWQ16hUz4+HQYdyntUKi0rB0pATaYQG3590VUjFpWkB9fFSPOtsBrzjvSsY+Z66y06fbcUobc3og==}
 
   '@codemirror/autocomplete@6.20.2':
     resolution: {integrity: sha512-G5FPkgIiLjOgZMjqVjvuKQ1rGPtHogLldJr33eFJdVLtmwY+giGrlv/ewljLz6b9BSQLkjxuwBc6g6omDM+YxQ==}
@@ -10486,6 +10492,8 @@ snapshots:
     dependencies:
       '@casl/ability': 6.7.2
       vue: 3.5.12(typescript@5.6.3)
+
+  '@certible/use-matomo@1.2.1': {}
 
   '@codemirror/autocomplete@6.20.2':
     dependencies:

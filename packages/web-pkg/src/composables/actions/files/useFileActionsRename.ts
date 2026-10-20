@@ -33,7 +33,7 @@ export const useFileActionsRename = () => {
   const ability = useAbility()
 
   const resourcesStore = useResourcesStore()
-  const { setCurrentFolder, upsertResource } = resourcesStore
+  const { upsertResource } = resourcesStore
 
   const getNameErrorMsg = (
     resource: Resource,
@@ -86,7 +86,7 @@ export const useFileActionsRename = () => {
   }
 
   const renameResource = async (space: SpaceResource, resource: Resource, newName: string) => {
-    let currentFolder = resourcesStore.currentFolder
+    const currentFolder = resourcesStore.currentFolder
 
     try {
       const newPath = join(dirname(resource.path), newName)
@@ -118,9 +118,7 @@ export const useFileActionsRename = () => {
       // }
 
       if (isCurrentFolder) {
-        currentFolder = { ...currentFolder } as Resource
-        _renameResource(space, currentFolder, newPath)
-        setCurrentFolder(currentFolder)
+        // navigating to the new path reloads the folder from the server, no need to rename
         return router.push(
           createFileRouteOptions(space, {
             path: newPath,
@@ -128,9 +126,17 @@ export const useFileActionsRename = () => {
           })
         )
       }
-      const fileResource = { ...resource } as Resource
-      _renameResource(space, fileResource, newPath)
-      upsertResource(fileResource)
+
+      let renamedResource: Resource
+      if (!configStore.options.routing.idBased) {
+        // with path based routing, the server builds the private link from the new path after a rename,
+        // but here it is outdated, so the resource needs to be fetched again
+        renamedResource = await clientService.webdav.getFileInfo(space, { path: newPath })
+      } else {
+        renamedResource = _renameResource(space, { ...resource } as Resource, newPath)
+      }
+
+      upsertResource(renamedResource)
     } catch (error) {
       console.error(error)
       let title = $gettext(

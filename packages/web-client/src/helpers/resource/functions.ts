@@ -105,6 +105,29 @@ function deriveResourcePath(filename: string, webDavBasePath?: string): string {
   return resourcePath
 }
 
+// The target of a navigable link is either in the same space as the link, or in
+// another space, as /spaces/<driveId>/<path>.
+function deriveLinkTarget(
+  linkTarget: unknown,
+  webDavBasePath?: string
+): { linkTarget?: string; linkTargetSpaceId?: string } {
+  if (typeof linkTarget !== 'string' || !linkTarget) {
+    return {}
+  }
+  const base = webDavBasePath && urlJoin(webDavBasePath, { leadingSlash: true, trailingSlash: false })
+  if (base && (linkTarget === base || linkTarget.startsWith(`${base}/`))) {
+    return { linkTarget: deriveResourcePath(linkTarget, webDavBasePath) }
+  }
+  const [, root, spaceId, ...rest] = linkTarget.split('/')
+  if (root === 'spaces' && spaceId) {
+    return {
+      linkTarget: `/${rest.filter(Boolean).join('/')}`,
+      linkTargetSpaceId: spaceId
+    }
+  }
+  return { linkTarget: deriveResourcePath(linkTarget, webDavBasePath) }
+}
+
 export function buildResource(resource: WebDavResponseResource, webDavBasePath?: string): Resource {
   const name = resource.props[DavProperty.Name]?.toString() || basename(resource.filename)
   const id = resource.props[DavProperty.FileId]
@@ -130,6 +153,8 @@ export function buildResource(resource: WebDavResponseResource, webDavBasePath?:
       shareTypes = [shareTypes]
     }
   }
+
+  const linkTarget = resource.props[DavProperty.LinkTarget]
 
   const r = {
     id,
@@ -160,6 +185,8 @@ export function buildResource(resource: WebDavResponseResource, webDavBasePath?:
     downloadURL: resource.props[DavProperty.DownloadURL],
     remoteItemId: resource.props[DavProperty.RemoteItemId],
     remoteItemPath: resource.props[DavProperty.ShareRoot],
+    linkType: resource.props[DavProperty.LinkType],
+    ...deriveLinkTarget(linkTarget, webDavBasePath),
     owner: {
       id: resource.props[DavProperty.OwnerId],
       displayName: resource.props[DavProperty.OwnerDisplayName]
@@ -176,7 +203,9 @@ export function buildResource(resource: WebDavResponseResource, webDavBasePath?:
       return (
         // TODO: we should later on separate this from the hidden extensions and use some better logic
         !HIDDEN_FILE_EXTENSIONS.includes(this.extension) &&
-        this.permissions.indexOf(DavPermission.SecureView) === -1
+        this.permissions.indexOf(DavPermission.SecureView) === -1 &&
+        // symlinks with no accessible target are opaque and must not be followed
+        !(this.linkType === 'symlink' && !this.linkTarget)
       )
     },
     canBeDeleted: function () {

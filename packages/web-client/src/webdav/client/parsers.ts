@@ -27,7 +27,8 @@ export const parseTusHeaders = (headers: Headers) => {
 
 const nameTagParser: WebDAVTagParser = (jPath, value) => {
   return jPath.endsWith('propstat.prop.name') ||
-    jPath.endsWith('propstat.prop.trashbin-original-filename')
+    jPath.endsWith('propstat.prop.trashbin-original-filename') ||
+    jPath.endsWith('propstat.prop.link-target')
     ? undefined
     : value
 }
@@ -60,6 +61,10 @@ export const parseMultiStatus = async (xmlBody: string) => {
 
     if (data.props.name) {
       data.props.name = data.props.name.toString()
+    }
+    // the link target is an href, like the resource's own one
+    if (data.props['link-target']) {
+      data.props['link-target'] = parseFileName(data.props['link-target'].toString())
     }
 
     return data

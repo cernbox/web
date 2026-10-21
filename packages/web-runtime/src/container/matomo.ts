@@ -5,9 +5,8 @@ import {
   ConfigStore,
   createLocationTrash,
   eventBus,
-  locationSharesViaLink,
-  locationSharesWithMe,
-  locationSharesWithOthers,
+  MatomoEvent,
+  matomoEvents,
   MessageStore,
   SideBarEventTopics,
   SpacesStore,
@@ -20,11 +19,21 @@ import {
   isProjectSpaceResource,
   isPublicSpaceResource,
   isShareSpaceResource,
+  Resource,
   SpaceResource
 } from '@ownclouders/web-client'
 import { watch } from 'vue'
 import { RouteLocationNormalized, Router } from 'vue-router'
 
+/**
+ * Rewrites every request right before matomo sends it:
+ * - `url` is reduced to its origin, because paths can contain file, folder and space names
+ * - `urlref` (the referrer) is removed, because it holds the full url of the previous page.
+ *   Only the first hit in embed mode keeps one, set to https://embedded/, so visits that
+ *   started embedded can still be counted without knowing the embedding page.
+ *
+ * It is on by default and can be turned off with `matomo.stripUrls: false`.
+ */
 const createRequestProcessor = ({ configStore }: { configStore: ConfigStore }) => {
   let firstHitSent = false
 
@@ -35,7 +44,6 @@ const createRequestProcessor = ({ configStore }: { configStore: ConfigStore }) =
         params.set('url', new URL(params.get('url')).origin + '/')
       }
 
-      // the referrer only tells whether the visit started in embed mode, never where it came from
       if (!firstHitSent && configStore.options.embed?.enabled) {
         params.set('urlref', 'https://embedded/')
       } else {
@@ -54,14 +62,18 @@ const getExtension = (fileName: string): string => {
   return fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : 'None'
 }
 
-const trackAppUsage = ({
+const trackPageAccess = ({
   tracker,
   appsStore,
+  pages,
+  trackApps,
   to,
   from
 }: {
   tracker: MatomoTracker
   appsStore: AppsStore
+  pages: Record<string, string>
+  trackApps: boolean
   to: RouteLocationNormalized
   from: RouteLocationNormalized
 }): void => {
@@ -69,13 +81,19 @@ const trackAppUsage = ({
     return
   }
 
-  const entry = appsStore.fileExtensions.find((e) => (e.routeName || e.app) === to.name)
-  if (!entry) {
+  const fileApp = appsStore.fileExtensions.find((e) => (e.routeName || e.app) === to.name)
+  if (fileApp) {
+    if (trackApps) {
+      const file = String(to.params.driveAliasAndItem || '')
+      tracker.trackEvent('App', fileApp.app, getExtension(file))
+    }
     return
   }
 
-  const file = String(to.params.driveAliasAndItem || '')
-  tracker.trackEvent('App', entry.app, getExtension(file))
+  const page = pages[String(to.name)]
+  if (page) {
+    tracker.trackEvent(page, String(to.name))
+  }
 }
 
 const trackUploads = ({ tracker }: { tracker: MatomoTracker }): void => {
@@ -85,18 +103,14 @@ const trackUploads = ({ tracker }: { tracker: MatomoTracker }): void => {
 }
 
 const trackDownloads = ({ tracker }: { tracker: MatomoTracker }): void => {
-  // every download ends in triggerDownloadWithFilename, which clicks a temporary <a download>
-  document.addEventListener('click', (event) => {
-    const link = event.target
-    if (!(link instanceof HTMLAnchorElement) || !link.hasAttribute('download')) {
-      return
+  eventBus.subscribe(
+    'app.files.downloaded',
+    ({ resource, version }: { resource: Resource; version?: string }) => {
+      tracker.trackEvent('Download', version ? 'File Version' : 'File', getExtension(resource.name))
     }
-
-    const isArchive = link.href.includes('/archiver')
-    // file versions are served from <dav>/meta/<fileId>/v/<version>
-    const isVersion = link.href.includes('/meta/') && link.href.includes('/v/')
-    const type = isArchive ? 'Folder/Archive' : isVersion ? 'File Version' : 'File'
-    tracker.trackEvent('Download', type, getExtension(link.download))
+  )
+  eventBus.subscribe('app.files.archive.downloaded', () => {
+    tracker.trackEvent('Download', 'Folder/Archive')
   })
 }
 
@@ -157,48 +171,6 @@ const trackSharedContentAccess = ({
   } else if (isPublicSpaceResource(currentSpace)) {
     tracker.trackEvent('Shares', 'Opened Public Link')
   }
-}
-
-const sharePages: Record<string, string> = {
-  [locationSharesWithMe.name]: 'Page: Shared with me',
-  [locationSharesWithOthers.name]: 'Page: Shared with others',
-  [locationSharesViaLink.name]: 'Page: Shared publicly'
-}
-
-const trackSharesAccess = ({
-  tracker,
-  to,
-  from
-}: {
-  tracker: MatomoTracker
-  to: RouteLocationNormalized
-  from: RouteLocationNormalized
-}): void => {
-  const page = sharePages[String(to.name)]
-  if (!page || to.name === from.name) {
-    return
-  }
-
-  tracker.trackEvent('Shares', page)
-}
-
-const trashOverviewRouteName = createLocationTrash('files-trash-overview').name
-const trashSpaceRouteName = createLocationTrash('files-trash-generic').name
-
-const trackTrashBinOverview = ({
-  tracker,
-  to,
-  from
-}: {
-  tracker: MatomoTracker
-  to: RouteLocationNormalized
-  from: RouteLocationNormalized
-}): void => {
-  if (to.name !== trashOverviewRouteName || to.name === from.name) {
-    return
-  }
-
-  tracker.trackEvent('Trash Bin', 'Opened Overview')
 }
 
 const trackTrashBinAccess = ({
@@ -311,10 +283,19 @@ export const startMatomo = ({
   userStore: UserStore
   messagesStore: MessageStore
 }): void => {
-  const { host, siteId, domains = [] } = configStore.matomo || {}
+  const {
+    host,
+    siteId,
+    domains = [],
+    stripUrls = true,
+    events = matomoEvents,
+    pages = {}
+  } = configStore.matomo || {}
   if (!host || !siteId) {
     return
   }
+
+  const isEnabled = (event: MatomoEvent) => events.includes(event)
 
   const tracker = initMatomo({
     host,
@@ -322,44 +303,66 @@ export const startMatomo = ({
     domains,
     trackRouter: true,
     enableLinkTracking: false,
-    preInitActions: [['setCustomRequestProcessing', createRequestProcessor({ configStore })]]
+    preInitActions: stripUrls
+      ? [['setCustomRequestProcessing', createRequestProcessor({ configStore })]]
+      : []
   })
 
   // metrics that rely only on the route
   watch(router.currentRoute, (to, from) => {
-    trackAppUsage({ tracker, appsStore, to, from })
-    trackSharesAccess({ tracker, to, from })
-    trackTrashBinOverview({ tracker, to, from })
+    trackPageAccess({ tracker, appsStore, pages, trackApps: isEnabled('app'), to, from })
   })
 
-  // the trash bin of a space is resolved like a folder of that space, so it is kept apart:
-  // opening a project's trash bin must not count as accessing the project
+  // metrics that rely on the space
   let previousSpace: SpaceResource
   let previousTrashSpace: SpaceResource
-  // metrics that rely on the space
   watch(
     () => spacesStore.currentSpace,
     (currentSpace) => {
+      const trashSpaceRouteName = createLocationTrash('files-trash-generic').name
+
+      // the trash bin of a space is resolved like a folder of that space, so it is kept apart:
+      // opening a project's trash bin must not count as accessing the project
       if (router.currentRoute.value.name === trashSpaceRouteName) {
-        trackTrashBinAccess({ tracker, currentSpace, previousSpace: previousTrashSpace })
+        if (isEnabled('trash')) {
+          trackTrashBinAccess({ tracker, currentSpace, previousSpace: previousTrashSpace })
+        }
         previousTrashSpace = currentSpace
         return
       }
 
-      trackProjectAccess({ tracker, currentSpace, previousSpace })
-      trackSharedContentAccess({ tracker, currentSpace, previousSpace })
+      if (isEnabled('project')) {
+        trackProjectAccess({ tracker, currentSpace, previousSpace })
+      }
+      if (isEnabled('shares')) {
+        trackSharedContentAccess({ tracker, currentSpace, previousSpace })
+      }
       previousSpace = currentSpace
       previousTrashSpace = undefined
     }
   )
 
   // metrics that do not rely on a state change
-  trackUser({ tracker, authStore, userStore })
-  trackUploads({ tracker })
-  trackDownloads({ tracker })
-  trackVersionsPanel({ tracker })
-  trackVersionRestores({ tracker })
-  trackTrashBinRestores({ tracker, spacesStore })
-  trackSearches({ tracker })
-  trackErrors({ tracker, messagesStore, router })
+  if (isEnabled('userId')) {
+    trackUser({ tracker, authStore, userStore })
+  }
+  if (isEnabled('upload')) {
+    trackUploads({ tracker })
+  }
+  if (isEnabled('download')) {
+    trackDownloads({ tracker })
+  }
+  if (isEnabled('versions')) {
+    trackVersionsPanel({ tracker })
+    trackVersionRestores({ tracker })
+  }
+  if (isEnabled('trash')) {
+    trackTrashBinRestores({ tracker, spacesStore })
+  }
+  if (isEnabled('search')) {
+    trackSearches({ tracker })
+  }
+  if (isEnabled('error')) {
+    trackErrors({ tracker, messagesStore, router })
+  }
 }

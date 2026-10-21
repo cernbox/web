@@ -234,6 +234,10 @@ export default defineComponent({
         }
       }
       loading.value = false
+
+      if (unref(searchResults).length) {
+        eventBus.publish('app.search.performed')
+      }
     }
 
     const onKeyUpEnter = () => {

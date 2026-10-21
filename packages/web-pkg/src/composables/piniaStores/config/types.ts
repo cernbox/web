@@ -37,6 +37,32 @@ const SentryConfigSchema = z.record(z.any())
 
 export type SentryConfig = z.infer<typeof SentryConfigSchema>
 
+export const matomoEvents = [
+  'app',
+  'upload',
+  'download',
+  'versions',
+  'search',
+  'project',
+  'shares',
+  'trash',
+  'error',
+  'userId'
+] as const
+
+export type MatomoEvent = (typeof matomoEvents)[number]
+
+const MatomoConfigSchema = z.object({
+  host: z.string(),
+  siteId: z.union([z.string(), z.number()]),
+  domains: z.array(z.string()).optional(),
+  stripUrls: z.boolean().optional(),
+  events: z.array(z.enum(matomoEvents)).optional(),
+  pages: z.record(z.string(), z.string()).optional()
+})
+
+export type MatomoConfig = z.infer<typeof MatomoConfigSchema>
+
 const StyleConfigSchema = z.object({
   href: z.string().optional()
 })
@@ -149,6 +175,7 @@ export const RawConfigSchema = z.object({
   auth: OAuth2ConfigSchema.optional(),
   openIdConnect: OpenIdConnectConfigSchema.optional(),
   sentry: SentryConfigSchema.optional(),
+  matomo: MatomoConfigSchema.optional(),
   scripts: z.array(ScriptConfigSchema).optional(),
   styles: z.array(StyleConfigSchema).optional()
 })

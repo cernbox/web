@@ -89,7 +89,7 @@ const buildMockWebDavResponse = (
   mockDeep<WebDavResponseResource>({
     filename: `/files/user/${basename}`,
     basename,
-    props
+    props: { [DavProperty.Name]: basename, ...props }
   })
 
 describe('buildResource', () => {
@@ -179,6 +179,15 @@ describe('buildResource', () => {
     expect(resource.extraProps['first-custom-prop']).toBe('1')
     expect(resource.extraProps['x:second-custom-prop']).toBe('2')
     expect(resource.extraProps['non-existing-prop']).toBeUndefined()
+  })
+  it('uses the name prop rather than the basename (e.g. a favorite space, whose basename is its id)', () => {
+    const webDavResponse = mockDeep<WebDavResponseResource>({
+      filename: '/spaces/abc',
+      basename: 'abc',
+      props: { [DavProperty.Name]: 'My Project' }
+    })
+    const resource = buildResource(webDavResponse, [], '/spaces/abc')
+    expect(resource.name).toBe('My Project')
   })
   describe('path', () => {
     it('resolves to "/" when the filename is an exact match of webDavBasePath', () => {

@@ -114,8 +114,7 @@ export function buildResource(
   extraPropNames: string[] = [],
   webDavBasePath?: string
 ): Resource {
-  const name =
-    resource.basename || resource.props[DavProperty.Name]?.toString() || basename(resource.filename)
+  const name = resource.props[DavProperty.Name]?.toString() || basename(resource.filename)
   const id = resource.props[DavProperty.FileId]
 
   const isFolder = resource.type === 'directory'

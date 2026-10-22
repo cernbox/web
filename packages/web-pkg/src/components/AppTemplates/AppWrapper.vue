@@ -212,7 +212,7 @@ const pageTitle = computed(() => {
 
   return $gettext(`%{appName} for %{fileName}`, {
     appName: $gettext(appName),
-    fileName: unref(unref(currentFileContext).fileName)
+    fileName: unref(unref(currentFileContext)?.fileName)
   })
 })
 
@@ -402,7 +402,7 @@ watch(
     if (!unref(noResourceLoading)) {
       await loadResourceTask.perform()
 
-      if (unref(fileSizeLimit) && toNumber(unref(resource).size) > unref(fileSizeLimit)) {
+      if (unref(fileSizeLimit) && toNumber(unref(resource)?.size) > unref(fileSizeLimit)) {
         dispatchModal({
           title: $gettext('File exceeds %{threshold}', {
             threshold: formatFileSize(unref(fileSizeLimit), currentLanguage)

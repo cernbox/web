@@ -7,7 +7,7 @@ import {
   defaultStubs,
   RouteLocation
 } from '@ownclouders/web-test-helpers'
-import { mock, mockDeep } from 'vitest-mock-extended'
+import { mock, mockDeep, type DeepMockProxy } from 'vitest-mock-extended'
 import { ClientService } from '@ownclouders/web-pkg'
 import { SpaceResource } from '@ownclouders/web-client'
 import { ListFilesResult } from '@ownclouders/web-client/webdav'
@@ -24,9 +24,9 @@ describe('FilesDrop view', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    it('logs a redacted message when resolving the public link fails', async () => {
+    it('logs the message and status, not the error, when resolving the public link fails', async () => {
       const publicLinkToken = 'drop-link-token'
-      const sensitiveError = Object.assign(new Error('leaked'), {
+      const sensitiveError = Object.assign(new Error('Internal Server Error'), {
         statusCode: 500,
         url: 'https://example.test/?token=secret'
       })
@@ -46,8 +46,12 @@ describe('FilesDrop view', () => {
 
       expect(wrapper.vm.loading).toBe(false)
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load public link')
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load public link', {
+        message: 'Internal Server Error',
+        statusCode: 500
+      })
       expect(consoleErrorSpy).not.toHaveBeenCalledWith(sensitiveError)
+      expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret')
     })
   })
 
@@ -67,7 +71,7 @@ describe('FilesDrop view', () => {
 })
 
 type GetMountedWrapperOptions = {
-  $clientService?: ClientService
+  $clientService?: DeepMockProxy<ClientService>
   piniaOptions?: Record<string, unknown>
 }
 

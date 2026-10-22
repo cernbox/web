@@ -42,6 +42,7 @@ const onPanZoomChange = (event: Event) => {
 const destroyPanzoom = () => {
   const el = unref(img) as unknown as HTMLElement
   el?.removeEventListener('panzoomchange', onPanZoomChange)
+  unref(panzoom)?.resetStyle()
   unref(panzoom)?.destroy()
   panzoom.value = undefined
   if (el) {

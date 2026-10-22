@@ -8,10 +8,12 @@ import {
   RouteLocation,
   shallowMount
 } from '@ownclouders/web-test-helpers'
-import { ApplicationInformation, Resource, SpaceResource } from '@ownclouders/web-client'
+import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { DavPermission } from '@ownclouders/web-client/webdav'
+import { ApplicationInformation, type AppConfigObject } from '../../../../src/apps/types'
 import AppWrapper from '../../../../src/components/AppTemplates/AppWrapper.vue'
 import { FileContext } from '../../../../src/composables/appDefaults/types'
+import type { AppDefaultsResult } from '../../../../src/composables/appDefaults/useAppDefaults'
 import { useAppDefaults } from '../../../../src/composables'
 
 vi.mock('../../../../src/composables', async () => {
@@ -101,20 +103,22 @@ describe('AppWrapper', () => {
     putFileContentsMock = vi.fn()
 
     vi.mocked(useAppDefaults).mockReturnValue({
-      applicationConfig: ref({}),
+      applicationConfig: ref<AppConfigObject>({}),
       closeApp: vi.fn(),
+      closed: ref(false),
       currentFileContext,
       getFileContents: getFileContentsMock,
       getFileInfo: getFileInfoMock,
       getUrlForResource: vi.fn(),
       putFileContents: putFileContentsMock,
+      makeRequest: vi.fn(),
       replaceInvalidFileRoute: vi.fn(() => false),
       revokeUrl: vi.fn(),
       activeFiles: ref([]),
       loadFolderForFileContext: vi.fn(),
       isFolderLoading: ref(false),
       isPublicLinkContext: ref(false)
-    } as ReturnType<typeof useAppDefaults>)
+    } satisfies AppDefaultsResult)
   }
 
   beforeEach(() => {
@@ -128,8 +132,8 @@ describe('AppWrapper', () => {
   })
 
   describe('error logging', () => {
-    it('logs a redacted message when loading the app resource fails', async () => {
-      const sensitiveError = Object.assign(new Error('leaked'), {
+    it('logs the message and status, not the error, when loading the app resource fails', async () => {
+      const sensitiveError = Object.assign(new Error('Service unavailable'), {
         url: 'https://example.test/?token=secret'
       })
       getFileInfoMock.mockRejectedValue(sensitiveError)
@@ -139,18 +143,22 @@ describe('AppWrapper', () => {
 
       expect(wrapper.vm.loadingError).toBe(sensitiveError)
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app resource')
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app resource', {
+        message: 'Service unavailable'
+      })
       expect(consoleErrorSpy).not.toHaveBeenCalledWith(sensitiveError)
+      expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret')
     })
 
-    it('logs a redacted message when loading the app file fails', async () => {
+    it('logs the message and status, not the error, when loading the app file fails', async () => {
       const fileResource = mock<Resource>({
         name: 'file.txt',
         path: '/file.txt',
         permissions: DavPermission.Updateable
       })
-      const sensitiveError = Object.assign(new Error('leaked'), {
-        config: { url: 'https://example.test/?token=secret' }
+      const sensitiveError = Object.assign(new Error('Request failed with status code 403'), {
+        config: { headers: { Authorization: 'Bearer secret-token' } },
+        response: { status: 403, headers: { 'x-request-id': 'req-file' } }
       })
       getFileInfoMock.mockResolvedValue(fileResource)
       getFileContentsMock.mockRejectedValue(sensitiveError)
@@ -158,11 +166,16 @@ describe('AppWrapper', () => {
       mountWrapper()
       await flushPromises()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app file')
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app file', {
+        message: 'Request failed with status code 403',
+        statusCode: 403,
+        xReqId: 'req-file'
+      })
       expect(consoleErrorSpy).not.toHaveBeenCalledWith(sensitiveError)
+      expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret')
     })
 
-    it('logs a redacted message when saving the file fails', async () => {
+    it('logs the message and status, not the error, when saving the file fails', async () => {
       const fileResource = mock<Resource>({
         name: 'file.txt',
         path: '/file.txt',
@@ -189,8 +202,9 @@ describe('AppWrapper', () => {
       await wrapper.vm.slotAttrs.onSave()
       await flushPromises()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save file')
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save file', { statusCode: 500 })
       expect(consoleErrorSpy).not.toHaveBeenCalledWith(sensitiveError)
+      expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret')
     })
   })
 })

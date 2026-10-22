@@ -83,7 +83,11 @@ import { useService, UppyService } from '@ownclouders/web-pkg'
 import { useAuthService } from '@ownclouders/web-pkg'
 import { HandleUpload } from '../HandleUpload'
 import { createFileRouteOptions } from '@ownclouders/web-pkg'
-import { PublicSpaceResource, SharePermissionBit } from '@ownclouders/web-client'
+import {
+  PublicSpaceResource,
+  SharePermissionBit,
+  getHttpErrorLogDetails
+} from '@ownclouders/web-client'
 
 export default defineComponent({
   components: {
@@ -195,7 +199,7 @@ export default defineComponent({
           if (error.statusCode === 401) {
             return authService.handleAuthError(unref(router.currentRoute))
           }
-          console.error(error)
+          console.error('Failed to load public link', getHttpErrorLogDetails(error))
           errorMessage.value = error
         })
         .finally(() => {

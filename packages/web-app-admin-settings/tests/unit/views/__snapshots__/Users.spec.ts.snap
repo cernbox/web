@@ -30,9 +30,11 @@ exports[`Users view > list view > renders initially warning if filters are manda
           </fieldset>
           <div data-v-10ab5d2a="" class="oc-flex oc-flex-middle">
             <div data-v-10ab5d2a="" class="" modelmodifiers="[object Object]" autocomplete="off"><label class="oc-label" for="users-filter">Search</label>
-              <div class="oc-position-relative">
-                <!--v-if--> <input id="users-filter" modelmodifiers="[object Object]" autocomplete="off" aria-invalid="false" class="oc-text-input oc-input oc-rounded" type="text" value="">
-                <!--v-if-->
+              <div class="">
+                <div class="oc-text-input-wrapper oc-position-relative">
+                  <!--v-if--> <input id="users-filter" modelmodifiers="[object Object]" autocomplete="off" aria-invalid="false" class="oc-text-input oc-input oc-rounded" type="text" value="">
+                  <!--v-if-->
+                </div>
               </div>
               <!--v-if-->
               <!--v-if-->
@@ -80,9 +82,11 @@ exports[`Users view > list view > renders list initially 1`] = `
           </fieldset>
           <div data-v-10ab5d2a="" class="oc-flex oc-flex-middle">
             <div data-v-10ab5d2a="" class="" modelmodifiers="[object Object]" autocomplete="off"><label class="oc-label" for="users-filter">Search</label>
-              <div class="oc-position-relative">
-                <!--v-if--> <input id="users-filter" modelmodifiers="[object Object]" autocomplete="off" aria-invalid="false" class="oc-text-input oc-input oc-rounded" type="text" value="">
-                <!--v-if-->
+              <div class="">
+                <div class="oc-text-input-wrapper oc-position-relative">
+                  <!--v-if--> <input id="users-filter" modelmodifiers="[object Object]" autocomplete="off" aria-invalid="false" class="oc-text-input oc-input oc-rounded" type="text" value="">
+                  <!--v-if-->
+                </div>
               </div>
               <!--v-if-->
               <!--v-if-->

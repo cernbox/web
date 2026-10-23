@@ -3,47 +3,53 @@
     <slot name="label">
       <label class="oc-label" :for="id" v-text="label" />
     </slot>
-    <div class="oc-position-relative">
-      <oc-icon
-        v-if="readOnly"
-        name="lock"
-        size="small"
-        class="oc-mt-s oc-ml-s oc-position-absolute"
-      />
-      <component
-        :is="inputComponent"
-        :id="id"
-        v-bind="additionalAttributes"
-        ref="input"
-        :aria-invalid="ariaInvalid"
-        class="oc-text-input oc-input oc-rounded"
-        :class="{
-          'oc-text-input-warning': !!warningMessage,
-          'oc-text-input-danger': !!errorMessage,
-          'oc-pl-l': !!readOnly,
-          'clear-action-visible': showClearButton
-        }"
-        :type="type"
-        :value="displayValue"
-        :disabled="disabled || readOnly"
-        v-on="additionalListeners"
-        @change="onChange(($event.target as HTMLInputElement).value)"
-        @input="onInput(($event.target as HTMLInputElement).value)"
-        @password-challenge-completed="$emit('passwordChallengeCompleted')"
-        @password-challenge-failed="$emit('passwordChallengeFailed')"
-        @focus="onFocus($event.target)"
-        @keydown.enter="$emit('enterKeyDown')"
-      />
-      <oc-button
-        v-if="showClearButton"
-        :aria-label="clearButtonAccessibleLabelValue"
-        class="oc-pr-s oc-position-center-right oc-text-input-btn-clear"
-        :class="{ 'oc-mr-rm': type === 'date' }"
-        appearance="raw"
-        @click="onClear"
-      >
-        <oc-icon name="close" size="small" variation="passive" />
-      </oc-button>
+    <div
+      :class="{
+        'oc-text-input-has-suffix': !!$slots.suffix
+      }"
+    >
+      <div class="oc-text-input-wrapper oc-position-relative">
+        <oc-icon
+          v-if="readOnly"
+          name="lock"
+          size="small"
+          class="oc-mt-s oc-ml-s oc-position-absolute"
+        />
+        <component
+          :is="inputComponent"
+          :id="id"
+          v-bind="additionalAttributes"
+          ref="input"
+          :aria-invalid="ariaInvalid"
+          class="oc-text-input oc-input oc-rounded"
+          :class="{
+            'oc-text-input-warning': !!warningMessage,
+            'oc-text-input-danger': !!errorMessage,
+            'oc-pl-l': !!readOnly,
+            'clear-action-visible': showClearButton
+          }"
+          :type="type"
+          :value="displayValue"
+          :disabled="disabled || readOnly"
+          v-on="additionalListeners"
+          @change="onChange(($event.target as HTMLInputElement).value)"
+          @input="onInput(($event.target as HTMLInputElement).value)"
+          @password-challenge-completed="$emit('passwordChallengeCompleted')"
+          @password-challenge-failed="$emit('passwordChallengeFailed')"
+          @focus="onFocus($event.target)"
+          @keydown.enter="$emit('enterKeyDown')"
+        />
+        <oc-button
+          v-if="showClearButton"
+          :aria-label="clearButtonAccessibleLabelValue"
+          class="oc-pr-s oc-position-center-right oc-text-input-btn-clear"
+          :class="{ 'oc-mr-rm': type === 'date' }"
+          appearance="raw"
+          @click="onClear"
+        >
+          <oc-icon name="close" size="small" variation="passive" />
+        </oc-button>
+      </div>
       <slot name="suffix" />
     </div>
     <div
@@ -322,6 +328,16 @@ async function onFocus(target: HTMLInputElement) {
     position: absolute;
     left: var(--oc-space-xsmall);
     top: var(--oc-space-xsmall);
+  }
+}
+
+.oc-text-input-has-suffix {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-xsmall);
+
+  > .oc-text-input-wrapper {
+    flex: 1;
   }
 }
 

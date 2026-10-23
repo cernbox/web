@@ -47,7 +47,7 @@
           @click="dropItemUrlClicked"
         >
           <oc-icon name="external-link" />
-          <span v-text="dropItemUrl" />
+          <span v-text="dropItemUrl" class="oc-text-truncate" />
         </oc-button>
       </li>
       <li v-if="searchTask.isRunning" class="oc-p-xs oc-flex oc-flex-center">

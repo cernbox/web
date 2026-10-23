@@ -589,14 +589,7 @@ onMounted(() => {
 })
 const clearSearchBox = () => {
   searchQuery.value = ''
-  // vue-select owns the visible search text; it isn't cleared automatically since
-  // auto-resolved collaborators are pushed in directly instead of picked from the dropdown
-  const vueSelectInstance = (
-    unref(ocSharingAutocomplete) as unknown as { select?: { search?: string } }
-  )?.select
-  if (vueSelectInstance) {
-    vueSelectInstance.search = ''
-  }
+  unref(ocSharingAutocomplete).clearSearch()
 }
 
 /** Resolves a pasted list of email addresses to known users and selects the matching ones. */
@@ -611,7 +604,10 @@ const resolveEmailList = async (emails: string[]) => {
   const matches = await Promise.all(
     emails.map(async (email) => {
       try {
-        const users = await client.users.listUsers({ search: `"${email}"` })
+        const users = await client.users.listUsers({
+          orderBy: ['displayName'],
+          search: `"${email}"`
+        })
         return (users || []).find((u) => u.mail?.toLowerCase() === email.toLowerCase())
       } catch (error) {
         console.error(error)

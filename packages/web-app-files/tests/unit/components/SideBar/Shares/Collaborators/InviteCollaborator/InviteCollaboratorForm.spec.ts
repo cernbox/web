@@ -5,7 +5,8 @@ import {
   defaultPlugins,
   RouteLocation,
   shallowMount,
-  VueWrapper
+  VueWrapper,
+  flushPromises
 } from '@ownclouders/web-test-helpers'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import { useMessages, useSharesStore } from '@ownclouders/web-pkg'
@@ -134,9 +135,11 @@ describe('InviteCollaboratorForm', () => {
 
       expect(wrapper.vm.resolvingEmails).toBe(true)
       expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalledWith({
+        orderBy: ['displayName'],
         search: '"jane@example.com"'
       })
       expect(mocks.$clientService.graphAuthenticated.users.listUsers).toHaveBeenCalledWith({
+        orderBy: ['displayName'],
         search: '"john@example.com"'
       })
     })
@@ -210,6 +213,18 @@ describe('InviteCollaboratorForm', () => {
       await wrapper.vm.resolveEmailList(['jane@example.com', 'john@example.com'])
 
       expect(wrapper.vm.selectedCollaborators.length).toBe(1)
+    })
+    it('clears the search text onde the pasted addresses are resolved', async () => {
+      const { wrapper, mocks } = getWrapper()
+      mocks.$clientService.graphAuthenticated.users.listUsers.mockResolvedValue([
+        { id: '2', mail: 'jane@example.com' } as User
+      ])
+      const input = wrapper.find<HTMLInputElement>('#files-share-invite-input')
+
+      await input.setValue('jane@example.com, john@example.com')
+      await flushPromises()
+
+      expect(input.element.value).toBe('')
     })
   })
   describe('share action', () => {

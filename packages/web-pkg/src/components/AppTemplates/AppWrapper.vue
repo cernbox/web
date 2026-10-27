@@ -327,7 +327,11 @@ export default defineComponent({
         selectedResources.value = [unref(resource)]
       } catch (e) {
         console.error('Failed to load app resource', getHttpErrorLogDetails(e))
-        loadingError.value = e
+        if (e?.statusCode === 403) {
+          loadingError.value = new Error($gettext("You don't have permission to open this file."))
+        } else {
+          loadingError.value = e
+        }
         loading.value = false
       }
     }).restartable()

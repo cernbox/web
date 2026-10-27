@@ -326,6 +326,11 @@ function setActiveFile() {
         ? 'remoteItemId'
         : 'fileId'
 
+    // With path-based routing the fileId query is never set, so fall back to matching the resource by its WebDAV path.
+    if (!unref(fileId) && unref(filteredFiles)[i].webDavPath === unref(currentFileContext.path)) {
+      activeIndex.value = i
+      return
+    }
     // match the given file id with the filtered files to get the current index
     if (unref(filteredFiles)[i][filterAttr] === unref(fileId)) {
       activeIndex.value = i

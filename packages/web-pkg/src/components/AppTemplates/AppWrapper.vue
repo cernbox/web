@@ -327,7 +327,13 @@ export default defineComponent({
         selectedResources.value = [unref(resource)]
       } catch (e) {
         console.error(e)
-        loadingError.value = e
+        let message = e.message
+        switch (e.statusCode) {
+          case 403:
+            message = $gettext("You don't have permission to open this file.")
+            break
+        }
+        loadingError.value = new Error(message)
         loading.value = false
       }
     }).restartable()

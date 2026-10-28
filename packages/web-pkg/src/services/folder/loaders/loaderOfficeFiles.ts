@@ -27,7 +27,7 @@ export class FolderLoaderOfficeFiles implements FolderLoader {
         projectName
       })
 
-      resources = resources.results.map(buildResource)
+      resources = resources.results.map((r) => buildResource(r, clientService.webdav.extraProps))
       resourcesStore.initResourceList({ currentFolder: null, resources })
     })
   }

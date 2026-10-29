@@ -579,7 +579,7 @@ const displayResourceAsSingleResource = computed(() => {
 
   if (unref(configOptions).runningOnEos) {
     if (
-      !unref(currentFolder).fileId ||
+      !unref(currentFolder)?.fileId ||
       unref(currentFolder).id === unref(paginatedResources)[0].id
     ) {
       return true

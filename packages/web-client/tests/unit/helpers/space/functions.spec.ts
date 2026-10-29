@@ -1,5 +1,6 @@
 import {
   buildEosExplorerSpace,
+  buildPublicSpaceResource,
   buildSpace,
   EOS_EXPLORER_SPACE_ID,
   isFallbackSpaceResource
@@ -441,5 +442,21 @@ describe('buildEosExplorerSpace', () => {
 
   it('does not treat a missing resource as a fallback space', () => {
     expect(isFallbackSpaceResource(undefined)).toBe(false)
+  })
+})
+
+describe('buildPublicSpaceResource', () => {
+  it.each([undefined, ''])('falls back to "Public files" given the name %j', (name) => {
+    const space = buildPublicSpaceResource({ id: 'token', name, publicLinkType: 'public-link' })
+    expect(space.name).toBe('Public files')
+  })
+
+  it('keeps the name it is given', () => {
+    const space = buildPublicSpaceResource({
+      id: 'token',
+      name: 'Shared folder',
+      publicLinkType: 'public-link'
+    })
+    expect(space.name).toBe('Shared folder')
   })
 })

@@ -197,8 +197,10 @@ export const useFileActions = () => {
   }) => {
     const remoteItemId = isShareSpaceResource(space) ? space.id : undefined
     const routeName = appFileExtension.routeName || appFileExtension.app
-    const routeOpts = getEditorRouteOpts(routeName, space, resource, mode, remoteItemId)
-    return router.resolve(routeOpts)
+    // Return the raw location, not router.resolve(): router-link resolves it again, and
+    // re-resolving a resolved location rebuilds the path from decoded params, so a `#` or
+    // `%` in a name ends up unencoded in the URL.
+    return getEditorRouteOpts(routeName, space, resource, mode, remoteItemId)
   }
   const getEditorRouteOpts = (
     routeName: RouteRecordName,

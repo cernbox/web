@@ -126,10 +126,12 @@ export function buildIncomingShareResource({
 
   const shareRoles = getShareResourceRoles({ driveItem, graphRoles })
   const sharePermissions = getShareResourcePermissions({ driveItem, shareRoles })
+  const ocmWebApp = readReceivedOcmWebApp(driveItem.remoteItem)
 
   const resource: IncomingShareResource = {
     id: driveItem.id,
     remoteItemId: driveItem.remoteItem.id,
+    ...(ocmWebApp !== undefined ? { ocmWebApp } : {}),
     driveId: driveItem.parentReference?.driveId,
     path: driveItem.remoteItem.path || '/',
     name: resourceName,
@@ -296,6 +298,39 @@ export function buildLinkShare({
     notifyUploads: graphPermission['@libre.graph.permissions.actions']?.includes('notifyUploads'),
     notifyUploadsExtraRecipients: graphPermission.grantedToIdentities?.[0]?.group?.id
   }
+}
+
+const receivedOcmWebAppKey = '@ocm.webApp'
+
+type RemoteItemWithOcmWebApp = NonNullable<DriveItem['remoteItem']> & {
+  [receivedOcmWebAppKey]?: unknown
+}
+
+function isNonArrayObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function readReceivedOcmWebApp(remoteItem?: RemoteItemWithOcmWebApp | null): Resource['ocmWebApp'] {
+  if (
+    remoteItem === undefined ||
+    remoteItem === null ||
+    typeof remoteItem !== 'object' ||
+    Array.isArray(remoteItem)
+  ) {
+    return undefined
+  }
+
+  const descriptor = remoteItem[receivedOcmWebAppKey]
+  if (!isNonArrayObject(descriptor)) {
+    return undefined
+  }
+
+  const appName = descriptor.appName
+  if (typeof appName !== 'string') {
+    return undefined
+  }
+
+  return { appName }
 }
 
 function getShareTypeFromPermission({ link, grantedToV2 }: Permission) {

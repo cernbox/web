@@ -2,7 +2,11 @@ import { Ref, ref, unref, MaybeRef } from 'vue'
 import { dirname } from 'path'
 import { ClientService } from '../../services'
 import { useAppFileHandling } from './useAppFileHandling'
-import { buildIncomingShareResource, Resource } from '@ownclouders/web-client'
+import {
+  buildIncomingShareResource,
+  getHttpErrorLogDetails,
+  Resource
+} from '@ownclouders/web-client'
 import { FileContext } from './types'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useFileRouteReplace } from '../router/useFileRouteReplace'
@@ -104,9 +108,10 @@ export function useAppFolderHandling({
       }
     } catch (error) {
       resourcesStore.setCurrentFolder(null)
-      console.error('Failed to load app folder')
+      const details = getHttpErrorLogDetails(error)
+      console.error('Failed to load app folder', details)
 
-      if (isAuthError(error)) {
+      if (details.statusCode === 401) {
         isFolderLoading.value = false
         return authService.handleAuthError(unref(currentRoute))
       }
@@ -119,19 +124,4 @@ export function useAppFolderHandling({
     loadFolderForFileContext,
     activeFiles: activeResources
   }
-}
-
-function isAuthError(error: unknown): boolean {
-  if (!isRecord(error)) {
-    return false
-  }
-  if (error.statusCode === 401) {
-    return true
-  }
-  const response = error.response
-  return isRecord(response) && response.status === 401
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }

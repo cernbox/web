@@ -44,6 +44,26 @@ describe('FolderLoaderSpace received webapp metadata', () => {
     vi.restoreAllMocks()
   })
 
+  it('does not call sharedWithMe for an internal share space alias', async () => {
+    const harness = createHarness()
+    const driveItem = driveItemFrom(positiveSharedWithMe)
+    const space = shareSpace(remoteId(driveItem), populatedMembers(), { ocm: false })
+    const stored = harness.remember(space)
+    harness.useListing(webdavListing())
+    harness.listSharedWithMe.mockResolvedValue([driveItem])
+
+    await harness.run(space)
+
+    expect(harness.listSharedWithMe).not.toHaveBeenCalled()
+    const published = harness.published()
+    expect(published.currentFolder.remoteItemId).toBe(space.id)
+    expect(published.resources[0].remoteItemId).toBe(space.id)
+    expect(published.currentFolder.ocmWebApp).toBeUndefined()
+    expect(published.resources[0].ocmWebApp).toBeUndefined()
+    expect(stored.ocmWebApp).toBeUndefined()
+    expect(stored.members?.['user-1']).toBeDefined()
+  })
+
   it('keeps the root mapper and reads metadata once', async () => {
     const harness = createHarness()
     const mountItem = driveItemFrom(positiveSharedWithMe)
@@ -1066,11 +1086,14 @@ function createHarness() {
 
 function shareSpace(
   id: string,
-  members: SpaceResource['members'] = populatedMembers()
+  members: SpaceResource['members'] = populatedMembers(),
+  options: { ocm?: boolean } = { ocm: true }
 ): SpaceResource {
+  const driveAliasPrefix = options.ocm === false ? 'share' : 'ocm-share'
   return {
     id,
     driveType: 'share',
+    driveAlias: `${driveAliasPrefix}/shared-folder`,
     name: 'shared-folder',
     members,
     ocmWebApp: { appName: 'Stale' }
@@ -1255,6 +1278,11 @@ function expectAxiosError(error: unknown): AxiosError {
 
 function expectFixedConsoleError(message: string) {
   expect(console.error).toHaveBeenCalledTimes(1)
-  expect(console.error).toHaveBeenCalledWith(message)
+  const call = vi.mocked(console.error).mock.calls[0]
+  expect(call[0]).toBe(message)
+  if (call.length > 1) {
+    expect(call[1]).toEqual(expect.any(Object))
+  }
   expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(syntheticSessionToken)
+  expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('Bearer secret-token')
 }

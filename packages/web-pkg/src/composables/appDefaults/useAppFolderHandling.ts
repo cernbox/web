@@ -2,7 +2,11 @@ import { Ref, ref, unref, MaybeRef } from 'vue'
 import { dirname } from 'path'
 import { ClientService } from '../../services'
 import { useAppFileHandling } from './useAppFileHandling'
-import { buildIncomingShareResource, Resource } from '@ownclouders/web-client'
+import {
+  buildIncomingShareResource,
+  getHttpErrorLogDetails,
+  Resource
+} from '@ownclouders/web-client'
 import { FileContext } from './types'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useFileRouteReplace } from '../router/useFileRouteReplace'
@@ -103,11 +107,14 @@ export function useAppFolderHandling({
         resourcesStore.initResourceList({ currentFolder: resource, resources: children })
       }
     } catch (error) {
-      if (error.statusCode === 401) {
+      resourcesStore.setCurrentFolder(null)
+      const details = getHttpErrorLogDetails(error)
+      console.error('Failed to load app folder', details)
+
+      if (details.statusCode === 401) {
+        isFolderLoading.value = false
         return authService.handleAuthError(unref(currentRoute))
       }
-      resourcesStore.setCurrentFolder(null)
-      console.error(error)
     }
     isFolderLoading.value = false
   }

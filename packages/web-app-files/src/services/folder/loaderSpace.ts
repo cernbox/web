@@ -13,6 +13,7 @@ import {
 import {
   buildIncomingShareResource,
   call,
+  getHttpErrorLogDetails,
   isPersonalSpaceResource,
   isPublicSpaceResource,
   isShareSpaceResource,
@@ -96,11 +97,13 @@ export class FolderLoaderSpace implements FolderLoader {
       options: FolderLoaderOptions = {}
     ) {
       try {
+        const loadUserId = receivedOcmWebAppUserId(userStore)
         // Identity is fixed before any abortable request so logout cannot leave another user's memo.
-        syncReceivedOcmWebAppMemoUser(receivedOcmWebAppUserId(userStore))
+        syncReceivedOcmWebAppMemoUser(loadUserId)
         resourcesStore.clearResourceList()
-        const previousShareOcmWebApp = isShareSpaceResource(space) ? space.ocmWebApp : undefined
-        if (isShareSpaceResource(space)) {
+        const ocmShareSpace = isOcmShareSpace(space)
+        const previousShareOcmWebApp = ocmShareSpace ? space.ocmWebApp : undefined
+        if (ocmShareSpace) {
           clearSpaceOcmWebApp(space, spacesStore)
         }
 
@@ -153,33 +156,31 @@ export class FolderLoaderSpace implements FolderLoader {
         }
 
         if (isShareSpaceResource(space)) {
-          // Memoized per user and space. A miss does one shared-with-me lookup.
-          const userId = receivedOcmWebAppUserId(userStore)
-          syncReceivedOcmWebAppMemoUser(userId)
-          const cachedReceivedOcmWebApp = readReceivedOcmWebAppMemo(userId, space.id)
-          let receivedOcmWebAppLookup: ReceivedOcmWebAppLookupResult
+          let receivedOcmWebAppLookup: ReceivedOcmWebAppLookupResult | undefined
           let storeReceivedOcmWebApp = false
-          if (cachedReceivedOcmWebApp) {
-            receivedOcmWebAppLookup = cachedReceivedOcmWebApp
-          } else {
-            receivedOcmWebAppLookup = yield* call(
-              loadReceivedOcmWebApp({
-                graphClient,
-                graphRoles: sharesStore.graphRoles,
-                serverUrl: configStore.serverUrl,
-                spaceId: space.id,
-                signal: signal1
-              })
-            )
-            const userIdAfterLookup = receivedOcmWebAppUserId(userStore)
-            if (userIdAfterLookup !== userId) {
-              syncReceivedOcmWebAppMemoUser(userIdAfterLookup)
-            } else if (
-              userId &&
-              !isAbortedSignal(signal1) &&
-              receivedOcmWebAppLookup.kind === 'resolved'
-            ) {
-              storeReceivedOcmWebApp = true
+
+          if (ocmShareSpace) {
+            // Memoized per user and space. A miss does one shared-with-me lookup.
+            const cachedReceivedOcmWebApp = readReceivedOcmWebAppMemo(loadUserId, space.id)
+            if (cachedReceivedOcmWebApp) {
+              receivedOcmWebAppLookup = cachedReceivedOcmWebApp
+            } else {
+              receivedOcmWebAppLookup = yield* call(
+                loadReceivedOcmWebApp({
+                  graphClient,
+                  graphRoles: sharesStore.graphRoles,
+                  serverUrl: configStore.serverUrl,
+                  spaceId: space.id,
+                  signal: signal1
+                })
+              )
+              if (
+                loadUserId &&
+                !isAbortedSignal(signal1) &&
+                receivedOcmWebAppLookup.kind === 'resolved'
+              ) {
+                storeReceivedOcmWebApp = true
+              }
             }
           }
 
@@ -199,47 +200,62 @@ export class FolderLoaderSpace implements FolderLoader {
             })
           }
 
-          if (receivedOcmWebAppLookup.kind === 'resolved') {
-            if (storeReceivedOcmWebApp) {
-              const userIdAtStore = receivedOcmWebAppUserId(userStore)
-              if (userIdAtStore !== userId || isAbortedSignal(signal1)) {
-                syncReceivedOcmWebAppMemoUser(userIdAtStore)
-              } else {
-                rememberReceivedOcmWebApp(userId, space.id, receivedOcmWebAppLookup.ocmWebApp)
-              }
+          if (ocmShareSpace && receivedOcmWebAppLookup) {
+            const userIdAtCommit = receivedOcmWebAppUserId(userStore)
+            const canCommitOcmMetadata = userIdAtCommit === loadUserId && !isAbortedSignal(signal1)
+            if (userIdAtCommit !== loadUserId) {
+              syncReceivedOcmWebAppMemoUser(userIdAtCommit)
             }
-            // A user switch during the lookup must not publish that user's metadata.
-            const userIdAtPublish = receivedOcmWebAppUserId(userStore)
-            if (userIdAtPublish === userId) {
-              const ocmWebApp = receivedOcmWebAppLookup.ocmWebApp
-              space.ocmWebApp = ocmWebApp
-              spacesStore.updateSpaceField({
-                id: space.id,
-                field: 'ocmWebApp',
-                value: ocmWebApp
-              })
 
-              // TODO: remove when server returns share id for federated shares in propfind response
+            if (receivedOcmWebAppLookup.kind === 'resolved') {
+              if (canCommitOcmMetadata) {
+                if (storeReceivedOcmWebApp) {
+                  rememberReceivedOcmWebApp(loadUserId, space.id, receivedOcmWebAppLookup.ocmWebApp)
+                }
+                const ocmWebApp = receivedOcmWebAppLookup.ocmWebApp
+                space.ocmWebApp = ocmWebApp
+                spacesStore.updateSpaceField({
+                  id: space.id,
+                  field: 'ocmWebApp',
+                  value: ocmWebApp
+                })
+
+                // TODO: remove when server returns share id for federated shares in propfind response
+                resources.forEach((resource) => {
+                  resource.remoteItemId = space.id
+                  resource.ocmWebApp = ocmWebApp
+                })
+                currentFolder.remoteItemId = space.id
+                currentFolder.ocmWebApp = ocmWebApp
+              }
+            } else {
+              if (previousShareOcmWebApp !== undefined) {
+                space.ocmWebApp = previousShareOcmWebApp
+                spacesStore.updateSpaceField({
+                  id: space.id,
+                  field: 'ocmWebApp',
+                  value: previousShareOcmWebApp
+                })
+              }
               resources.forEach((resource) => {
                 resource.remoteItemId = space.id
-                resource.ocmWebApp = ocmWebApp
               })
               currentFolder.remoteItemId = space.id
-              currentFolder.ocmWebApp = ocmWebApp
             }
-          } else {
-            if (previousShareOcmWebApp !== undefined) {
-              space.ocmWebApp = previousShareOcmWebApp
-              spacesStore.updateSpaceField({
-                id: space.id,
-                field: 'ocmWebApp',
-                value: previousShareOcmWebApp
-              })
-            }
+          } else if (!ocmShareSpace) {
             resources.forEach((resource) => {
               resource.remoteItemId = space.id
             })
             currentFolder.remoteItemId = space.id
+            clearInheritedOcmWebApp(currentFolder, resources)
+            if (space.ocmWebApp !== undefined) {
+              space.ocmWebApp = undefined
+              spacesStore.updateSpaceField({
+                id: space.id,
+                field: 'ocmWebApp',
+                value: undefined
+              })
+            }
           }
         } else {
           clearInheritedOcmWebApp(currentFolder, resources)
@@ -248,9 +264,10 @@ export class FolderLoaderSpace implements FolderLoader {
         resourcesStore.initResourceList({ currentFolder, resources })
       } catch (error) {
         resourcesStore.setCurrentFolder(null)
-        console.error('Failed to load folder')
+        const details = getHttpErrorLogDetails(error)
+        console.error('Failed to load folder', details)
 
-        if (isAuthError(error)) {
+        if (details.statusCode === 401) {
           return authService.handleAuthError(unref(router.currentRoute))
         }
       }
@@ -386,10 +403,11 @@ async function loadReceivedOcmWebApp({
   try {
     driveItems = await graphClient.driveItems.listSharedWithMe({ signal })
   } catch (error) {
-    if (signal?.aborted || isCancelledLoad(error) || isAuthError(error)) {
+    const details = getHttpErrorLogDetails(error)
+    if (signal?.aborted || isCancelledLoad(error) || details.statusCode === 401) {
       throw error
     }
-    console.error('Failed to load received OCM web app metadata')
+    console.error('Failed to load received OCM web app metadata', details)
     return { kind: 'transient_failure' }
   }
 
@@ -418,10 +436,18 @@ async function loadReceivedOcmWebApp({
         serverUrl
       }).ocmWebApp
     }
-  } catch {
-    console.error('Failed to map received OCM web app metadata')
+  } catch (error) {
+    console.error('Failed to map received OCM web app metadata', getHttpErrorLogDetails(error))
     return { kind: 'resolved', ocmWebApp: undefined }
   }
+}
+
+function isOcmShareSpace(space: SpaceResource): boolean {
+  return (
+    isShareSpaceResource(space) &&
+    typeof space.driveAlias === 'string' &&
+    space.driveAlias.startsWith('ocm-share/')
+  )
 }
 
 function receivedOcmWebAppUserId(userStore: UserStore): string | undefined {
@@ -442,17 +468,6 @@ function copyOcmWebApp(ocmWebApp: Resource['ocmWebApp']): Resource['ocmWebApp'] 
 
 function isAbortedSignal(signal: unknown): boolean {
   return isRecord(signal) && signal.aborted === true
-}
-
-function isAuthError(error: unknown): boolean {
-  if (!isRecord(error)) {
-    return false
-  }
-  if (error.statusCode === 401) {
-    return true
-  }
-  const response = error.response
-  return isRecord(response) && response.status === 401
 }
 
 function isCancelledLoad(error: unknown): boolean {

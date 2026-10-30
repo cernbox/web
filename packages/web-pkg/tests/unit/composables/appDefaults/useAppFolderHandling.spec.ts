@@ -1,7 +1,12 @@
+import { AxiosError, AxiosHeaders } from 'axios'
 import { ref } from 'vue'
 import { mock } from 'vitest-mock-extended'
 import { flushPromises } from '@vue/test-utils'
-import { defaultComponentMocks, getComposableWrapper, RouteLocation } from '@ownclouders/web-test-helpers'
+import {
+  defaultComponentMocks,
+  getComposableWrapper,
+  RouteLocation
+} from '@ownclouders/web-test-helpers'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 import {
   useAppFolderHandling,
@@ -137,10 +142,41 @@ describe('useAppFolderHandling', () => {
 
     expect(setCurrentFolderSpy).toHaveBeenCalledWith(null)
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder')
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder', {
+      message: 'leaked'
+    })
     expect(consoleErrorSpy).not.toHaveBeenCalledWith(sensitiveError)
+    expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret')
     expect(handleAuthErrorMock).not.toHaveBeenCalled()
     expect(composable.isFolderLoading.value).toBe(false)
+  })
+
+  it('does not log axios authorization headers on failure', async () => {
+    const axiosError = new AxiosError(
+      'Request failed with status code 500',
+      AxiosError.ERR_BAD_RESPONSE,
+      { headers: new AxiosHeaders({ Authorization: 'Bearer secret-token' }) },
+      {},
+      {
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new AxiosHeaders(),
+        data: {},
+        config: { headers: new AxiosHeaders() }
+      }
+    )
+    getFileInfoMock.mockRejectedValue(axiosError)
+
+    const { composable } = setupComposable()
+    await composable.loadFolderForFileContext(createContext())
+    await flushPromises()
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder', {
+      message: 'Request failed with status code 500',
+      statusCode: 500
+    })
+    expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret-token')
+    expect(handleAuthErrorMock).not.toHaveBeenCalled()
   })
 
   it('handles a 401 with statusCode via the auth service', async () => {
@@ -157,7 +193,10 @@ describe('useAppFolderHandling', () => {
 
     expect(setCurrentFolderSpy).toHaveBeenCalledWith(null)
     expect(handleAuthErrorMock).toHaveBeenCalledWith(currentRoute)
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder')
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder', {
+      message: 'unauthorized',
+      statusCode: 401
+    })
     expect(consoleErrorSpy).not.toHaveBeenCalledWith(authError)
     expect(composable.isFolderLoading.value).toBe(false)
   })
@@ -176,8 +215,11 @@ describe('useAppFolderHandling', () => {
 
     expect(setCurrentFolderSpy).toHaveBeenCalledWith(null)
     expect(handleAuthErrorMock).toHaveBeenCalledWith(currentRoute)
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder')
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app folder', {
+      statusCode: 401
+    })
     expect(consoleErrorSpy).not.toHaveBeenCalledWith(authError)
+    expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('secret.test')
     expect(composable.isFolderLoading.value).toBe(false)
   })
 })

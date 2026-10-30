@@ -90,7 +90,7 @@ import {
   isShareSpaceResource
 } from '@ownclouders/web-client'
 import { DavPermission } from '@ownclouders/web-client/webdav'
-import { HttpError } from '@ownclouders/web-client'
+import { HttpError, getHttpErrorLogDetails } from '@ownclouders/web-client'
 import { dirname } from 'path'
 import { useFileActionsOpenWithApp } from '../../composables/actions/files/useFileActionsOpenWithApp'
 import { UnsavedChangesModal } from '../Modals'
@@ -326,7 +326,7 @@ export default defineComponent({
         resourcesStore.initResourceList({ currentFolder: null, resources: [unref(resource)] })
         selectedResources.value = [unref(resource)]
       } catch (e) {
-        console.error(e)
+        console.error('Failed to load app resource', getHttpErrorLogDetails(e))
         loadingError.value = e
         loading.value = false
       }
@@ -386,7 +386,7 @@ export default defineComponent({
           })
         }
       } catch (e) {
-        console.error(e)
+        console.error('Failed to load app file', getHttpErrorLogDetails(e))
         loadingError.value = e
       } finally {
         loading.value = false
@@ -428,7 +428,7 @@ export default defineComponent({
     )
 
     const errorPopup = (error: HttpError) => {
-      console.error(error)
+      console.error('Failed to save file', getHttpErrorLogDetails(error))
       showErrorMessage({
         title: $gettext('An error occurred'),
         desc: error.message,

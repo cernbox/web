@@ -37,7 +37,7 @@ const popupWarning = {
   status: 'warning',
   desc: 'Please turn on pop-ups and redirects in your browser settings to make sure everything works right.'
 }
-const fieldNames = ['file', 'expired_session_redirect_uri', 'access-token', 'access_token'] as const
+const fieldNames = ['file', 'expired_session_redirect_uri', 'access_token'] as const
 
 const appInfo: ApplicationInformation = {
   id: 'open-cloud-mesh',
@@ -291,7 +291,7 @@ describe('remote webapp launch', () => {
   it.each([
     ['root', rootResource],
     ['nested', nestedResource]
-  ] as const)('sends only the four launcher fields for the %s file', (_label, resource) => {
+  ] as const)('sends only the three launcher fields for the %s file', (_label, resource) => {
     const { handler } = mountLaunch(track)
     const browser = installBrowser()
 
@@ -303,11 +303,10 @@ describe('remote webapp launch', () => {
     expect(fields).toEqual([
       { name: 'file', type: 'hidden', value: resource.id.toString() },
       { name: 'expired_session_redirect_uri', type: 'hidden', value: redirectUri },
-      { name: 'access-token', type: 'hidden', value: token },
       { name: 'access_token', type: 'hidden', value: token }
     ])
-    expect(fields[2]?.value).toBe(fields[3]?.value)
-    expect(form?.querySelectorAll('input')).toHaveLength(4)
+    expect(form?.querySelector('input[name="access-token"]')).toBeNull()
+    expect(form?.querySelectorAll('input')).toHaveLength(3)
     expect(redirectUri).toBe(`https://${window.location.hostname}`)
     expect(redirectUri).not.toBe(window.location.origin)
     expect(redirectUri).not.toContain(token)
@@ -341,7 +340,6 @@ describe('remote webapp launch', () => {
     expect(fieldsOf(form).map((field) => field.value)).toEqual([
       rootResource.id.toString(),
       redirectUri,
-      token,
       token
     ])
   })

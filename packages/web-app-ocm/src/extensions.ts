@@ -116,7 +116,6 @@ export const extensions = (appInfo: ApplicationInformation) => {
     submitServedWebappLaunch(remoteWindow, targetWindowName, action, [
       ['file', resource.id.toString()],
       ['expired_session_redirect_uri', expiredSessionRedirectUri],
-      ['access-token', accessToken],
       ['access_token', accessToken]
     ])
   }

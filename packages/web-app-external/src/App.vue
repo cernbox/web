@@ -97,6 +97,36 @@ export default defineComponent({
       return queryItemAsString(unref(templateIdQuery))
     })
 
+    // Anchor into the document, carried by "copy link to this comment" links and by @mention
+    // notifications. Only EuroOffice produces and understands these today, but forwarding it
+    // is app-agnostic: the parameter is only ever present on a link that app generated.
+    const actionLinkQuery = useRouteQuery('actionLink')
+    const actionLinkQueryValue = computed(() => {
+      return queryItemAsString(unref(actionLinkQuery))
+    })
+
+    /**
+     * The editor reads its anchor off its own iframe URL (editor-wopi.ejs, `queryParams`),
+     * so it has to be forwarded onto the app url the backend hands back - nothing else in
+     * the chain carries it. Lower-cased on the way out to match the convention every other
+     * parameter that template reads follows (lang, thm, dchat, formsubmit...).
+     */
+    const withActionLink = (url: string) => {
+      const actionLink = unref(actionLinkQueryValue)
+      if (!actionLink) {
+        return url
+      }
+
+      try {
+        const parsed = new URL(url)
+        parsed.searchParams.set('actionlink', actionLink)
+        return parsed.toString()
+      } catch {
+        // never worth losing the document over a failed deep link
+        return url
+      }
+    }
+
     const appName = computed(() => {
       const lowerCaseAppName = unref(route)
         .name.toString()
@@ -334,7 +364,7 @@ export default defineComponent({
           throw new Error('Error in app server response')
         }
 
-        appUrl.value = response.data.app_url
+        appUrl.value = withActionLink(response.data.app_url)
         method.value = response.data.method
 
         if (response.data.form_parameters) {

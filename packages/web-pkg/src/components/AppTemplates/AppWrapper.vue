@@ -334,7 +334,7 @@ export default defineComponent({
         if (e?.statusCode === 403 || e?.statusCode === 404) {
           showNotFoundMessage.value = true
         } else {
-          loadingError.value = new Error($gettext('This resource could not be opened'))
+          loadingError.value = e
         }
         loading.value = false
       }
@@ -395,7 +395,7 @@ export default defineComponent({
         }
       } catch (e) {
         console.error('Failed to load app file', getHttpErrorLogDetails(e))
-        loadingError.value = new Error($gettext('This resource could not be opened'))
+        loadingError.value = e
       } finally {
         loading.value = false
       }

@@ -5,7 +5,8 @@ import {
   extractExtensionFromFile,
   extractNodeId,
   Resource,
-  ResourceIndicator
+  ResourceIndicator,
+  WebDavResponseResource
 } from '../resource'
 import {
   EOS_EXPLORER_SPACE_ID,
@@ -441,3 +442,18 @@ function getPermissionsFromGraphPermission(
   }
   return []
 }
+
+/**
+ * A favorite resource is considered to be a space if its path has 3 components (e.g. /spaces/spaceId, ['', 'spaces', 'spaceId']).
+ * The id is always before the first '!' in the fileid property of the resource.
+ */
+export const getFavoriteSpaceIds = (favorites: WebDavResponseResource[]) =>
+  new Set(
+    favorites
+      .filter((f) => f.filename.split('/').length === 3)
+      .map((f) => f.props.fileid.split('!')[0])
+  )
+
+/** File ids of all favorites, to match against a resource's fileId. */
+export const getFavoritesFileIds = (favorites: WebDavResponseResource[]) =>
+  new Set(favorites.map((f) => f.props.fileid))

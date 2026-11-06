@@ -17,6 +17,7 @@ import { useGettext } from 'vue3-gettext'
 import { useArchiverService } from '../../archiverService'
 import { formatFileSize } from '../../../helpers/filesize'
 import { useAuthStore, useConfigStore, useMessages } from '../../piniaStores'
+import { eventBus } from '../../../services'
 
 export const useFileActionsDownloadArchive = () => {
   const { showErrorMessage } = useMessages()
@@ -51,6 +52,9 @@ export const useFileActionsDownloadArchive = () => {
             publicToken: space.id as string,
             publicLinkPassword: authStore.publicLinkPassword
           })
+      })
+      .then(() => {
+        eventBus.publish('app.files.archive.downloaded', { resources })
       })
       .catch((e) => {
         console.error(e)

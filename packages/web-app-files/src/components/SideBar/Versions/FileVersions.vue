@@ -55,6 +55,7 @@
 <script lang="ts">
 import { DavPermission } from '@ownclouders/web-client/webdav'
 import {
+  eventBus,
   formatRelativeDateFromHTTP,
   formatDateFromJSDate,
   formatFileSize,
@@ -105,6 +106,7 @@ export default defineComponent({
     const revertToVersion = async (version: Resource) => {
       try {
         await clientService.webdav.restoreFileVersion(unref(space), unref(resource), version.name)
+        eventBus.publish('app.files.versions.restored')
         showMessage({ title: $gettext('Version was successfully restored') })
       } catch (error) {
         showErrorMessage({

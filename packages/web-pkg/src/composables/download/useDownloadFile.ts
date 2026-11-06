@@ -1,7 +1,7 @@
 import { useClientService } from '../clientService'
 import { triggerDownloadWithFilename } from '../../../src/helpers'
 import { useGettext } from 'vue3-gettext'
-import { ClientService } from '../../services'
+import { ClientService, eventBus } from '../../services'
 import { useCapabilityStore, useMessages, useUserStore } from '../piniaStores'
 import { Resource, SpaceResource } from '@ownclouders/web-client'
 
@@ -25,6 +25,7 @@ export const useDownloadFile = (options?: DownloadFileOptions) => {
         username: userStore.user?.onPremisesSamAccountName
       })
       triggerDownloadWithFilename(url, file.name)
+      eventBus.publish('app.files.downloaded', { resource: file, version })
     } catch (e) {
       console.error(e)
       showErrorMessage({

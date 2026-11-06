@@ -141,7 +141,7 @@ describe('AppWrapper', () => {
       const wrapper = mountWrapper()
       await flushPromises()
 
-      expect(wrapper.vm.loadingError).toBe(sensitiveError)
+      expect(wrapper.vm.loadingError.message).toBe('This file could not be opened')
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
       expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load app resource', {
         message: 'Service unavailable'

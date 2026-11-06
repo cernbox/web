@@ -12,6 +12,7 @@
       @close="closeApp"
     />
     <loading-screen v-if="isLoading" />
+    <not-found-message v-else-if="showNotFoundMessage" />
     <error-screen v-else-if="loadingError" :message="loadingError.message" />
     <div
       v-else
@@ -45,6 +46,7 @@ import AppTopBar from '../AppTopBar.vue'
 import ErrorScreen from './PartialViews/ErrorScreen.vue'
 import LoadingScreen from './PartialViews/LoadingScreen.vue'
 import FileSideBar from '../SideBar/FileSideBar.vue'
+import NotFoundMessage from '../FilesList/NotFoundMessage.vue'
 import {
   UrlForResourceOptions,
   queryItemAsString,
@@ -103,7 +105,8 @@ export default defineComponent({
     AppTopBar,
     FileSideBar,
     ErrorScreen,
-    LoadingScreen
+    LoadingScreen,
+    NotFoundMessage
   },
   props: {
     // TODO: Add app-top-bar-actions array prop and pass to AppTopBar
@@ -172,6 +175,7 @@ export default defineComponent({
     const isReadOnly = ref(false)
     const serverContent = ref()
     const currentContent = ref()
+    const showNotFoundMessage = ref(false)
 
     const { actions: saveAsActions } = useFileActionsSaveAs({ content: currentContent })
 
@@ -327,10 +331,10 @@ export default defineComponent({
         selectedResources.value = [unref(resource)]
       } catch (e) {
         console.error('Failed to load app resource', getHttpErrorLogDetails(e))
-        if (e?.statusCode === 403) {
-          loadingError.value = new Error($gettext("You don't have permission to open this file."))
+        if (e?.statusCode === 403 || e?.statusCode === 404) {
+          showNotFoundMessage.value = true
         } else {
-          loadingError.value = e
+          loadingError.value = new Error($gettext('This resource could not be opened'))
         }
         loading.value = false
       }
@@ -391,7 +395,7 @@ export default defineComponent({
         }
       } catch (e) {
         console.error('Failed to load app file', getHttpErrorLogDetails(e))
-        loadingError.value = e
+        loadingError.value = new Error($gettext('This resource could not be opened'))
       } finally {
         loading.value = false
       }
@@ -721,7 +725,8 @@ export default defineComponent({
       pageTitle,
       resource,
       space,
-      slotAttrs
+      slotAttrs,
+      showNotFoundMessage
     }
   }
 })

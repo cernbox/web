@@ -53,12 +53,12 @@ import {
   createLocationSpaces,
   isLocationPublicActive,
   isLocationSpacesActive
-} from '@ownclouders/web-pkg'
+} from '../../router'
 
-import { useRouter } from '@ownclouders/web-pkg'
+import { useRouter } from '../../composables/router'
 import { defineComponent, PropType } from 'vue'
 import { SpaceResource } from '@ownclouders/web-client'
-import { createFileRouteOptions } from '@ownclouders/web-pkg'
+import { createFileRouteOptions } from '../../helpers/router'
 
 export default defineComponent({
   name: 'NotFoundMessage',

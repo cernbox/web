@@ -162,12 +162,12 @@ import {
   useOpenWithDefaultApp,
   useKeyboardActions,
   useRoute,
-  useRouteQuery
+  useRouteQuery,
+  NotFoundMessage
 } from '@ownclouders/web-pkg'
 import CreateAndUpload from '../../components/AppBar/CreateAndUpload.vue'
 import FilesViewWrapper from '../../components/FilesViewWrapper.vue'
 import ListInfo from '../../components/FilesList/ListInfo.vue'
-import NotFoundMessage from '../../components/FilesList/NotFoundMessage.vue'
 import QuickActions from '../../components/FilesList/QuickActions.vue'
 import ResourceDetails from '../../components/FilesList/ResourceDetails.vue'
 import { ResourceTiles } from '@ownclouders/web-pkg'

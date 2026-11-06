@@ -8,10 +8,9 @@
 <script lang="ts">
 import { computed, defineComponent, ref, unref, watchEffect } from 'vue'
 import { useRoute, useRouter, useSpacesLoading, useSpacesStore } from '@ownclouders/web-pkg'
-import { AppLoadingSpinner } from '@ownclouders/web-pkg'
+import { AppLoadingSpinner, NotFoundMessage } from '@ownclouders/web-pkg'
 import { urlJoin } from '@ownclouders/web-client'
 import { createFileRouteOptions } from '@ownclouders/web-pkg'
-import NotFoundMessage from '../../components/FilesList/NotFoundMessage.vue'
 
 // 'personal/home' is used as personal drive alias from static contexts
 // (i.e. places where we can't load the actual personal space)

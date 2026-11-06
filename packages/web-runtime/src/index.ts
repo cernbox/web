@@ -45,6 +45,7 @@ import Avatar from './components/Avatar.vue'
 import focusMixin from './mixins/focusMixin'
 import { extensionPoints } from './extensionPoints'
 import { isSilentRedirectRoute } from './helpers/silentRedirect'
+import { startMatomo } from './container/matomo'
 
 export const bootstrapApp = async (configurationPath: string, appsReadyCallback: () => void) => {
   const isSilentRedirect = isSilentRedirectRoute()
@@ -97,6 +98,15 @@ export const bootstrapApp = async (configurationPath: string, appsReadyCallback:
 
     announceUppyService({ app })
     startSentry(configStore, app)
+    startMatomo({
+      configStore,
+      router,
+      appsStore,
+      spacesStore,
+      authStore,
+      userStore,
+      messagesStore
+    })
     const appProviderService = announceAppProviderService({
       app,
       serverUrl: configStore.serverUrl,

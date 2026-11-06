@@ -28,6 +28,7 @@ import {
   useSharesStore
 } from '../../piniaStores'
 import { useRestoreWorker } from '../../webWorkers/restoreWorker'
+import { eventBus } from '../../../services'
 
 export const useFileActionsRestore = () => {
   const { showMessage, showErrorMessage } = useMessages()
@@ -138,6 +139,7 @@ export const useFileActionsRestore = () => {
           })
         }
         showMessage({ title })
+        eventBus.publish('app.files.trash.restored', { count: successful.length })
 
         // user hasn't navigated to another location meanwhile
         if (

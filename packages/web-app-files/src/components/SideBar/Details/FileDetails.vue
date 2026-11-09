@@ -13,6 +13,14 @@
         <oc-spinner v-if="isPreviewLoading" />
       </div>
       <div
+        v-else-if="compactHeader"
+        class="details-icon-compact oc-flex oc-flex-middle oc-mb-m"
+        data-testid="compact-header"
+      >
+        <resource-icon :resource="resource" size="xlarge" />
+        <span class="oc-text-bold oc-text-truncate oc-ml-s" v-text="resource.name" />
+      </div>
+      <div
         v-else
         class="details-icon-wrapper oc-width-1-1 oc-flex oc-flex-middle oc-flex-center oc-mb"
       >
@@ -180,6 +188,12 @@ export default defineComponent({
       type: Boolean,
       required: false,
       default: true
+    },
+    // a small icon and the name instead of the big icon, when there is no preview
+    compactHeader: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   setup(props) {

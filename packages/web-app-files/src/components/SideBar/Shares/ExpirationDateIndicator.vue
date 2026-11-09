@@ -6,7 +6,9 @@
       name="calendar-event"
       :color="isExpired ? 'var(--oc-color-swatch-danger-muted)' : ''"
       fill-type="line"
+      :size="withText ? 'small' : 'medium'"
     />
+    <span v-if="withText" class="oc-ml-xs" aria-hidden="true" v-text="expirationDateText" />
     <span class="oc-invisible-sr" v-text="screenreaderShareExpiration" />
   </div>
 </template>
@@ -20,7 +22,9 @@ import { useGettext } from 'vue3-gettext'
 export default defineComponent({
   name: 'ExpirationDateIndicator',
   props: {
-    expirationDate: { type: Object as PropType<DateTime>, required: false, default: null }
+    expirationDate: { type: Object as PropType<DateTime>, required: false, default: null },
+    // shows when it expires next to the icon, not only in the tooltip
+    withText: { type: Boolean, required: false, default: false }
   },
   setup(props) {
     const { $gettext, current: currentLanguage } = useGettext()
@@ -47,6 +51,11 @@ export default defineComponent({
       )
     })
 
+    const expirationDateText = computed(() =>
+      unref(isExpired)
+        ? $gettext('Expired %{timeToExpiry}', { timeToExpiry: unref(expirationDateRelative) })
+        : $gettext('Expires %{timeToExpiry}', { timeToExpiry: unref(expirationDateRelative) })
+    )
     const screenreaderShareExpiration = computed(() => {
       const expire = unref(isExpired) ? 'expired' : 'expires'
 
@@ -58,6 +67,7 @@ export default defineComponent({
 
     return {
       isExpired,
+      expirationDateText,
       expirationDateTooltip,
       screenreaderShareExpiration
     }

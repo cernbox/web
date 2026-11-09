@@ -25,7 +25,8 @@ export const useFileActionsShowDetails = () => {
         if (isLocationTrashActive(router, 'files-trash-generic')) {
           return false
         }
-        return resources.length > 0
+        // the details dialog shows one item, several items had the sidebar
+        return resources.length === 1
       },
       handler({ resources }) {
         resourcesStore.setSelection(resources.map(({ id }) => id))

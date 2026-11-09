@@ -1,8 +1,8 @@
 import {
   ActionExtension,
+  CustomComponentExtension,
   ExtensionPoint,
-  FolderViewExtension,
-  SidebarPanelExtension
+  FolderViewExtension
 } from '@ownclouders/web-pkg'
 import { computed } from 'vue'
 
@@ -31,10 +31,17 @@ export const defaultActionsExtensionPoint: ExtensionPoint<ActionExtension> = {
   extensionType: 'action',
   multiple: true
 }
-export const fileSideBarExtensionPoint: ExtensionPoint<SidebarPanelExtension<any, any, any>> = {
-  id: 'global.files.sidebar',
-  extensionType: 'sidebarPanel',
-  multiple: true
+export const shareDialogExtensionPoint: ExtensionPoint<CustomComponentExtension> = {
+  id: 'global.files.share-dialog',
+  extensionType: 'customComponent'
+}
+export const detailsDialogExtensionPoint: ExtensionPoint<CustomComponentExtension> = {
+  id: 'global.files.details-dialog',
+  extensionType: 'customComponent'
+}
+export const spaceMembersDialogExtensionPoint: ExtensionPoint<CustomComponentExtension> = {
+  id: 'global.files.space-members-dialog',
+  extensionType: 'customComponent'
 }
 export const folderViewsFolderExtensionPoint: ExtensionPoint<FolderViewExtension> = {
   id: 'app.files.folder-views.folder',
@@ -61,7 +68,9 @@ export const extensionPoints = () => {
       batchActionsExtensionPoint,
       contextActionsExtensionPoint,
       defaultActionsExtensionPoint,
-      fileSideBarExtensionPoint,
+      shareDialogExtensionPoint,
+      detailsDialogExtensionPoint,
+      spaceMembersDialogExtensionPoint,
       folderViewsFolderExtensionPoint,
       folderViewsFavoritesExtensionPoint,
       folderViewsOfficeFilesExtensionPoint,

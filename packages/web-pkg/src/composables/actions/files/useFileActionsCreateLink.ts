@@ -73,14 +73,15 @@ export const useFileActionsCreateLink = ({
         }
       }
 
-      const alertRwFolders = configStore.options.alertRwFolders
+      // the default of alertRwFolders is an empty object, so check for the message itself
+      const alertRwFolders = configStore.options.alertRwFolders ?? {}
+      const rwFolderMessage = alertRwFolders[language.current] ?? Object.values(alertRwFolders)[0]
 
-      if (options.isRW && options.isFolder && alertRwFolders) {
+      if (options.isRW && options.isFolder && rwFolderMessage) {
         dispatchModal({
           variation: 'warning',
           title: 'Default expiration date',
-          message:
-            alertRwFolders[language.current] ?? alertRwFolders[Object.keys(alertRwFolders)[0]],
+          message: rwFolderMessage,
           confirmText: 'Got it'
         })
       }

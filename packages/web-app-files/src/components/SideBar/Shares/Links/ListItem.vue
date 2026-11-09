@@ -22,6 +22,20 @@
             class="link-current-role"
             v-text="$gettext(currentLinkRoleLabel)"
           />
+          <!-- in words next to the permission, so the row says what the link does -->
+          <span
+            v-if="linkShare.hasPassword"
+            class="oc-files-file-link-has-password oc-flex oc-flex-middle oc-ml-s oc-text-muted"
+          >
+            <oc-icon name="lock-password" fill-type="line" size="small" />
+            <span class="oc-ml-xs" v-text="$gettext('Password')" />
+          </span>
+          <expiration-date-indicator
+            v-if="linkShare.expirationDateTime"
+            :expiration-date="DateTime.fromISO(linkShare.expirationDateTime)"
+            with-text
+            class="oc-ml-s oc-text-muted"
+          />
         </div>
         <oc-checkbox
           v-if="isModifiable && isCurrentLinkRoleUploader"
@@ -32,21 +46,6 @@
       </div>
     </div>
     <div class="oc-flex oc-flex-middle">
-      <div class="oc-flex">
-        <oc-icon
-          v-if="linkShare.hasPassword"
-          v-oc-tooltip="$gettext('This link is password-protected')"
-          name="lock-password"
-          class="oc-files-file-link-has-password oc-mr-xs"
-          fill-type="line"
-          :aria-label="$gettext('This link is password-protected')"
-        />
-      </div>
-      <expiration-date-indicator
-        v-if="linkShare.expirationDateTime"
-        :expiration-date="DateTime.fromISO(linkShare.expirationDateTime)"
-        class="oc-mx-xs"
-      />
       <copy-link :link-share="linkShare" :disabled="isExpired" class="oc-mx-xs" />
       <edit-dropdown
         :can-rename="canRename"
@@ -194,3 +193,17 @@ export default defineComponent({
   }
 })
 </script>
+
+<style lang="scss" scoped>
+// the name, permission, password and expiry take the free width, the buttons stay right
+.files-links-details > :first-child,
+.files-links-name-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.oc-files-file-link-has-password,
+.expiration-date-indicator {
+  flex-shrink: 0;
+}
+</style>

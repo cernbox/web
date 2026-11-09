@@ -53,6 +53,7 @@ import {
   ApplicationInformation,
   AppMenuItemExtension,
   CustomComponentTarget,
+  useActiveApp,
   useAuthStore,
   useCapabilityStore,
   useConfigStore,
@@ -92,6 +93,7 @@ export default {
 
     const authStore = useAuthStore()
     const router = useRouter()
+    const activeApp = useActiveApp()
     const { isEnabled: isEmbedModeEnabled } = useEmbedMode()
 
     const appMenuExtensions = computed(() => {
@@ -129,6 +131,10 @@ export default {
     })
 
     const isSideBarToggleVisible = computed(() => {
+      // the files app has no sidebar, it opens dialogs instead
+      if (unref(activeApp) === 'files') {
+        return false
+      }
       return authStore.userContextReady || authStore.publicLinkContextReady
     })
     const isSideBarToggleDisabled = computed(() => {

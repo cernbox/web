@@ -67,7 +67,10 @@
         </template>
       </oc-select>
     </div>
-    <div class="oc-flex oc-flex-between oc-flex-wrap oc-mb-l oc-mt-s">
+    <div
+      v-show="!optionsAfterPick || selectedCollaborators.length"
+      class="oc-flex oc-flex-between oc-flex-wrap oc-mb-l oc-mt-s"
+    >
       <role-dropdown
         :key="currentShareRoleType.id"
         mode="create"
@@ -204,6 +207,12 @@ export default defineComponent({
       type: String,
       required: false,
       default: () => $gettext('Share')
+    },
+    // shows the permission, notify and share button only once someone is picked
+    optionsAfterPick: {
+      type: Boolean,
+      required: false,
+      default: false
     },
     inviteLabel: {
       type: String,

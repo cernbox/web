@@ -28,6 +28,10 @@ const defaultSpaceIcon: IconType = {
   name: 'layout-grid',
   color: 'var(--oc-color-swatch-passive-default)'
 }
+const shortcutIcon: IconType = {
+  name: 'resource-type-url',
+  color: 'var(--oc-color-text-default)'
+}
 const defaultFallbackIcon: IconType = {
   name: 'resource-type-file',
   color: 'var(--oc-color-text-default)'
@@ -83,6 +87,10 @@ export default defineComponent({
       }
       if (unref(isFolder)) {
         return defaultFolderIcon
+      }
+      // links which can be navigated look like shortcuts, the others like plain files
+      if (props.resource.linkTarget) {
+        return shortcutIcon
       }
 
       const icon =

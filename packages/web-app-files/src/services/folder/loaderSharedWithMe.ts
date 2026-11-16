@@ -3,7 +3,6 @@ import { Router } from 'vue-router'
 import { useTask } from 'vue-concurrency'
 import { buildIncomingShareResource, call } from '@ownclouders/web-client'
 import { isLocationSharesActive } from '@ownclouders/web-pkg'
-import { markFavorites } from '../favorites'
 
 export class FolderLoaderSharedWithMe implements FolderLoader {
   public isEnabled(): boolean {
@@ -48,8 +47,6 @@ export class FolderLoaderSharedWithMe implements FolderLoader {
           serverUrl: configStore.serverUrl
         })
       )
-
-      yield* markFavorites(resources, clientService, spacesStore, signal1)
 
       resourcesStore.initResourceList({ currentFolder: null, resources })
     })

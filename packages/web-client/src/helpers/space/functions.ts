@@ -165,6 +165,7 @@ export function buildSpace(
     serverUrl?: string
     webDavPath?: string
     webDavTrashPath?: string
+    root?: DriveItem & { '@libre.graph.me.labels'?: string[] }
   },
   graphRoles: Record<string, ShareRole>
 ): SpaceResource {
@@ -221,7 +222,7 @@ export function buildSpace(
     indicators: [] as ResourceIndicator[],
     tags: [] as string[],
     permissions: '',
-    starred: false,
+    starred: data.root?.['@libre.graph.me.labels']?.includes('favorite') ?? false,
     etag: '',
     shareTypes: [] as number[],
     privateLink: data.webUrl,

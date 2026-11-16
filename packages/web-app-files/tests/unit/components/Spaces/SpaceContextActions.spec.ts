@@ -7,12 +7,12 @@ import {
   RouteLocation
 } from '@ownclouders/web-test-helpers'
 import { mock } from 'vitest-mock-extended'
-import { Drive } from '@ownclouders/web-client/graph/generated'
 
-const spaceMock = mock<Drive>({
+const spaceMock = mock<Parameters<typeof buildSpace>[0]>({
   id: '1',
   root: {
-    permissions: [{ '@libre.graph.permissions.actions': [], grantedToV2: { user: { id: '1' } } }]
+    permissions: [{ '@libre.graph.permissions.actions': [], grantedToV2: { user: { id: '1' } } }],
+    '@libre.graph.me.labels': []
   },
   driveType: 'project',
   special: null

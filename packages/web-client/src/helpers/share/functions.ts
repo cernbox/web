@@ -94,7 +94,7 @@ export function buildIncomingShareResource({
   graphRoles,
   serverUrl
 }: {
-  driveItem: DriveItem
+  driveItem: DriveItem & { '@libre.graph.me.labels'?: string[] }
   graphRoles: Record<string, ShareRole>
   serverUrl: string
 }): IncomingShareResource {
@@ -155,6 +155,7 @@ export function buildIncomingShareResource({
       : undefined,
     syncEnabled: driveItem['@client.synchronize'],
     hidden: driveItem['@UI.Hidden'],
+    starred: driveItem['@libre.graph.me.labels']?.includes('favorite') ?? false,
     shareRoles,
     sharePermissions,
     outgoing: false,
@@ -183,7 +184,7 @@ export function buildOutgoingShareResource({
   user,
   serverUrl
 }: {
-  driveItem: DriveItem
+  driveItem: DriveItem & { '@libre.graph.me.labels'?: string[] }
   user: User
   serverUrl: string
 }): OutgoingShareResource {
@@ -220,6 +221,7 @@ export function buildOutgoingShareResource({
     isFolder: !!driveItem.folder,
     type: !!driveItem.folder ? 'folder' : 'file',
     mimeType: driveItem.file?.mimeType || 'httpd/unix-directory',
+    starred: driveItem['@libre.graph.me.labels']?.includes('favorite') ?? false,
     outgoing: true,
     privateLink: driveItem.webUrl ?? urlJoin(serverUrl, 'f', driveItem.id),
     canRename: () => true,

@@ -454,7 +454,3 @@ export const getFavoriteSpaceIds = (favorites: WebDavResponseResource[]) =>
       .filter((f) => f.filename.split('/').length === 3)
       .map((f) => f.props.fileid.split('!')[0])
   )
-
-/** File ids of all favorites, to match against a resource's fileId. */
-export const getFavoritesFileIds = (favorites: WebDavResponseResource[]) =>
-  new Set(favorites.map((f) => f.props.fileid))

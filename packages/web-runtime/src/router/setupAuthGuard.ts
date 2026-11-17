@@ -48,6 +48,9 @@ export const setupAuthGuard = (router: Router) => {
         if (authService.lowAssuranceError) {
           return { name: 'accessDenied', query: { reason: 'lowAssuranceLevel' } }
         }
+        if (authService.loginError) {
+          return { name: 'accessDenied', query: { reason: 'loginError' } }
+        }
         if (unref(isDelegatingAuthentication)) {
           return { path: '/web-oidc-callback' }
         }

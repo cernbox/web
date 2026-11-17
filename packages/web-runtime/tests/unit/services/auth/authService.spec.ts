@@ -195,6 +195,7 @@ describe('AuthService', () => {
         name: 'accessDenied',
         query: { reason: 'loginError' }
       })
+      expect(authService.loginError).toBe(true)
     })
 
     it('shows session expired modal for mid-session failures', async () => {

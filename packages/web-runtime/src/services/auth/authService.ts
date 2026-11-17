@@ -46,6 +46,7 @@ export class AuthService implements AuthServiceInterface {
   private accessTokenExpiryThreshold = 10
 
   public lowAssuranceError: boolean
+  public loginError: boolean
 
   public initialize(
     configStore: ConfigStore,
@@ -62,6 +63,7 @@ export class AuthService implements AuthServiceInterface {
     this.clientService = clientService
     this.router = router
     this.lowAssuranceError = false
+    this.loginError = false
     this.ability = ability
     this.language = language
     this.userStore = userStore
@@ -372,6 +374,7 @@ export class AuthService implements AuthServiceInterface {
     // than showing the "session expired" modal which implies a prior session.
     if (!this.authStore.userContextReady) {
       this.tokenTimerWorker?.resetTokenTimer()
+      this.loginError = true
       return this.router.push({ name: 'accessDenied', query: { reason: 'loginError' } })
     }
 

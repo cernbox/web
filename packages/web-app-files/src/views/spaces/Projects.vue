@@ -321,7 +321,6 @@ export default defineComponent({
         graphClient: clientService.graphAuthenticated,
         signal
       })
-
       yield spacesStore.loadMountPoints({
         graphClient: clientService.graphAuthenticated,
         signal,

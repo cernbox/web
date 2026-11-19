@@ -96,6 +96,7 @@ import { HttpError, getHttpErrorLogDetails } from '@ownclouders/web-client'
 import { dirname } from 'path'
 import { useFileActionsOpenWithApp } from '../../composables/actions/files/useFileActionsOpenWithApp'
 import { UnsavedChangesModal } from '../Modals'
+import { AppWrapperServerState } from './types'
 import { formatFileSize, getSharedDriveItem } from '../../helpers'
 import toNumber from 'lodash-es/toNumber'
 
@@ -693,6 +694,7 @@ export default defineComponent({
       applicationConfig: unref(applicationConfig),
       currentFileContext: unref(currentFileContext),
       currentContent: unref(currentContent),
+      currentETag: unref(currentETag),
       isFolderLoading: unref(isFolderLoading),
 
       'onUpdate:resource': (value: Resource) => {
@@ -702,6 +704,14 @@ export default defineComponent({
       },
       'onUpdate:currentContent': (value: unknown) => {
         currentContent.value = value
+      },
+      // An app that edits the file together with others hears about their saves. Without their
+      // etag its own next save would fail as a conflict, and with their content it is clean again.
+      'onUpdate:serverState': ({ etag, content }: AppWrapperServerState) => {
+        currentETag.value = etag
+        if (content !== undefined) {
+          serverContent.value = content
+        }
       },
 
       onSave: save,

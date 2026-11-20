@@ -26,9 +26,9 @@ describe('useOfficePostMessageRegistry', () => {
     expect(realRegistrations.some((r) => r.match('collabora-something'))).toBe(true)
   })
 
-  it('has a real matcher for EuroOffice/OnlyOffice app names', () => {
+  it('has a real matcher for EuroOffice app names', () => {
     expect(realRegistrations.some((r) => r.match('EuroOffice'))).toBe(true)
-    expect(realRegistrations.some((r) => r.match('OnlyOffice'))).toBe(true)
+    expect(realRegistrations.some((r) => r.match('EuroOffice Writer'))).toBe(true)
   })
 
   it('has a real matcher for MS365, exclusive to that app name', () => {

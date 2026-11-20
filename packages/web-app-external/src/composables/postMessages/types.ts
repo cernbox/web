@@ -23,7 +23,7 @@ export interface OfficePostMessageRegistration {
   // only populated by MS365 today, exposed generically so App.vue can react to it
   isLoaded?: Ref<boolean>
   // whether there are @mentions queued for notifyMentionedUsers that haven't been flushed yet;
-  // only populated by Collabora today, exposed generically so App.vue can warn before unload
+  // populated by Collabora and EuroOffice, exposed generically so App.vue can warn before unload
   hasPendingMentions?: Ref<boolean>
 }
 

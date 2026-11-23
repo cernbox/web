@@ -17,6 +17,8 @@ import * as webClientGraphGenerated from '@ownclouders/web-client/graph/generate
 import * as webClientOcs from '@ownclouders/web-client/ocs'
 import * as webClientSse from '@ownclouders/web-client/sse'
 import * as webClientWebdav from '@ownclouders/web-client/webdav'
+import * as yjs from 'yjs'
+import * as yProtocolsAwareness from 'y-protocols/awareness'
 
 import { urlJoin } from '@ownclouders/web-client'
 import { App } from 'vue'
@@ -42,7 +44,10 @@ const injectionMap = {
   '@ownclouders/web-client/sse': webClientSse,
   '@ownclouders/web-client/webdav': webClientWebdav,
   'web-pkg': webPkg,
-  'web-client': webClient
+  'web-client': webClient,
+  // one Yjs for web and the apps: a Y.Doc only works with the copy of Yjs that made it
+  yjs,
+  'y-protocols/awareness': yProtocolsAwareness
 }
 
 for (const [key, value] of Object.entries(injectionMap)) {

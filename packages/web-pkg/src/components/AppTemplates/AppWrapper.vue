@@ -98,6 +98,8 @@ import { useFileActionsOpenWithApp } from '../../composables/actions/files/useFi
 import { UnsavedChangesModal } from '../Modals'
 import { formatFileSize, getSharedDriveItem } from '../../helpers'
 import toNumber from 'lodash-es/toNumber'
+import { YjsOptions } from './types'
+import { useAppWrapperYjs } from './useAppWrapperYjs'
 
 export default defineComponent({
   name: 'AppWrapper',
@@ -135,6 +137,11 @@ export default defineComponent({
     disableAutoSave: {
       type: Boolean,
       default: false
+    },
+    /** Live editing through the Yjs server, see `YjsOptions`. */
+    yjs: {
+      type: Object as PropType<YjsOptions>,
+      default: null
     }
   },
   setup(props) {
@@ -176,11 +183,21 @@ export default defineComponent({
     const serverContent = ref()
     const currentContent = ref()
     const showNotFoundMessage = ref(false)
+    /**
+     * Id of the resource `currentContent` was fetched for. `resource` is swapped
+     * ahead of the body; the Yjs session's `enabled` gate compares the two.
+     */
+    const contentResourceId = ref<string>()
 
     const { actions: saveAsActions } = useFileActionsSaveAs({ content: currentContent })
 
     const isEditor = computed(() => {
-      return Boolean(props.wrappedComponent.emits?.includes('update:currentContent'))
+      // A collaborative app drives its content through the Yjs session instead
+      // of `update:currentContent`, so opting in makes it an editor.
+      return (
+        Boolean(props.yjs) ||
+        Boolean(props.wrappedComponent.emits?.includes('update:currentContent'))
+      )
     })
 
     const hasProp = (name: string) => {
@@ -188,21 +205,16 @@ export default defineComponent({
     }
 
     const isDirty = computed(() => {
+      // Peers' edits reach a read-only editor too, but it has nothing to save
+      if (unref(isReadOnly)) {
+        return false
+      }
       return unref(currentContent) !== unref(serverContent)
     })
 
     const preventUnload = (e: Event) => {
       e.preventDefault()
     }
-
-    watch(isDirty, (dirty) => {
-      // Prevent reload if there are changes
-      if (dirty) {
-        window.addEventListener('beforeunload', preventUnload)
-      } else {
-        window.removeEventListener('beforeunload', preventUnload)
-      }
-    })
 
     const {
       applicationConfig,
@@ -221,11 +233,79 @@ export default defineComponent({
       applicationId: props.applicationId
     })
 
+    const {
+      session: yjsSession,
+      isSessionReady,
+      effectiveReadOnly,
+      isConflicted,
+      reconcileConflict
+    } = useAppWrapperYjs({
+      yjs: props.yjs,
+      applicationId: props.applicationId,
+      resource,
+      isReadOnly,
+      isDirty,
+      loading,
+      loadingError,
+      contentResourceId,
+      currentContent,
+      serverContent,
+      currentETag,
+      currentFileContext,
+      fileContentOptions: props.fileContentOptions,
+      getFileContents,
+      putFileContents,
+      applySavedResource,
+      onConflict: showExternalUpdateConflict,
+      onExternalUpdateApplied: () => {
+        showMessage({
+          title: $gettext('File updated'),
+          desc: $gettext(
+            'This file was updated outside this window. The editor now shows the latest version.'
+          )
+        })
+      }
+    })
+
+    /**
+     * The Yjs session reports doc changes debounced, so `isDirty` and `currentContent` lag behind
+     * the last keystrokes. Let it catch up before deciding about unsaved work.
+     */
+    const flushPendingContent = () => {
+      yjsSession?.flushContent()
+    }
+
+    // `beforeunload` can't wait for a flush, so a pending change counts as unsaved there.
+    // Remote edits leave changes pending for read-only users too, which they can't save anyway.
+    const hasUnsavedWork = computed(
+      () => unref(isDirty) || (!unref(isReadOnly) && unref(yjsSession?.hasPendingContent))
+    )
+
+    watch(hasUnsavedWork, (dirty) => {
+      // Prevent reload if there are changes
+      if (dirty) {
+        window.addEventListener('beforeunload', preventUnload)
+      } else {
+        window.removeEventListener('beforeunload', preventUnload)
+      }
+    })
+
     // components that load their own resource keep `loading` false from the start, so without this
     // the slot would render before the drive resolver has produced a file context. Resolving a
     // space is asynchronous (drive types are fetched on demand), and everything below - `slotAttrs`
     // included - assumes a context is there.
-    const isLoading = computed(() => unref(loading) || !unref(currentFileContext))
+    // The loading screen also stays up until the Yjs session is synced and hydrated, so the wrapped
+    // component always mounts against a ready Y.Doc. A load failure short-circuits: it leaves the
+    // session disabled, so waiting on it would keep the error from ever showing.
+    const isLoading = computed(() => {
+      if (unref(loading) || !unref(currentFileContext)) {
+        return true
+      }
+      if (unref(loadingError) || unref(showNotFoundMessage)) {
+        return false
+      }
+      return !unref(isSessionReady)
+    })
 
     const { applicationMeta } = useAppMeta({ applicationId: props.applicationId, appsStore })
 
@@ -379,12 +459,14 @@ export default defineComponent({
           (p) => (unref(resource).permissions || '').indexOf(p) > -1
         )
 
-        if (unref(hasProp('currentContent'))) {
+        // A collaborative app needs the body too: the Yjs session seeds the room from it
+        if (props.yjs || unref(hasProp('currentContent'))) {
           const fileContentsResponse = yield* call(
             getFileContents(currentFileContext, { ...props.fileContentOptions, signal })
           )
           serverContent.value = currentContent.value = fileContentsResponse.body
           currentETag.value = fileContentsResponse.headers['OC-ETag']
+          contentResourceId.value = unref(resource).id
         }
 
         if (unref(hasProp('url'))) {
@@ -448,16 +530,53 @@ export default defineComponent({
       showMessage({ title: $gettext('File autosaved') })
     }
 
+    function showExternalUpdateConflict(response: Response = null) {
+      errorPopup(
+        new HttpError(
+          $gettext(
+            'This file was updated outside this window. Please refresh the page (all changes will be lost).'
+          ),
+          response
+        )
+      )
+    }
+
+    /**
+     * Single landing point for a successful write: updates the etag for the next `If-Match` and
+     * the store. `saved` is the PUT's response, or null when only the etag is known. A function
+     * declaration, so it is hoisted above the `useAppWrapperYjs` call that captures it.
+     */
+    function applySavedResource(etag: string, saved: Resource | null = null) {
+      currentETag.value = etag
+      const current = unref(resource)
+      if (!current) {
+        return
+      }
+      const updated: Resource = {
+        ...current,
+        etag,
+        ...(saved && { size: saved.size, mdate: saved.mdate })
+      }
+      // The Yjs session stamps the room with the etag of our own saves, which it reads from
+      // `resource`. Other apps keep the resource object they were given.
+      if (yjsSession) {
+        resource.value = updated
+      }
+      resourcesStore.upsertResource(saved ?? updated)
+    }
+
     const saveFileTask = useTask(function* () {
       const newContent = unref(currentContent)
+      // Pin the Y.Doc state behind `newContent`; the doc usually moves on while
+      // the PUT is in flight.
+      yjsSession?.beginSave()
       try {
         const putFileContentsResponse = yield putFileContents(currentFileContext, {
           content: newContent,
           previousEntityTag: unref(currentETag)
         })
         serverContent.value = newContent
-        currentETag.value = putFileContentsResponse.etag
-        resourcesStore.upsertResource(putFileContentsResponse)
+        applySavedResource(putFileContentsResponse.etag, putFileContentsResponse)
       } catch (e) {
         switch (e.statusCode) {
           case 401:
@@ -468,14 +587,13 @@ export default defineComponent({
             break
           case 409:
           case 412:
-            errorPopup(
-              new HttpError(
-                $gettext(
-                  'This file was updated outside this window. Please refresh the page (all changes will be lost).'
-                ),
-                e.response
-              )
-            )
+            // `previousEntityTag` didn't match what the server has. A connected Yjs session can
+            // resolve that itself when the conflicting write came from a peer in the room,
+            // because our Y.Doc already holds that peer's edits.
+            if (yield* reconcileConflict(newContent)) {
+              break
+            }
+            showExternalUpdateConflict(e.response)
             break
           case 507:
             const space = spacesStore.spaces.find(
@@ -503,6 +621,7 @@ export default defineComponent({
     }).drop()
 
     const save = async () => {
+      flushPendingContent()
       await saveFileTask.perform()
     }
 
@@ -527,7 +646,10 @@ export default defineComponent({
       if (editorOptions.autosaveEnabled && !props.disableAutoSave) {
         autosaveIntervalId = setInterval(
           async () => {
-            if (isDirty.value) {
+            flushPendingContent()
+            // A session that gave up the room over an external write would only hit the same
+            // conflict again
+            if (isDirty.value && !unref(isConflicted)) {
               await save()
               autosavePopup()
             }
@@ -555,6 +677,7 @@ export default defineComponent({
 
     const { bindKeyAction } = useKeyboardActions({ skipDisabledKeyBindingsCheck: true })
     bindKeyAction({ modifier: Modifier.Ctrl, primary: Key.S }, () => {
+      flushPendingContent()
       if (!unref(isDirty)) {
         return
       }
@@ -567,7 +690,7 @@ export default defineComponent({
           name: 'save-file',
           disabledTooltip: () => '',
           isVisible: () => unref(isEditor),
-          isDisabled: () => isReadOnly.value || !isDirty.value,
+          isDisabled: () => unref(effectiveReadOnly) || !isDirty.value,
           icon: 'save',
           id: 'app-save-action',
           label: () => $gettext('Save'),
@@ -591,6 +714,7 @@ export default defineComponent({
       args: FileActionOptions,
       originalAction: Action<FileActionOptions>['handler']
     ) => {
+      flushPendingContent()
       if (unref(isDirty)) {
         await save()
         autosavePopup()
@@ -659,6 +783,7 @@ export default defineComponent({
     const fileActions = computed((): Action[] => [...unref(fileActionsSave)])
 
     onBeforeRouteLeave((_to, _from, next) => {
+      flushPendingContent()
       if (unref(isDirty)) {
         dispatchModal({
           icon: 'error-warning',
@@ -689,11 +814,17 @@ export default defineComponent({
       resource: unref(resource),
       activeFiles: unref(activeFiles),
       isDirty: unref(isDirty),
-      isReadOnly: unref(isReadOnly),
+      isReadOnly: unref(effectiveReadOnly),
       applicationConfig: unref(applicationConfig),
       currentFileContext: unref(currentFileContext),
       currentContent: unref(currentContent),
       isFolderLoading: unref(isFolderLoading),
+
+      // Non-null by the time a collaborative app renders: `isLoading` covers the
+      // session being synced and hydrated. Always null for other apps.
+      ydoc: unref(yjsSession?.ydoc) ?? null,
+      awareness: unref(yjsSession?.awareness) ?? null,
+      yjsStatus: unref(yjsSession?.status) ?? null,
 
       'onUpdate:resource': (value: Resource) => {
         resource.value = value

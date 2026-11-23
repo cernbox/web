@@ -154,7 +154,9 @@ const OptionsConfigSchema = z.object({
   hideNavigation: z.boolean().optional(),
   defaultLanguage: z.string().optional(),
   listVersions: z.boolean().optional(),
-  alertRwFolders: z.record(z.string()).optional()
+  alertRwFolders: z.record(z.string()).optional(),
+  // WebSocket URL of the Yjs server for live editing; unset, apps edit alone
+  yjsServerUrl: z.string().optional()
 })
 
 export type OptionsConfig = z.infer<typeof OptionsConfigSchema>

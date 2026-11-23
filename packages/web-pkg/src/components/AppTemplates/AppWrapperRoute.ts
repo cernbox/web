@@ -1,6 +1,6 @@
 import { defineComponent, h } from 'vue'
 import AppWrapper from './AppWrapper.vue'
-import { AppWrapperSlotArgs } from './types'
+import { AppWrapperSlotArgs, YjsOptions } from './types'
 import { FileContentOptions, UrlForResourceOptions } from '../../composables'
 import { Resource } from '@ownclouders/web-client'
 
@@ -12,6 +12,8 @@ export function AppWrapperRoute(
     fileContentOptions?: FileContentOptions
     importResourceWithExtension?: (resource: Resource) => string
     disableAutoSave?: boolean
+    /** Live editing through the Yjs server, see `YjsOptions`. */
+    yjs?: YjsOptions
   }
 ) {
   return defineComponent({

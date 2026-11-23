@@ -69,7 +69,9 @@ export const defineConfig = (overrides = {}) => {
               '@ownclouders/web-client/webdav',
               '@ownclouders/web-pkg',
               'web-client',
-              'web-pkg'
+              'web-pkg',
+              'yjs',
+              'y-protocols/awareness'
             ],
             preserveEntrySignatures: 'strict',
             input: {

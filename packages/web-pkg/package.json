@@ -36,6 +36,7 @@
   "dependencies": {
     "@casl/ability": "^6.7.1",
     "@casl/vue": "^2.2.2",
+    "@hocuspocus/provider": "^4.7.1",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@ownclouders/design-system": "workspace:^",
     "@ownclouders/web-client": "workspace:^",
@@ -70,6 +71,8 @@
     "vue-concurrency": "^5.0.1",
     "vue-router": "^4.2.5",
     "vue3-gettext": "^2.4.0",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.32",
     "zod": "^3.23.8"
   },
   "devDependencies": {

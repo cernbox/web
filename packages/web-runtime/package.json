@@ -44,6 +44,8 @@
     "vue3-gettext": "2.4.0",
     "webdav": "5.9.0",
     "xml-js": "^1.6.11",
+    "y-protocols": "1.0.7",
+    "yjs": "13.6.32",
     "zod": "3.23.8"
   },
   "devDependencies": {

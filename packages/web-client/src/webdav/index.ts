@@ -24,6 +24,7 @@ import { ListOfficeFilesFactory } from './listOfficeFiles'
 
 export * from './constants'
 export * from './types'
+export { parseRestoreCollisions, type RestoreCollision } from './client/parsers'
 
 export type { ListFilesOptions, ListFilesResult } from './listFiles'
 export type { GetFileContentsResponse } from './getFileContents'

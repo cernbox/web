@@ -10,6 +10,7 @@ import { unref } from 'vue'
 import { HttpError, Resource, TrashResource } from '@ownclouders/web-client'
 import { ProjectSpaceResource, SpaceResource } from '@ownclouders/web-client'
 import { useRestoreWorker } from '../../../../../src/composables/webWorkers/restoreWorker'
+import { ConflictDialog, ResolveStrategy } from '../../../../../src/helpers/resource'
 
 vi.mock('../../../../../src/composables/webWorkers/restoreWorker')
 
@@ -112,6 +113,82 @@ describe('restore', () => {
     })
   })
 
+  describe('collisions', () => {
+    const folder = {
+      id: '20261123/docs',
+      path: '/docs',
+      name: 'docs',
+      type: 'folder'
+    } as TrashResource
+
+    it.each([
+      {
+        name: 'the collisions that the server reports',
+        collisions: [{ key: '20261123/docs/report.txt', path: 'docs/report.txt' }],
+        restored: { id: '20261123/docs/report.txt', path: '/docs/report.txt', name: 'report.txt' }
+      },
+      { name: 'the resource without a list', collisions: [], restored: folder }
+    ])('restores $name with overwrite to keep both', async ({ collisions, restored }) => {
+      vi.spyOn(ConflictDialog.prototype, 'resolveFileExists').mockResolvedValue({
+        strategy: ResolveStrategy.KEEP_BOTH,
+        doForAllConflicts: false
+      })
+
+      let done: Promise<void>
+      getWrapper({
+        setup: ({ restoreResources }, { space }) => {
+          done = (async () => {
+            restoreResources(space, [folder], [])
+
+            const { startWorker } = useRestoreWorker()
+            await vi.waitFor(() => expect(startWorker).toHaveBeenCalledTimes(2))
+            expect(startWorker).toHaveBeenLastCalledWith(
+              expect.objectContaining({
+                overwrite: true,
+                resources: [expect.objectContaining(restored)]
+              }),
+              expect.any(Function)
+            )
+          })()
+        },
+        restoreResult: {
+          successful: [],
+          failed: [{ resource: folder, error: new HttpError('', undefined, 412), collisions }]
+        }
+      })
+      await done
+    })
+
+    it('does not restore a skipped collision again', async () => {
+      vi.spyOn(ConflictDialog.prototype, 'resolveFileExists').mockResolvedValue({
+        strategy: ResolveStrategy.SKIP,
+        doForAllConflicts: true
+      })
+
+      let done: Promise<void>
+      getWrapper({
+        setup: ({ restoreResources }, { space }) => {
+          done = (async () => {
+            restoreResources(space, [folder], [])
+
+            await vi.waitFor(() =>
+              expect(ConflictDialog.prototype.resolveFileExists).toHaveBeenCalled()
+            )
+            const { startWorker } = useRestoreWorker()
+            expect(startWorker).toHaveBeenCalledTimes(1)
+            const { showErrorMessage } = useMessages()
+            expect(showErrorMessage).not.toHaveBeenCalled()
+          })()
+        },
+        restoreResult: {
+          successful: [],
+          failed: [{ resource: folder, error: new HttpError('', undefined, 412) }]
+        }
+      })
+      await done
+    })
+  })
+
   it('should request parent folder on collecting restore conflicts', () => {
     getWrapper({
       setup: async ({ collectConflicts }, { space, clientService }) => {
@@ -159,7 +236,11 @@ function getWrapper({
   driveType?: string
   restoreResult?: {
     successful: TrashResource[]
-    failed: { resource: TrashResource; error: HttpError }[]
+    failed: {
+      resource: TrashResource
+      error: HttpError
+      collisions?: { key: string; path: string }[]
+    }[]
   }
   setup: (
     instance: ReturnType<typeof useFileActionsRestore>,

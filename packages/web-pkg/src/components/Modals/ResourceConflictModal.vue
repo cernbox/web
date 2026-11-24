@@ -19,6 +19,7 @@
         >{{ $gettext('Skip') }}
       </oc-button>
       <oc-button
+        v-if="allowReplace"
         class="oc-modal-body-actions-secondary oc-ml-s"
         appearance="outline"
         variation="passive"
@@ -55,7 +56,9 @@ export default defineComponent({
     },
     suggestMerge: { type: Boolean, default: true },
     separateSkipHandling: { type: Boolean, default: false },
-    confirmSecondaryTextOverwrite: { type: String, default: null }
+    confirmSecondaryTextOverwrite: { type: String, default: null },
+    // A restore never replaces an item: it can only keep both.
+    allowReplace: { type: Boolean, default: true }
   },
   setup(props) {
     const { removeModal } = useModals()

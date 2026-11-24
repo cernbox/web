@@ -208,7 +208,8 @@ export class DAV {
       }
     } catch (error) {
       const { response } = error
-      const body = await response.text()
+      // A clone, so that the caller can read the body too, such as the collisions of a restore.
+      const body = await response.clone().text()
       const errorMessage = parseError(body)
       throw new DavHttpError(
         errorMessage.message,

@@ -591,6 +591,16 @@ describe('ResourceTable', () => {
         wrapper.emitted<{ resources: Resource[] }[]>('fileClick')[0][0].resources[0].name
       ).toMatch('psec-file.psec')
     })
+
+    it.each([
+      { browsable: true, isLink: true },
+      { browsable: false, isLink: false }
+    ])('links a deleted folder only if it is browsable ($browsable)', ({ browsable, isLink }) => {
+      const folder = resourcesWithAllFields.find(({ id }) => id === 'documents')
+      const { wrapper } = getMountedWrapper({ resources: [{ ...folder, browsable } as Resource] })
+
+      expect(wrapper.find('.oc-tbody-tr-documents .oc-resource-link').exists()).toBe(isLink)
+    })
   })
 
   describe('resource details', () => {

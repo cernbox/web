@@ -3,7 +3,7 @@
   <template v-else>
     <app-banner :file-id="fileId"></app-banner>
     <drive-redirect v-if="!space" :drive-alias-and-item="driveAliasAndItem" />
-    <generic-trash v-else-if="isTrashRoute" :space="space" :item-id="itemId" />
+    <generic-trash v-else-if="isTrashRoute" :space="space" :item="item" :item-id="itemId" />
     <generic-space v-else :space="space" :item="item" :item-id="itemId" />
   </template>
 </template>

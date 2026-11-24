@@ -10,6 +10,7 @@
       <app-loading-spinner v-if="areResourcesLoading" />
       <template v-else>
         <div
+          v-if="isTrashRoot"
           class="shared-with-me-filters oc-flex oc-flex-between oc-flex-wrap oc-flex-bottom oc-mx-m oc-mb-m"
         >
           <div class="oc-flex oc-flex-wrap">
@@ -17,7 +18,17 @@
               <oc-icon name="filter-2" class="oc-mr-xs" />
               <span v-text="$gettext('Filter:')" />
             </div>
-            <trashbin-date-picker @range-changed="rangeChanged" />
+            <item-filter
+              :filter-label="$gettext('Today')"
+              :items="trashViews"
+              :close-on-click="true"
+              class="trashbin-view-filter"
+              filter-name="deleted"
+            >
+              <template #item="{ item: view }">
+                <span v-text="view.name" />
+              </template>
+            </item-filter>
           </div>
         </div>
         <no-content-message
@@ -57,7 +68,7 @@
           :fields-displayed="['name', 'ddate']"
           :are-paths-displayed="true"
           :resources="paginatedResources"
-          :are-resources-clickable="false"
+          :target-route-callback="trashFolderRoute"
           :are-thumbnails-displayed="false"
           :header-position="fileListHeaderY"
           :sort-by="sortBy"
@@ -86,7 +97,15 @@
 <script lang="ts">
 import { storeToRefs } from 'pinia'
 
-import { AppBar, ContextActions, FileSideBar, useUserStore } from '@ownclouders/web-pkg'
+import {
+  AppBar,
+  ContextActions,
+  createFileRouteOptions,
+  FileSideBar,
+  ItemFilter,
+  queryItemAsString,
+  useUserStore
+} from '@ownclouders/web-pkg'
 import FilesViewWrapper from '../../components/FilesViewWrapper.vue'
 import ListInfo from '../../components/FilesList/ListInfo.vue'
 import { ResourceTable } from '@ownclouders/web-pkg'
@@ -96,7 +115,17 @@ import { Pagination } from '@ownclouders/web-pkg'
 
 import { eventBus } from '@ownclouders/web-pkg'
 import { useResourcesViewDefaults } from '../../composables'
-import { computed, defineComponent, PropType, onMounted, onBeforeUnmount, unref, ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  PropType,
+  onMounted,
+  onBeforeUnmount,
+  unref,
+  ref,
+  watch
+} from 'vue'
+import { DateTime } from 'luxon'
 import { Resource } from '@ownclouders/web-client'
 import { createLocationTrash } from '@ownclouders/web-pkg'
 import { isProjectSpaceResource, SpaceResource } from '@ownclouders/web-client'
@@ -104,7 +133,6 @@ import { useDocumentTitle } from '@ownclouders/web-pkg'
 import { useGettext } from 'vue3-gettext'
 
 import { useRouteQuery } from '@ownclouders/web-pkg'
-import TrashbinDatePicker from '../../components/FilesList/TrashbinDatePicker.vue'
 
 export default defineComponent({
   name: 'GenericTrash',
@@ -115,16 +143,21 @@ export default defineComponent({
     ContextActions,
     FileSideBar,
     FilesViewWrapper,
+    ItemFilter,
     ListInfo,
     NoContentMessage,
     Pagination,
-    ResourceTable,
-    TrashbinDatePicker
+    ResourceTable
   },
 
   props: {
     space: {
       type: Object as PropType<SpaceResource>,
+      required: false,
+      default: null
+    },
+    item: {
+      type: String,
       required: false,
       default: null
     },
@@ -140,21 +173,28 @@ export default defineComponent({
     const userStore = useUserStore()
     const { user } = storeToRefs(userStore)
 
-    const filterFrom = useRouteQuery('from')
-    const filterTo = useRouteQuery('to')
-    const dateFilter =
-      unref(filterFrom) && unref(filterTo)
-        ? ref({
-            from: unref(filterFrom),
-            to: unref(filterTo)
-          })
-        : ref(null)
-
-    const rangeChanged = (data) => {
-      dateFilter.value =
-        data.range?.from && data.range?.to ? { from: data.range.from, to: data.range.to } : null
-      performLoaderTask()
+    const viewQuery = useRouteQuery('q_deleted')
+    const trashViews = [
+      { id: 'today', name: $gettext('Today'), days: 0 },
+      { id: 'week', name: $gettext('Last week'), days: 6 },
+      { id: 'month', name: $gettext('Last month'), days: 30 }
+    ]
+    // The backends include the first and the last day of the range.
+    const dateFilter = () => {
+      const view =
+        trashViews.find(({ id }) => id === queryItemAsString(unref(viewQuery))) || trashViews[0]
+      const today = DateTime.utc()
+      return { from: today.minus({ days: view.days }).toISODate(), to: today.toISODate() }
     }
+
+    const isTrashRoot = computed(() => !props.item || props.item === '/')
+    const trashFolderRoute = ({ path }: { path: string }) => {
+      return createLocationTrash('files-trash-generic', {
+        params: createFileRouteOptions(props.space, { path }).params,
+        query: { ...(unref(viewQuery) && { q_deleted: unref(viewQuery) }) }
+      })
+    }
+
     const recycleError = ref(false)
 
     let loadResourcesEventToken: string
@@ -176,7 +216,7 @@ export default defineComponent({
     const performLoaderTask = async () => {
       recycleError.value = false
       try {
-        await resourcesViewDefaults.loadResourcesTask.perform(props.space, unref(dateFilter))
+        await resourcesViewDefaults.loadResourcesTask.perform(props.space, dateFilter(), props.item)
         resourcesViewDefaults.refreshFileListHeaderPosition()
         resourcesViewDefaults.scrollToResourceFromRoute(
           unref(resourcesViewDefaults.paginatedResources),
@@ -198,12 +238,18 @@ export default defineComponent({
       eventBus.unsubscribe('app.files.list.load', loadResourcesEventToken)
     })
 
+    watch([viewQuery, () => props.item], () => {
+      performLoaderTask()
+    })
+
     return {
       ...resourcesViewDefaults,
       user,
       noContentMessage,
-      rangeChanged,
-      recycleError
+      recycleError,
+      trashViews,
+      isTrashRoot,
+      trashFolderRoute
     }
   },
 
@@ -217,15 +263,22 @@ export default defineComponent({
       if (this.space.driveType === 'personal') {
         currentNodeName = this.$gettext('Personal')
       }
+      // A key starts with the days of the deletion, which is not a folder.
+      const [days, ...folders] = (this.item || '').split('/').filter(Boolean)
+      const levels = [
+        { text: currentNodeName, path: '' },
+        ...folders.map((text, i) => ({ text, path: [days, ...folders.slice(0, i + 1)].join('/') }))
+      ]
       return [
         {
           text: this.$gettext('Deleted files'),
           to: createLocationTrash('files-trash-overview')
         },
-        {
-          text: currentNodeName,
-          onClick: () => eventBus.publish('app.files.list.load')
-        }
+        ...levels.map(({ text, path }, i) =>
+          i === levels.length - 1
+            ? { text, onClick: () => eventBus.publish('app.files.list.load') }
+            : { text, to: this.trashFolderRoute({ path }) }
+        )
       ]
     },
 

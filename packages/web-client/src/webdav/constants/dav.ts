@@ -100,6 +100,7 @@ const DavPropertyMapping = {
   TrashbinOriginalFilename: defString('trashbin-original-filename' as const),
   TrashbinOriginalLocation: defString('trashbin-original-location' as const),
   TrashbinDeletedDate: defString('trashbin-delete-datetime' as const),
+  TrashbinBrowsable: defNumber('trashbin-browsable' as const),
 
   PublicLinkItemType: defString('public-link-item-type' as const),
   PublicLinkPermission: defString('public-link-permission' as const),
@@ -168,6 +169,7 @@ export abstract class DavProperties {
     DavProperty.TrashbinOriginalLocation,
     DavProperty.TrashbinOriginalFilename,
     DavProperty.TrashbinDeletedDate,
+    DavProperty.TrashbinBrowsable,
     DavProperty.Permissions,
     DavProperty.FileParent
   ]

@@ -227,14 +227,24 @@ export function buildResource(resource: WebDavResponseResource, webDavBasePath?:
   return r
 }
 
-export function buildDeletedResource(resource: WebDavResponseResource): TrashResource {
+export function buildDeletedResource(
+  resource: WebDavResponseResource,
+  trashPath = ''
+): TrashResource {
   const isFolder = resource.type === 'directory'
   const fullName = resource.props[DavProperty.TrashbinOriginalFilename]?.toString()
   const extension = extractExtensionFromFile({ name: fullName, type: resource.type } as Resource)
-  const id = path.basename(resource.filename)
+  // The id is the key of the item, which has more than one segment in a browsable trash bin.
+  // Servers without browsable trash bins put items elsewhere, and their keys have one segment.
+  const trashPrefix = `${trashPath}/`
+  const id =
+    trashPath && resource.filename.startsWith(trashPrefix)
+      ? resource.filename.slice(trashPrefix.length)
+      : path.basename(resource.filename)
   return {
     type: isFolder ? 'folder' : resource.type,
     isFolder,
+    browsable: isFolder && resource.props[DavProperty.TrashbinBrowsable] === 1,
     ddate: resource.props[DavProperty.TrashbinDeletedDate],
     name: path.basename(fullName),
     extension,

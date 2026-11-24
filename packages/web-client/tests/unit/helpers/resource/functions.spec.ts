@@ -3,6 +3,7 @@ import {
   Ability,
   Resource,
   WebDavResponseResource,
+  buildDeletedResource,
   buildResource,
   extractDomSelector,
   extractExtensionFromFile,
@@ -223,5 +224,36 @@ describe('buildResource', () => {
       const resource = buildResource(webDavResponse, '/spaces/abc')
       expect(resource.isShareRoot()).toBeFalsy()
     })
+  })
+})
+
+describe('buildDeletedResource', () => {
+  const trashPath = '/spaces/trash-bin/cephmount$OBQXEZLDOQ'
+  const buildDeleted = (filename: string, browsable?: number) =>
+    buildDeletedResource(
+      mockDeep<WebDavResponseResource>({
+        filename,
+        type: 'directory',
+        props: {
+          [DavProperty.TrashbinOriginalFilename]: 'docs',
+          [DavProperty.TrashbinOriginalLocation]: 'docs',
+          [DavProperty.TrashbinBrowsable]: browsable
+        }
+      }),
+      trashPath
+    )
+
+  it.each([
+    { filename: `${trashPath}/20261123/docs/report.txt`, id: '20261123/docs/report.txt' },
+    { filename: `${trashPath}/1a2b3c`, id: '1a2b3c' },
+    // A server without browsable trash bins puts its items elsewhere.
+    { filename: '/spaces/alice/1a2b3c', id: '1a2b3c' }
+  ])('uses the whole key of $filename as id', ({ filename, id }) => {
+    expect(buildDeleted(filename).id).toBe(id)
+  })
+
+  it('is browsable only when the server marks it', () => {
+    expect(buildDeleted(`${trashPath}/20261123/docs`, 1).browsable).toBe(true)
+    expect(buildDeleted(`${trashPath}/1a2b3c`).browsable).toBe(false)
   })
 })

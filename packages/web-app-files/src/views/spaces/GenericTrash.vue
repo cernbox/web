@@ -68,7 +68,7 @@
           :fields-displayed="['name', 'ddate']"
           :are-paths-displayed="true"
           :resources="paginatedResources"
-          :target-route-callback="trashFolderRoute"
+          :target-route-callback="trashFolderLink"
           :are-thumbnails-displayed="false"
           :header-position="fileListHeaderY"
           :sort-by="sortBy"
@@ -188,11 +188,15 @@ export default defineComponent({
     }
 
     const isTrashRoot = computed(() => !props.item || props.item === '/')
-    const trashFolderRoute = ({ path }: { path: string }) => {
+    const trashFolderRoute = (key: string) => {
       return createLocationTrash('files-trash-generic', {
-        params: createFileRouteOptions(props.space, { path }).params,
+        params: createFileRouteOptions(props.space, { path: key }).params,
         query: { ...(unref(viewQuery) && { q_deleted: unref(viewQuery) }) }
       })
+    }
+    // The table gives the original path of a deleted item, but the bin opens a folder by its key.
+    const trashFolderLink = ({ resource }: { resource: Resource }) => {
+      return trashFolderRoute(`${resource.id}`)
     }
 
     const recycleError = ref(false)
@@ -249,7 +253,8 @@ export default defineComponent({
       recycleError,
       trashViews,
       isTrashRoot,
-      trashFolderRoute
+      trashFolderRoute,
+      trashFolderLink
     }
   },
 
@@ -277,7 +282,7 @@ export default defineComponent({
         ...levels.map(({ text, path }, i) =>
           i === levels.length - 1
             ? { text, onClick: () => eventBus.publish('app.files.list.load') }
-            : { text, to: this.trashFolderRoute({ path }) }
+            : { text, to: this.trashFolderRoute(path) }
         )
       ]
     },

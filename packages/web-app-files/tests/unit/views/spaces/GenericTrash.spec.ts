@@ -14,7 +14,7 @@ import {
   PartialComponentProps,
   ComponentProps
 } from '@ownclouders/web-test-helpers'
-import { AppBar } from '@ownclouders/web-pkg'
+import { AppBar, ResourceTable } from '@ownclouders/web-pkg'
 
 vi.mock('../../../../src/composables')
 
@@ -39,6 +39,23 @@ describe('GenericTrash view', () => {
     expect(
       wrapper.findComponent<typeof AppBar>('app-bar-stub').props().breadcrumbs[1].text
     ).toEqual(space.name)
+  })
+  it('links a deleted folder by its key, not by its original path', () => {
+    const space = mock<SpaceResource>({
+      id: '1',
+      name: 'Personal space',
+      getDriveAliasAndItem: vi.fn(({ path }: Resource) => `personal/alice/${path}`)
+    })
+    const { wrapper } = getMountedWrapper({ props: { space }, files: [mock<Resource>()] })
+
+    const route = wrapper
+      .findComponent<typeof ResourceTable>('resource-table-stub')
+      .props('targetRouteCallback')({
+      path: '/docs',
+      resource: mock<Resource>({ id: '20261125/docs', path: '/docs' })
+    }) as { params: { driveAliasAndItem: string } }
+
+    expect(route.params.driveAliasAndItem).toBe('personal/alice/20261125/docs')
   })
   describe('different files view states', () => {
     it('shows the loading spinner during loading', () => {

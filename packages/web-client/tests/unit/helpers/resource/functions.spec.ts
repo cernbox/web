@@ -140,7 +140,8 @@ describe('buildResource', () => {
           DavPermission.Updateable +
           DavPermission.FileUpdateable +
           DavPermission.Deletable,
-        [DavProperty.Tags]: undefined
+        [DavProperty.Tags]: undefined,
+        [DavProperty.Name]: `forest.${extension}`
       }, `forest.${extension}`)
       const resource = buildResource(webDavResponse)
       const ability = mock<Ability>()

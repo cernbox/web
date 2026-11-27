@@ -1,19 +1,14 @@
-import { dirname } from 'path'
+import { basename, dirname } from 'path'
 import { isLocationTrashActive } from '../../../router'
 
 import {
   Resource,
   isProjectSpaceResource,
-  extractExtensionFromFile,
   SpaceResource,
   isTrashResource
 } from '@ownclouders/web-client'
-import {
-  ResolveStrategy,
-  ResolveConflict,
-  resolveFileNameDuplicate,
-  ConflictDialog
-} from '../../../helpers/resource'
+import type { RestoreCollision } from '@ownclouders/web-client/webdav'
+import { ResolveStrategy, ResolveConflict, ConflictDialog } from '../../../helpers/resource'
 import { urlJoin } from '@ownclouders/web-client'
 import { useClientService } from '../../clientService'
 import { useRouter } from '../../router'
@@ -104,6 +99,8 @@ export const useFileActionsRestore = () => {
       const resolvedConflict: ResolveConflict = await conflictDialog.resolveFileExists(
         { name: conflict.name, isFolder } as Resource,
         remainingConflictCount,
+        false,
+        false,
         false
       )
       count++
@@ -119,98 +116,130 @@ export const useFileActionsRestore = () => {
     return resolvedConflicts
   }
 
+  // The user decides for each collision to skip it, or to restore it with overwrite, which keeps both.
+  const restoreCollisions = async (
+    space: SpaceResource,
+    collided: { resource: Resource; collisions?: RestoreCollision[] }[]
+  ) => {
+    // Without a list from the server, the collision is the resource of the request.
+    const conflicts = collided.flatMap(({ resource, collisions }) =>
+      collisions?.length
+        ? collisions.map(
+            ({ key, path }) =>
+              ({
+                id: key,
+                path: urlJoin(path, { leadingSlash: true }),
+                name: basename(path),
+                type: 'file'
+              }) as Resource
+          )
+        : [resource]
+    )
+    const keepBoth = (await collectResolveStrategies(conflicts))
+      .filter(({ strategy }) => strategy === ResolveStrategy.KEEP_BOTH)
+      .map(({ resource }) => resource)
+    if (keepBoth.length) {
+      return restoreResources(space, keepBoth, [], true)
+    }
+    // The restore can have put back the part of a folder that did not collide.
+    eventBus.publish('app.files.list.load')
+  }
+
   const restoreResources = (
     space: SpaceResource,
     resources: Resource[],
-    missingFolderPaths: string[]
+    missingFolderPaths: string[],
+    overwrite = false,
+    collidedResources: Resource[] = []
   ) => {
     const originalRoute = unref(router.currentRoute)
 
-    startWorker({ space, resources, missingFolderPaths }, async ({ successful, failed }) => {
-      if (successful.length) {
-        let title: string
-        if (successful.length === 1) {
-          title = $gettext('%{resource} was restored successfully', {
-            resource: successful[0].name
+    startWorker(
+      { space, resources, missingFolderPaths, overwrite },
+      async ({ successful, failed }) => {
+        const collided = [
+          ...failed.filter(({ error }) => !overwrite && error.statusCode === 412),
+          ...collidedResources.map((resource) => ({ resource }))
+        ]
+        const otherFailures = failed.filter(({ error }) => overwrite || error.statusCode !== 412)
+
+        if (successful.length) {
+          let title: string
+          if (successful.length === 1) {
+            title = $gettext('%{resource} was restored successfully', {
+              resource: successful[0].name
+            })
+          } else {
+            title = $gettext('%{resourceCount} files restored successfully', {
+              resourceCount: successful.length.toString()
+            })
+          }
+          showMessage({ title })
+          eventBus.publish('app.files.trash.restored', { count: successful.length })
+
+          // user hasn't navigated to another location meanwhile
+          if (
+            originalRoute.name === unref(router.currentRoute).name &&
+            originalRoute.query?.fileId === unref(router.currentRoute).query?.fileId
+          ) {
+            resourcesStore.removeResources(successful)
+            resourcesStore.resetSelection()
+          }
+
+          // Reload quota
+          const graphClient = clientService.graphAuthenticated
+          const updatedSpace = await graphClient.drives.getDrive(space.id, sharesStore.graphRoles)
+          spacesStore.updateSpaceField({
+            id: updatedSpace.id,
+            field: 'spaceQuota',
+            value: updatedSpace.spaceQuota
           })
-        } else {
-          title = $gettext('%{resourceCount} files restored successfully', {
-            resourceCount: successful.length.toString()
-          })
-        }
-        showMessage({ title })
-        eventBus.publish('app.files.trash.restored', { count: successful.length })
-
-        // user hasn't navigated to another location meanwhile
-        if (
-          originalRoute.name === unref(router.currentRoute).name &&
-          originalRoute.query?.fileId === unref(router.currentRoute).query?.fileId
-        ) {
-          resourcesStore.removeResources(successful)
-          resourcesStore.resetSelection()
         }
 
-        // Reload quota
-        const graphClient = clientService.graphAuthenticated
-        const updatedSpace = await graphClient.drives.getDrive(space.id, sharesStore.graphRoles)
-        spacesStore.updateSpaceField({
-          id: updatedSpace.id,
-          field: 'spaceQuota',
-          value: updatedSpace.spaceQuota
-        })
+        if (otherFailures.length) {
+          let translated: string
+          const translateParams: Record<string, string> = {}
+          if (otherFailures.length === 1) {
+            translateParams.resource = otherFailures[0].resource.name
+            translated = $gettext('Failed to restore "%{resource}"', translateParams, true)
+          } else {
+            translateParams.resourceCount = otherFailures.length.toString()
+            translated = $gettext('Failed to restore %{resourceCount} files', translateParams, true)
+          }
+          showErrorMessage({ title: translated, errors: otherFailures.map(({ error }) => error) })
+        }
+
+        if (collided.length) {
+          await restoreCollisions(space, collided)
+        } else if (overwrite) {
+          // A forced restore of an item in a folder changes that folder in the trash bin.
+          eventBus.publish('app.files.list.load')
+        }
       }
-
-      if (failed.length) {
-        let translated: string
-        const translateParams: Record<string, string> = {}
-        if (failed.length === 1) {
-          translateParams.resource = failed[0].resource.name
-          translated = $gettext('Failed to restore "%{resource}"', translateParams, true)
-        } else {
-          translateParams.resourceCount = failed.length.toString()
-          translated = $gettext('Failed to restore %{resourceCount} files', translateParams, true)
-        }
-        showErrorMessage({ title: translated, errors: failed.map(({ error }) => error) })
-      }
-    })
+    )
   }
 
   const handler = async ({ space, resources }: FileActionOptions) => {
     // resources need to be sorted by path ASC to recover the parents first in case of deep nested folder structure
     const sortedResources = resources.sort((a, b) => a.path.length - b.path.length)
 
-    // collect and request existing files in associated parent folders of each resource
-    const { existingResourcesByPath, conflicts, resolvedResources, missingFolderPaths } =
-      await collectConflicts(space, sortedResources)
+    // The server reports the collisions, but the parent folder of each resource must exist.
+    const { missingFolderPaths } = await collectConflicts(space, sortedResources)
 
-    // iterate through conflicts and collect resolve strategies
-    const resolvedConflicts = await collectResolveStrategies(conflicts)
-
-    // iterate through conflicts and behave according to strategy
-    const filesToOverwrite = resolvedConflicts
-      .filter((e) => e.strategy === ResolveStrategy.REPLACE)
-      .map((e) => e.resource)
-    resolvedResources.push(...filesToOverwrite)
-    const filesToKeepBoth = resolvedConflicts
-      .filter((e) => e.strategy === ResolveStrategy.KEEP_BOTH)
-      .map((e) => e.resource)
-
-    for (let resource of filesToKeepBoth) {
-      resource = { ...resource }
-      const parentPath = dirname(resource.path)
-      const existingResources = existingResourcesByPath[parentPath] || []
-      const extension = extractExtensionFromFile(resource)
-      const resolvedName = resolveFileNameDuplicate(resource.name, extension, [
-        ...existingResources,
-        ...resolvedConflicts.map((e) => e.resource),
-        ...resolvedResources
-      ])
-      resource.name = resolvedName
-      resource.path = urlJoin(parentPath, resolvedName)
-      resolvedResources.push(resource)
+    // Copies of one path go back one at a time, so the copies after the first collide with it.
+    const paths = new Set<string>()
+    const first: Resource[] = []
+    const again: Resource[] = []
+    for (const resource of sortedResources) {
+      if (paths.has(resource.path)) {
+        again.push(resource)
+      } else {
+        first.push(resource)
+        paths.add(resource.path)
+      }
     }
 
-    return restoreResources(space, resolvedResources, missingFolderPaths)
+    return restoreResources(space, first, missingFolderPaths, false, again)
   }
 
   const actions = computed((): FileAction[] => [

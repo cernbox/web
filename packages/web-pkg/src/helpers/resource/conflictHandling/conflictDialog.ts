@@ -64,7 +64,8 @@ export class ConflictDialog {
     resource: Resource,
     conflictCount: number,
     suggestMerge = false,
-    separateSkipHandling = false // separate skip-handling between files and folders
+    separateSkipHandling = false, // separate skip-handling between files and folders
+    allowReplace = true
   ): Promise<ResolveConflict> {
     const { dispatchModal } = useModals()
 
@@ -81,6 +82,7 @@ export class ConflictDialog {
           conflictCount,
           suggestMerge,
           separateSkipHandling,
+          allowReplace,
           callbackFn: (conflict: ResolveConflict) => {
             resolve(conflict)
           }

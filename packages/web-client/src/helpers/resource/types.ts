@@ -118,6 +118,7 @@ export interface FileResource extends Resource {
 
 export interface TrashResource extends Resource {
   ddate: string
+  browsable: boolean
   canBeRestored(): boolean
 }
 

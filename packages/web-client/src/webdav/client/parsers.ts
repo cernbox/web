@@ -93,3 +93,20 @@ export const parseError = (xmlBody: string): { message: string; errorCode: DavEr
 
   return errorObj
 }
+
+export type RestoreCollision = { key: string; path: string }
+
+/** Reads the items that a restore left in the trash bin from the body of its 412 response. */
+export const parseRestoreCollisions = (xmlBody: string): RestoreCollision[] => {
+  const parser = new XMLParser({
+    removeNSPrefix: true,
+    parseTagValue: false,
+    isArray: (name) => name === 'collision'
+  })
+  try {
+    const collisions: RestoreCollision[] = parser.parse(xmlBody).error?.collisions?.collision || []
+    return collisions.map(({ key, path }) => ({ key: `${key}`, path: `${path}` }))
+  } catch {
+    return []
+  }
+}

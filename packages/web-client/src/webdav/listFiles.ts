@@ -104,7 +104,7 @@ export const ListFilesFactory = (
       try {
         let webDavPath = ''
         if (isTrash) {
-          webDavPath = buildWebDavSpacesTrashPath(space.id)
+          webDavPath = buildWebDavSpacesTrashPath(space.id, path)
         } else {
           webDavPath = getWebDavPath(space, { fileId, path })
         }
@@ -115,9 +115,10 @@ export const ListFilesFactory = (
           ...opts
         })
         if (isTrash) {
+          const trashPath = buildWebDavSpacesTrashPath(space.id)
           return {
             resource: buildResource(webDavResources[0], webDavPath),
-            children: webDavResources.slice(1).map(buildDeletedResource)
+            children: webDavResources.slice(1).map((r) => buildDeletedResource(r, trashPath))
           } as ListFilesResult
         }
         const resources = webDavResources.map((r) => buildResource(r, space.webDavPath))

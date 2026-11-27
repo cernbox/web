@@ -614,6 +614,11 @@ export default defineComponent({
         return false
       }
 
+      // Only some trash bins can list the content of a deleted folder.
+      if ((resource as TrashResource).browsable === false) {
+        return false
+      }
+
       if (!resource.isFolder && !isPasswordProtectedFolderFileResource(resource.name)) {
         if (!resource.canDownload() && !canBeOpenedWithSecureView(resource)) {
           return false

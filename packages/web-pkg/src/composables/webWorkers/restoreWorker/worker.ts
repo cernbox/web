@@ -3,7 +3,7 @@ import { dirname } from 'path'
 import { webdav as _webdav, urlJoin } from '@ownclouders/web-client'
 import type { Resource, SpaceResource } from '@ownclouders/web-client'
 import type { WorkerTopic } from '../../piniaStores/webWorkers'
-import type { WebDAV } from '@ownclouders/web-client/webdav'
+import { parseRestoreCollisions, type WebDAV } from '@ownclouders/web-client/webdav'
 import type { RestoreWorkerReturnData } from './useRestoreWorker'
 
 type MessageData = {
@@ -13,6 +13,7 @@ type MessageData = {
   space?: SpaceResource
   resources?: Resource[]
   missingFolderPaths?: string[]
+  overwrite?: boolean
 }
 
 type Message = {
@@ -70,7 +71,7 @@ self.onmessage = async (e: MessageEvent) => {
     return
   }
 
-  const { baseUrl, headers, space, resources, missingFolderPaths } = data
+  const { baseUrl, headers, space, resources, missingFolderPaths, overwrite } = data
 
   storedHeaders = headers
   const webdav = _webdav(baseUrl, () => storedHeaders)
@@ -94,7 +95,7 @@ self.onmessage = async (e: MessageEvent) => {
       }
 
       try {
-        await webdav.restoreFile(space, r, r, { overwrite: true })
+        await webdav.restoreFile(space, r, r, { overwrite })
         successful.push(r)
       } catch (e) {
         console.error(e)
@@ -102,7 +103,10 @@ self.onmessage = async (e: MessageEvent) => {
           resource: r,
           message: e.message,
           statusCode: e.statusCode,
-          xReqId: e.response.headers?.get('x-request-id')
+          xReqId: e.response.headers?.get('x-request-id'),
+          ...(e.statusCode === 412 && {
+            collisions: parseRestoreCollisions(await e.response.text())
+          })
         })
       }
     })

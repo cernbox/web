@@ -6,6 +6,7 @@ import {
   type Resource,
   type SpaceResource
 } from '@ownclouders/web-client'
+import type { RestoreCollision } from '@ownclouders/web-client/webdav'
 import { useConfigStore } from '../../piniaStores'
 import { useLoadingService } from '../../loadingService'
 import { useRequestHeaders } from '../../requestHeaders'
@@ -13,12 +14,18 @@ import RestoreWorker from './worker?worker'
 
 export type RestoreWorkerReturnData = {
   successful: Resource[]
-  failed: { resource: Resource; message: string; statusCode: number; xReqId: string }[]
+  failed: {
+    resource: Resource
+    message: string
+    statusCode: number
+    xReqId: string
+    collisions?: RestoreCollision[]
+  }[]
 }
 
 type CallbackOptions = {
   successful: Resource[]
-  failed: { resource: Resource; error: HttpError }[]
+  failed: { resource: Resource; error: HttpError; collisions?: RestoreCollision[] }[]
 }
 
 /**
@@ -34,8 +41,14 @@ export const useRestoreWorker = () => {
     {
       space,
       resources,
-      missingFolderPaths
-    }: { space: SpaceResource; resources: Resource[]; missingFolderPaths: string[] },
+      missingFolderPaths,
+      overwrite = false
+    }: {
+      space: SpaceResource
+      resources: Resource[]
+      missingFolderPaths: string[]
+      overwrite?: boolean
+    },
     callback: (result: CallbackOptions) => void
   ) => {
     const worker = createWorker<RestoreWorkerReturnData>(RestoreWorker as unknown as string, {
@@ -51,8 +64,8 @@ export const useRestoreWorker = () => {
       const { successful, failed } = JSON.parse(e.data) as RestoreWorkerReturnData
 
       // construct http error based on the parsed error data
-      const failedWithErrors = failed.map(({ resource, ...errorData }) => {
-        return { resource, error: createHttpError(errorData) }
+      const failedWithErrors = failed.map(({ resource, collisions, ...errorData }) => {
+        return { resource, collisions, error: createHttpError(errorData) }
       })
 
       callback({ successful, failed: failedWithErrors })
@@ -65,17 +78,19 @@ export const useRestoreWorker = () => {
         })
     )
 
-    worker.post(getWorkerData({ space, resources, missingFolderPaths }))
+    worker.post(getWorkerData({ space, resources, missingFolderPaths, overwrite }))
   }
 
   const getWorkerData = ({
     space,
     resources,
-    missingFolderPaths
+    missingFolderPaths,
+    overwrite
   }: {
     space: SpaceResource
     resources: Resource[]
     missingFolderPaths: string[]
+    overwrite: boolean
   }) => {
     return JSON.stringify({
       topic: 'startProcess',
@@ -83,6 +98,7 @@ export const useRestoreWorker = () => {
         space,
         resources,
         missingFolderPaths,
+        overwrite,
         baseUrl: configStore.serverUrl,
         headers: {
           ...unref(headers),

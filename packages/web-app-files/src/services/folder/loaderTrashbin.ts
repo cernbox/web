@@ -19,13 +19,13 @@ export class FolderLoaderTrashbin implements FolderLoader {
       resourcesStore,
       clientService: { webdav }
     } = context
-    return useTask(function* (signal1, signal2, space: SpaceResource, dateFilter) {
+    return useTask(function* (signal1, signal2, space: SpaceResource, dateFilter, path?: string) {
       resourcesStore.clearResourceList()
       resourcesStore.setAncestorMetaData({})
 
       const { resource, children } = yield webdav.listFiles(
         space,
-        {},
+        { path },
         {
           depth: 1,
           davProperties: DavProperties.Trashbin,
